@@ -28,7 +28,8 @@ add_library({{ project_name }} SHARED
 
 {{~ if language_standard ~}}
 target_compile_features({{ project_name }} PUBLIC {{ }}
-    {{- if language_standard == "stdcpp20" -}} cxx_std_20
+    {{- if language_standard == "stdcpplatest" -}} cxx_std_23
+    {{- else if language_standard == "stdcpp20" -}} cxx_std_20
     {{- else if language_standard == "stdcpp17" -}} cxx_std_17
     {{- else if language_standard == "stdcpp14" -}} cxx_std_14
     {{- else if language_standard == "stdcpp11" -}} cxx_std_11
