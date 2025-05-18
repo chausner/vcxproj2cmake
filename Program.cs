@@ -3,7 +3,6 @@ using System.CommandLine;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
-using vcxproj2cmake;
 
 static partial class Program
 {
@@ -37,12 +36,13 @@ static partial class Program
         }
 
         var conanPackageInfo = LoadConanPackageInfo();
+        var cmakeListsTemplate = LoadCMakeListsTemplate();
 
         if (hasProjects)
         {
             foreach (var project in projects!)
             {
-                ProcessProject(project, conanPackageInfo);
+                ProcessProject(project, cmakeListsTemplate, conanPackageInfo);
             }
         }
         else if (hasSolution)
@@ -56,16 +56,15 @@ static partial class Program
             foreach (var proj in projectPaths)
             {
                 string absolutePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(solution)!, proj));
-                ProcessProject(absolutePath, conanPackageInfo);
+                ProcessProject(absolutePath, cmakeListsTemplate, conanPackageInfo);
             }
         }
     }
 
-    static void ProcessProject(string projectPath, Dictionary<string, ConanPackage> conanPackageInfo)
+    static void ProcessProject(string projectPath, Template cmakeListsTemplate, Dictionary<string, ConanPackage> conanPackageInfo)
     {
         var projectFileInfo = ParseProjectFile(projectPath, conanPackageInfo);
-        var template = Template.Parse(Templates.CMakeLists);
-        var result = template.Render(projectFileInfo);
+        var result = cmakeListsTemplate.Render(projectFileInfo);
 
         Console.WriteLine($"\n# --- {Path.GetFileName(projectPath)} ---\n");
         Console.WriteLine(result);
@@ -98,6 +97,15 @@ static partial class Program
             .Select(line => line.Split(','))
             .Select(tokens => (tokens[0], new ConanPackage(tokens[1], tokens[2])))
             .ToDictionary();
+    }
+
+    static Template LoadCMakeListsTemplate()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        using var stream = assembly.GetManifestResourceStream("vcxproj2cmake.CMakeLists.txt.scriban");
+        using var streamReader = new StreamReader(stream);
+        string content = streamReader.ReadToEnd();
+        return Template.Parse(content);
     }
 
     static ProjectFileInfo ParseProjectFile(string project, Dictionary<string, ConanPackage> conanPackageInfo)

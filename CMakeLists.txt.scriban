@@ -1,9 +1,4 @@
-﻿namespace vcxproj2cmake;
-
-static class Templates
-{
-    public const string CMakeLists = """
-cmake_minimum_required(VERSION 3.0)
+﻿cmake_minimum_required(VERSION 3.0)
 
 project({{ project_name }})
 
@@ -122,5 +117,3 @@ target_compile_options({{ project_name }} PUBLIC
 
 {{~ end -}}
 
-""";
-}
