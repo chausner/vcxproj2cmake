@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
-static partial class Program
+static class Program
 {
     static int Main(string[] args)
     {
@@ -63,7 +63,7 @@ static partial class Program
 
     static void ProcessProject(string projectPath, Template cmakeListsTemplate, Dictionary<string, ConanPackage> conanPackageInfo)
     {
-        var projectFileInfo = ParseProjectFile(projectPath, conanPackageInfo);
+        var projectFileInfo = ProjectFileInfo.ParseProjectFile(projectPath, conanPackageInfo);
         var result = cmakeListsTemplate.Render(projectFileInfo);
 
         Console.WriteLine($"\n# --- {Path.GetFileName(projectPath)} ---\n");
@@ -107,8 +107,22 @@ static partial class Program
         string content = streamReader.ReadToEnd();
         return Template.Parse(content);
     }
+}
 
-    static ProjectFileInfo ParseProjectFile(string project, Dictionary<string, ConanPackage> conanPackageInfo)
+class ProjectFileInfo
+{
+    public required string ProjectName { get; set; }
+    public required string ConfigurationType { get; set; }
+    public required string? LanguageStandard { get; set; }
+    public required string[] SourceFiles { get; set; }
+    public required ConfigDependentSetting IncludePaths { get; set; }
+    public required ConfigDependentSetting Libraries { get; set; }
+    public required ConfigDependentSetting Defines { get; set; }
+    public required ConfigDependentSetting Options { get; set; }
+    public required string[] QtModules { get; set; }
+    public required ConanPackage[] ConanPackages { get; set; }
+
+    public static ProjectFileInfo ParseProjectFile(string project, Dictionary<string, ConanPackage> conanPackageInfo)
     {
         var msbuildNamespace = "http://schemas.microsoft.com/developer/msbuild/2003";
         var projectXName = XName.Get("Project", msbuildNamespace);
@@ -267,20 +281,6 @@ static partial class Program
     static string[] ParseDefines(string defines) => ParseList(defines, ';', "%(PreprocessorDefinitions)");
 
     static string[] ParseOptions(string options) => ParseList(options, ' ', "%(AdditionalOptions)");
-}
-
-class ProjectFileInfo
-{
-    public required string ProjectName { get; set; }
-    public required string ConfigurationType { get; set; }
-    public required string? LanguageStandard { get; set; }
-    public required string[] SourceFiles { get; set; }
-    public required ConfigDependentSetting IncludePaths { get; set; }
-    public required ConfigDependentSetting Libraries { get; set; }
-    public required ConfigDependentSetting Defines { get; set; }
-    public required ConfigDependentSetting Options { get; set; }
-    public required string[] QtModules { get; set; }
-    public required ConanPackage[] ConanPackages { get; set; }
 }
 
 class ConfigDependentSetting
