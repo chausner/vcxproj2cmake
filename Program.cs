@@ -9,28 +9,74 @@ static partial class Program
 {
     static int Main(string[] args)
     {
-        var projectOption = new Option<string>(
+        var projectOption = new Option<string?>(
             name: "--project",
-            description: "Path to .vcxproj file")
-        { IsRequired = true };
+            description: "Path to .vcxproj file");
+        var solutionOption = new Option<string?>(
+            name: "--solution",
+            description: "Path to .sln file");
 
         var rootCommand = new RootCommand("Converts VC++ projects to CMake");
         rootCommand.AddOption(projectOption);
-        rootCommand.SetHandler(Run, projectOption);
+        rootCommand.AddOption(solutionOption);
+        rootCommand.SetHandler(Run, projectOption, solutionOption);
 
         return rootCommand.Invoke(args);
     }
 
-    static void Run(string project)
+    static void Run(string? project, string? solution)
     {
+        if (string.IsNullOrEmpty(project) == string.IsNullOrEmpty(solution))
+        {
+            Console.Error.WriteLine("Error: Specify either --project or --solution, but not both.");
+            Environment.Exit(1);
+        }
+
         var conanPackageInfo = LoadConanPackageInfo();
 
-        var projectFileInfo = ParseProjectFile(project, conanPackageInfo);
+        if (!string.IsNullOrEmpty(project))
+        {
+            ProcessProject(project, conanPackageInfo);
+        }
+        else if (!string.IsNullOrEmpty(solution))
+        {
+            var projectPaths = GetProjectsFromSolution(solution);
+            if (projectPaths.Length == 0)
+            {
+                Console.Error.WriteLine($"No .vcxproj files found in solution: {solution}");
+                Environment.Exit(1);
+            }
+            foreach (var proj in projectPaths)
+            {
+                string absolutePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(solution)!, proj));
+                ProcessProject(absolutePath, conanPackageInfo);
+            }
+        }
+    }
 
+    static void ProcessProject(string projectPath, Dictionary<string, ConanPackage> conanPackageInfo)
+    {
+        var projectFileInfo = ParseProjectFile(projectPath, conanPackageInfo);
         var template = Template.Parse(Templates.CMakeLists);
         var result = template.Render(projectFileInfo);
 
+        Console.WriteLine($"\n# --- {Path.GetFileName(projectPath)} ---\n");
         Console.WriteLine(result);
+    }
+
+    static string[] GetProjectsFromSolution(string solutionPath)
+    {
+        var projectPaths = new List<string>();
+        var regex = new Regex(@"Project\(.*?\) = .*?, ""(.*?\.vcxproj)""", RegexOptions.IgnoreCase);
+
+        foreach (var line in File.ReadLines(solutionPath))
+        {
+            var match = regex.Match(line);
+            if (match.Success)
+                projectPaths.Add(match.Groups[1].Value);
+        }
+
+        return projectPaths.ToArray();
     }
 
     static Dictionary<string, ConanPackage> LoadConanPackageInfo()
