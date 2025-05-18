@@ -9,9 +9,11 @@ static partial class Program
 {
     static int Main(string[] args)
     {
-        var projectOption = new Option<string?>(
+        var projectOption = new Option<List<string>?>(
             name: "--project",
-            description: "Path to .vcxproj file");
+            description: "Path(s) to .vcxproj file(s)");
+        projectOption.AllowMultipleArgumentsPerToken = true;
+
         var solutionOption = new Option<string?>(
             name: "--solution",
             description: "Path to .sln file");
@@ -24,9 +26,11 @@ static partial class Program
         return rootCommand.Invoke(args);
     }
 
-    static void Run(string? project, string? solution)
+    static void Run(List<string>? projects, string? solution)
     {
-        if (string.IsNullOrEmpty(project) == string.IsNullOrEmpty(solution))
+        bool hasProjects = projects != null && projects.Count > 0;
+        bool hasSolution = !string.IsNullOrEmpty(solution);
+        if (hasProjects == hasSolution)
         {
             Console.Error.WriteLine("Error: Specify either --project or --solution, but not both.");
             Environment.Exit(1);
@@ -34,13 +38,16 @@ static partial class Program
 
         var conanPackageInfo = LoadConanPackageInfo();
 
-        if (!string.IsNullOrEmpty(project))
+        if (hasProjects)
         {
-            ProcessProject(project, conanPackageInfo);
+            foreach (var project in projects!)
+            {
+                ProcessProject(project, conanPackageInfo);
+            }
         }
-        else if (!string.IsNullOrEmpty(solution))
+        else if (hasSolution)
         {
-            var projectPaths = GetProjectsFromSolution(solution);
+            var projectPaths = GetProjectsFromSolution(solution!);
             if (projectPaths.Length == 0)
             {
                 Console.Error.WriteLine($"No .vcxproj files found in solution: {solution}");
