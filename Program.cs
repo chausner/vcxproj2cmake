@@ -192,7 +192,7 @@ class ProjectFileInfo
                 projectElement
                 .Elements(itemDefinitionGroupXName)
                 .Where(group => group.Attribute("Condition") == null ||
-                    group.Attribute("Condition")!.Value == $"'$(Configuration)|$(Platform)'=='{projectConfig}'")
+                    Regex.IsMatch(group.Attribute("Condition")!.Value, $@"'$\(Configuration\)\|$\(Platform\)'\s*==\s*'{projectConfig}'"))
                 .ToList();
 
             foreach (var group in itemDefinitionGroups)
