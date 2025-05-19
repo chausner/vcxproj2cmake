@@ -197,17 +197,19 @@ class ProjectFileInfo
 
             foreach (var group in itemDefinitionGroups)
             {
-                var projectConfigCompilerSettings =
-                    group
-                    .Elements(clCompileXName)
-                    .SelectMany(element => element.Elements())
-                    .ToDictionary(element => element.Name.LocalName, element => element.Value);
+                // not using ToDictionary() here since settings may occur multiple times,
+                // in this case older definitions should get overwritten by newer definitions
+                var projectConfigCompilerSettings = new Dictionary<string, string>();
+                foreach (var element in group.Elements(clCompileXName).SelectMany(element => element.Elements()))
+                {
+                    projectConfigCompilerSettings[element.Name.LocalName] = element.Value;
+                }
 
-                var projectConfigLinkerSettings =
-                    group
-                    .Elements(linkXName)
-                    .SelectMany(element => element.Elements())
-                    .ToDictionary(element => element.Name.LocalName, element => element.Value);
+                var projectConfigLinkerSettings = new Dictionary<string, string>();
+                foreach (var element in group.Elements(linkXName).SelectMany(element => element.Elements()))
+                {
+                    projectConfigLinkerSettings[element.Name.LocalName] = element.Value;
+                }
 
                 foreach (var setting in projectConfigCompilerSettings)
                 {
