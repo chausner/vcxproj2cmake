@@ -1,4 +1,5 @@
 ﻿using Scriban;
+using Scriban.Runtime;
 using System.CommandLine;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -64,7 +65,14 @@ static class Program
     static void ProcessProject(string projectPath, Template cmakeListsTemplate, Dictionary<string, ConanPackage> conanPackageInfo)
     {
         var projectFileInfo = ProjectFileInfo.ParseProjectFile(projectPath, conanPackageInfo);
-        var result = cmakeListsTemplate.Render(projectFileInfo);
+
+        var scriptObject = new ScriptObject();
+        scriptObject.Import(projectFileInfo);
+        scriptObject.Import("fail", new Action<string>(error => throw new Exception(error)));
+
+        var context = new TemplateContext();
+        context.PushGlobal(scriptObject);
+        var result = cmakeListsTemplate.Render(context);
 
         Console.WriteLine($"\n# --- {Path.GetFileName(projectPath)} ---\n");
         Console.WriteLine(result);

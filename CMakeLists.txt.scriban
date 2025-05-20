@@ -16,7 +16,7 @@ add_library({{ project_name }} STATIC
 {{~ else if configuration_type == "DynamicLibrary" ~}}
 add_library({{ project_name }} SHARED
 {{~ else ~}}
-{{ error.unsupported_configuration_type }}
+{{ fail $"Unsupported configuration type: {configuration_type}" }}
 {{~ end ~}}
     {{ source_files | array.sort | array.join "\n" }}
 )
@@ -29,7 +29,7 @@ target_compile_features({{ project_name }} PUBLIC {{ }}
     {{- else if language_standard == "stdcpp14" -}} cxx_std_14
     {{- else if language_standard == "stdcpp11" -}} cxx_std_11
     {{- else -}}
-    {{ error.unsupported_language_standard }}
+    {{ fail $"Unsupported language standard: {language_standard}" }}
     {{- end -}}
 )
 
