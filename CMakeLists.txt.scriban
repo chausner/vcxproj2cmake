@@ -18,7 +18,9 @@ add_library({{ project_name }} SHARED
 {{~ else ~}}
 {{ fail $"Unsupported configuration type: {configuration_type}" }}
 {{~ end ~}}
-    {{ source_files | array.sort | array.join "\n" }}
+    {{~ for file in source_files | array.sort ~}}
+    {{ file | translate_msbuild_expression }}
+    {{~ end ~}}
 )
 
 {{~ if language_standard ~}}
@@ -37,18 +39,20 @@ target_compile_features({{ project_name }} PUBLIC {{ }}
 
 {{~ if !include_paths.is_empty ~}}
 target_include_directories({{ project_name }} PUBLIC
-    {{ include_paths.common | array.join "\n" }}
+    {{~ for path in include_paths.common ~}}
+    {{ path | translate_msbuild_expression }}
+    {{~ end ~}}
     {{~ for path in include_paths.debug ~}}
-    $<$<CONFIG:Debug>:{{ path }}>
+    $<$<CONFIG:Debug>:{{ path | translate_msbuild_expression }}>
     {{~ end ~}}
     {{~ for path in include_paths.release ~}}
-    $<$<CONFIG:Release>:{{ path }}>
+    $<$<CONFIG:Release>:{{ path | translate_msbuild_expression }}>
     {{~ end ~}}
     {{~ for path in include_paths.x86 ~}}
-    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x86>:{{ path }}>
+    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x86>:{{ path | translate_msbuild_expression }}>
     {{~ end ~}}
     {{~ for path in include_paths.x64 ~}}
-    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{{ path }}>
+    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{{ path | translate_msbuild_expression }}>
     {{~ end ~}}
 )
 
@@ -56,7 +60,9 @@ target_include_directories({{ project_name }} PUBLIC
 
 {{~ if !defines.is_empty ~}}
 target_compile_definitions({{ project_name }} PUBLIC
-    {{ defines.common | array.join "\n" }}
+    {{~ for define in defines.common ~}}
+    {{ define }}
+    {{~ end ~}}
     {{~ for define in defines.debug ~}}
     $<$<CONFIG:Debug>:{{ define }}>
     {{~ end ~}}
@@ -75,18 +81,20 @@ target_compile_definitions({{ project_name }} PUBLIC
 
 {{~ if !libraries.is_empty || qt_modules.size > 0 ~}}
 target_link_libraries({{ project_name }} PUBLIC
-    {{ libraries.common | array.join "\n" }}
+    {{~ for library in libraries.common ~}}
+    {{ library | translate_msbuild_expression }}
+    {{~ end ~}}
     {{~ for library in libraries.debug ~}}
-    $<$<CONFIG:Debug>:{{ library }}>
+    $<$<CONFIG:Debug>:{{ library | translate_msbuild_expression }}>
     {{~ end ~}}
     {{~ for library in libraries.release ~}}
-    $<$<CONFIG:Release>:{{ library }}>
+    $<$<CONFIG:Release>:{{ library | translate_msbuild_expression }}>
     {{~ end ~}}
     {{~ for library in libraries.x86 ~}}
-    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x86>:{{ library }}>
+    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x86>:{{ library | translate_msbuild_expression }}>
     {{~ end ~}}
     {{~ for library in libraries.x64 ~}}
-    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{{ library }}>
+    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{{ library | translate_msbuild_expression }}>
     {{~ end ~}}
     {{~ for module in qt_modules ~}}
     Qt5::{{ module }}
@@ -100,6 +108,9 @@ target_link_libraries({{ project_name }} PUBLIC
 
 {{~ if !options.is_empty ~}}
 target_compile_options({{ project_name }} PUBLIC
+    {{~ for option in options.common ~}}
+    {{ option }}
+    {{~ end ~}}
     {{ options.common | array.join "\n" }}
     {{~ for option in options.debug ~}}
     $<$<CONFIG:Debug>:{{ option }}>

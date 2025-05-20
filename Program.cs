@@ -69,6 +69,7 @@ static class Program
         var scriptObject = new ScriptObject();
         scriptObject.Import(projectFileInfo);
         scriptObject.Import("fail", new Action<string>(error => throw new Exception(error)));
+        scriptObject.Import("translate_msbuild_expression", TranslateMSBuildExpression);
 
         var context = new TemplateContext();
         context.PushGlobal(scriptObject);
@@ -115,6 +116,24 @@ static class Program
         string content = streamReader.ReadToEnd();
         return Template.Parse(content);
     }
+
+    static string TranslateMSBuildExpression(string value)
+    {
+        // In CMake, we should always use forward-slashes as directory separator, even on Windows
+        string translatedValue = value.Replace(@"\", "/");
+
+        translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectDir\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/");
+        translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectName\)", "${PROJECT_NAME}");
+        translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/");
+        translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionName\)", "${CMAKE_PROJECT_NAME}");
+
+        if (Regex.Match(translatedValue, @"\$\([A-Za-z0-9_]+\)").Success)
+        {
+            Console.WriteLine($"Warning: value contains unsupported MSBuild macro/property: {value}");
+        }
+
+        return translatedValue;
+}
 }
 
 class ProjectFileInfo
