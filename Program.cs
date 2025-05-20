@@ -70,6 +70,13 @@ static class Program
             }
         }
 
+        if (solutionFileInfo != null &&
+            projectFileInfos.Any(project => Path.GetDirectoryName(project.AbsoluteProjectPath) == Path.GetDirectoryName(solutionFileInfo.AbsoluteSolutionPath)))
+        {
+            Console.Error.WriteLine($"The solution file and at least one project file are located in the same directory. This is not supported.");
+            Environment.Exit(1);
+        }
+
         var projectCMakeListsTemplate = LoadTemplate("vcxproj2cmake.Resources.Templates.Project-CMakeLists.txt.scriban");
         var solutionCMakeListsTemplate = LoadTemplate("vcxproj2cmake.Resources.Templates.Solution-CMakeLists.txt.scriban");
 
