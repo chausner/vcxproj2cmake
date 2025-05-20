@@ -18,15 +18,20 @@ static class Program
             name: "--solution",
             description: "Path to .sln file");
 
-        var rootCommand = new RootCommand("Converts VC++ projects to CMake");
+        var dryRunOption = new Option<bool>(
+            name: "--dry-run",
+            description: "Print generated output to the console, do not store generated files");
+
+        var rootCommand = new RootCommand("Converts Microsoft Visual C++ projects and solutions to CMake");
         rootCommand.AddOption(projectOption);
         rootCommand.AddOption(solutionOption);
-        rootCommand.SetHandler(Run, projectOption, solutionOption);
+        rootCommand.AddOption(dryRunOption);
+        rootCommand.SetHandler(Run, projectOption, solutionOption, dryRunOption);
 
         return rootCommand.Invoke(args);
     }
 
-    static void Run(List<string>? projects, string? solution)
+    static void Run(List<string>? projects, string? solution, bool dryRun)
     {
         bool hasProjects = projects != null && projects.Count > 0;
         bool hasSolution = !string.IsNullOrEmpty(solution);
@@ -37,49 +42,136 @@ static class Program
         }
 
         var conanPackageInfo = LoadConanPackageInfo();
-        var cmakeListsTemplate = LoadCMakeListsTemplate();
+
+        SolutionFileInfo? solutionFileInfo = null;
+        List<ProjectFileInfo> projectFileInfos = new();
 
         if (hasProjects)
         {
-            foreach (var project in projects!)
+            foreach (var projectPath in projects!)
             {
-                ProcessProject(project, cmakeListsTemplate, conanPackageInfo);
+                projectFileInfos.Add(ProjectFileInfo.ParseProjectFile(projectPath, conanPackageInfo));
             }
         }
         else if (hasSolution)
         {
-            var projectPaths = GetProjectsFromSolution(solution!);
-            if (projectPaths.Length == 0)
+            solutionFileInfo = SolutionFileInfo.ParseSolutionFile(solution!);
+
+            if (solutionFileInfo.Projects.Length == 0)
             {
                 Console.Error.WriteLine($"No .vcxproj files found in solution: {solution}");
                 Environment.Exit(1);
             }
-            foreach (var proj in projectPaths)
+
+            foreach (var projectPath in solutionFileInfo.Projects)
             {
-                string absolutePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(solution)!, proj));
-                ProcessProject(absolutePath, cmakeListsTemplate, conanPackageInfo);
+                string absolutePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(solution)!, projectPath));
+                projectFileInfos.Add(ProjectFileInfo.ParseProjectFile(absolutePath, conanPackageInfo));
             }
         }
+
+        var projectCMakeListsTemplate = LoadTemplate("vcxproj2cmake.Resources.Templates.Project-CMakeLists.txt.scriban");
+        var solutionCMakeListsTemplate = LoadTemplate("vcxproj2cmake.Resources.Templates.Solution-CMakeLists.txt.scriban");
+
+        foreach (var projectFileInfo in projectFileInfos)
+            GenerateCMakeForProject(projectFileInfo, projectCMakeListsTemplate, dryRun);
+
+        if (solutionFileInfo != null)
+            GenerateCMakeForSolution(solutionFileInfo, solutionCMakeListsTemplate, dryRun);
     }
 
-    static void ProcessProject(string projectPath, Template cmakeListsTemplate, Dictionary<string, ConanPackage> conanPackageInfo)
+    static void GenerateCMake(object model, string destinationPath, Template cmakeListsTemplate, bool dryRun)
     {
-        var projectFileInfo = ProjectFileInfo.ParseProjectFile(projectPath, conanPackageInfo);
-
         var scriptObject = new ScriptObject();
-        scriptObject.Import(projectFileInfo);
+        scriptObject.Import(model);
         scriptObject.Import("fail", new Action<string>(error => throw new Exception(error)));
-        scriptObject.Import("translate_msbuild_expression", TranslateMSBuildExpression);
+        scriptObject.Import("translate_msbuild_macros", TranslateMSBuildMacros);
+        scriptObject.Import("normalize_path", NormalizePath);
 
         var context = new TemplateContext();
         context.PushGlobal(scriptObject);
         var result = cmakeListsTemplate.Render(context);
 
-        Console.WriteLine($"\n# --- {Path.GetFileName(projectPath)} ---\n");
-        Console.WriteLine(result);
+        if (dryRun)
+        {
+            Console.WriteLine($"\nGenerated output for {destinationPath}\n");
+            Console.WriteLine(result);
+        }
+        else
+        {
+            Console.WriteLine($"Generating {destinationPath}");
+            File.WriteAllText(destinationPath, result);
+        }
     }
 
-    static string[] GetProjectsFromSolution(string solutionPath)
+    static void GenerateCMakeForProject(ProjectFileInfo projectFileInfo, Template cmakeListsTemplate, bool dryRun)
+    {
+        string cmakeListsPath = Path.Combine(Path.GetDirectoryName(projectFileInfo.AbsoluteProjectPath)!, "CMakeLists.txt");
+
+        GenerateCMake(projectFileInfo, cmakeListsPath, cmakeListsTemplate, dryRun);       
+    }
+
+    static void GenerateCMakeForSolution(SolutionFileInfo solutionFileInfo, Template cmakeListsTemplate, bool dryRun)
+    {
+        string cmakeListsPath = Path.Combine(Path.GetDirectoryName(solutionFileInfo.AbsoluteSolutionPath)!, "CMakeLists.txt");
+
+        GenerateCMake(solutionFileInfo, cmakeListsPath, cmakeListsTemplate, dryRun);
+    }
+
+    static Dictionary<string, ConanPackage> LoadConanPackageInfo()
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        using var stream = assembly.GetManifestResourceStream("vcxproj2cmake.Resources.conan-packages.csv");
+        using var streamReader = new StreamReader(stream);
+
+        return
+            streamReader.ReadToEnd()
+            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(line => line.Split(','))
+            .Select(tokens => (tokens[0], new ConanPackage(tokens[1], tokens[2])))
+            .ToDictionary();
+    }
+
+    static Template LoadTemplate(string resourceName)
+    {
+        var assembly = Assembly.GetExecutingAssembly();        
+        using var stream = assembly.GetManifestResourceStream(resourceName);
+        using var streamReader = new StreamReader(stream);
+        string content = streamReader.ReadToEnd();
+        return Template.Parse(content);
+    }
+
+    static string NormalizePath(string path)
+    {
+        // In CMake, we should always use forward-slashes as directory separator, even on Windows
+        string normalizedPath = path.Replace(@"\", "/");
+
+        return normalizedPath;
+    }
+
+    static string TranslateMSBuildMacros(string value)
+    {
+        string translatedValue = Regex.Replace(value, @"\$\(ProjectDir\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/");
+        translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectName\)", "${PROJECT_NAME}");
+        translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/");
+        translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionName\)", "${CMAKE_PROJECT_NAME}");
+
+        if (Regex.Match(translatedValue, @"\$\([A-Za-z0-9_]+\)").Success)
+        {
+            Console.WriteLine($"Warning: value contains unsupported MSBuild macro/property: {value}");
+        }
+
+        return translatedValue;
+    }
+}
+
+class SolutionFileInfo
+{
+    public required string AbsoluteSolutionPath { get; set; }
+    public required string SolutionName { get; set; }
+    public required string[] Projects { get; set; }
+
+    public static SolutionFileInfo ParseSolutionFile(string solutionPath)
     {
         var projectPaths = new List<string>();
         var regex = new Regex(@"Project\(.*?\) = .*?, ""(.*?\.vcxproj)""", RegexOptions.IgnoreCase);
@@ -91,53 +183,18 @@ static class Program
                 projectPaths.Add(match.Groups[1].Value);
         }
 
-        return projectPaths.ToArray();
-    }
-
-    static Dictionary<string, ConanPackage> LoadConanPackageInfo()
-    {
-        var assembly = Assembly.GetExecutingAssembly();
-        using var stream = assembly.GetManifestResourceStream("vcxproj2cmake.conan-packages.csv");
-        using var streamReader = new StreamReader(stream);
-
-        return
-            streamReader.ReadToEnd()
-            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(line => line.Split(','))
-            .Select(tokens => (tokens[0], new ConanPackage(tokens[1], tokens[2])))
-            .ToDictionary();
-    }
-
-    static Template LoadCMakeListsTemplate()
-    {
-        var assembly = Assembly.GetExecutingAssembly();
-        using var stream = assembly.GetManifestResourceStream("vcxproj2cmake.CMakeLists.txt.scriban");
-        using var streamReader = new StreamReader(stream);
-        string content = streamReader.ReadToEnd();
-        return Template.Parse(content);
-    }
-
-    static string TranslateMSBuildExpression(string value)
-    {
-        // In CMake, we should always use forward-slashes as directory separator, even on Windows
-        string translatedValue = value.Replace(@"\", "/");
-
-        translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectDir\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/");
-        translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectName\)", "${PROJECT_NAME}");
-        translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/");
-        translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionName\)", "${CMAKE_PROJECT_NAME}");
-
-        if (Regex.Match(translatedValue, @"\$\([A-Za-z0-9_]+\)").Success)
+        return new SolutionFileInfo
         {
-            Console.WriteLine($"Warning: value contains unsupported MSBuild macro/property: {value}");
-        }
-
-        return translatedValue;
-}
+            AbsoluteSolutionPath = Path.GetFullPath(solutionPath),
+            SolutionName = Path.GetFileNameWithoutExtension(solutionPath),
+            Projects = projectPaths.ToArray()
+        };
+    }
 }
 
 class ProjectFileInfo
 {
+    public required string AbsoluteProjectPath { get; set; }
     public required string ProjectName { get; set; }
     public required string[] Languages { get; set; }
     public required string ConfigurationType { get; set; }
@@ -150,7 +207,7 @@ class ProjectFileInfo
     public required string[] QtModules { get; set; }
     public required ConanPackage[] ConanPackages { get; set; }
 
-    public static ProjectFileInfo ParseProjectFile(string project, Dictionary<string, ConanPackage> conanPackageInfo)
+    public static ProjectFileInfo ParseProjectFile(string projectPath, Dictionary<string, ConanPackage> conanPackageInfo)
     {
         var msbuildNamespace = "http://schemas.microsoft.com/developer/msbuild/2003";
         var projectXName = XName.Get("Project", msbuildNamespace);
@@ -164,8 +221,9 @@ class ProjectFileInfo
         var qtModulesXName = XName.Get("QtModules", msbuildNamespace);
         var importXName = XName.Get("Import", msbuildNamespace);
         var importGroupXName = XName.Get("ImportGroup", msbuildNamespace);
+        var projectReferenceXName = XName.Get("ProjectReference", msbuildNamespace);
 
-        var doc = XDocument.Load(project);
+        var doc = XDocument.Load(projectPath);
         var projectElement = doc.Element(projectXName);
 
         var projectConfigurations =
@@ -203,6 +261,14 @@ class ProjectFileInfo
             .Elements(importXName)
             .Concat(projectElement.Elements(importGroupXName).SelectMany(group => group.Elements(importXName)))
             .Select(import => import.Attribute("Project")!.Value)
+            .ToList();
+
+        var projectReferences =
+            projectElement
+            .Elements(itemGroupXName)
+            .SelectMany(group => group.Elements(projectReferenceXName))
+            .Select(element => element.Attribute("Include")!.Value)
+            .Distinct()
             .ToList();
 
         Dictionary<string, Dictionary<string, string>> compilerSettings = [];
@@ -282,7 +348,8 @@ class ProjectFileInfo
 
         return new ProjectFileInfo
         {
-            ProjectName = Path.GetFileNameWithoutExtension(project),
+            AbsoluteProjectPath = Path.GetFullPath(projectPath),
+            ProjectName = Path.GetFileNameWithoutExtension(projectPath),
             Languages = DetectLanguages(sourceFiles),
             ConfigurationType = configurationType,
             LanguageStandard = languageStandard,

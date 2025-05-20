@@ -12,11 +12,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="CMakeLists.txt.scriban" />
+    <EmbeddedResource Include="Resources\Templates\Solution-CMakeLists.txt.scriban" />
+    <EmbeddedResource Include="Resources\Templates\Project-CMakeLists.txt.scriban" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="conan-packages.csv">
+    <EmbeddedResource Include="Resources\conan-packages.csv">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
   </ItemGroup>
