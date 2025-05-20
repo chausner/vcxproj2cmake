@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required(VERSION 3.0)
 project({{ solution_name }})
 
-{{~ for project in projects ~}}
-add_subdirectory({{ project }})
+{{~ for project in projects | order_projects_by_dependencies ~}}
+add_subdirectory({{ project.path | get_directory_name | normalize_path }})
 {{~ end ~}}
