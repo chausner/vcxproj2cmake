@@ -120,6 +120,7 @@ static class Program
 class ProjectFileInfo
 {
     public required string ProjectName { get; set; }
+    public required string[] Languages { get; set; }
     public required string ConfigurationType { get; set; }
     public required string? LanguageStandard { get; set; }
     public required string[] SourceFiles { get; set; }
@@ -263,6 +264,7 @@ class ProjectFileInfo
         return new ProjectFileInfo
         {
             ProjectName = Path.GetFileNameWithoutExtension(project),
+            Languages = DetectLanguages(sourceFiles),
             ConfigurationType = configurationType,
             LanguageStandard = languageStandard,
             SourceFiles = sourceFiles.ToArray(),
@@ -291,6 +293,21 @@ class ProjectFileInfo
     static string[] ParseDefines(string defines) => ParseList(defines, ';', "%(PreprocessorDefinitions)");
 
     static string[] ParseOptions(string options) => ParseList(options, ' ', "%(AdditionalOptions)");
+
+    static string[] DetectLanguages(IEnumerable<string> sourceFiles)
+    {
+        List<string> result = new List<string>();
+
+        if (sourceFiles.Any(file => file.EndsWith(".c", StringComparison.OrdinalIgnoreCase)))
+            result.Add("C");
+        if (sourceFiles.Any(file => Regex.IsMatch(file, @"\.(cpp|cxx|c\+\+|cc|hpp)$", RegexOptions.IgnoreCase)))
+            result.Add("CXX");
+
+        if (result.Count == 0)
+            Console.WriteLine("Warning: could not detect languages for project");
+
+        return result.ToArray();
+    }
 }
 
 class ConfigDependentSetting
