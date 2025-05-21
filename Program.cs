@@ -200,7 +200,9 @@ static class Program
 
     static string TranslateMSBuildMacros(string value)
     {
-        string translatedValue = Regex.Replace(value, @"\$\(ProjectDir\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/");
+        string translatedValue = value;
+        translatedValue = Regex.Replace(translatedValue, @"\$\(ConfigurationName\)", "${CMAKE_BUILD_TYPE}/");
+        translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectDir\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/");
         translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectName\)", "${PROJECT_NAME}");
         translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/");
         translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionName\)", "${CMAKE_PROJECT_NAME}");
@@ -250,6 +252,8 @@ class SolutionFileInfo
 
     public static SolutionFileInfo ParseSolutionFile(string solutionPath)
     {
+        Console.WriteLine($"Parsing {solutionPath}");
+
         var projectPaths = new List<string>();
         var regex = new Regex(@"Project\(.*?\) = .*?, ""(.*?\.vcxproj)""", RegexOptions.IgnoreCase);
 
@@ -287,6 +291,8 @@ class ProjectFileInfo
 
     public static ProjectFileInfo ParseProjectFile(string projectPath, Dictionary<string, ConanPackage> conanPackageInfo)
     {
+        Console.WriteLine($"Parsing {projectPath}");
+
         var msbuildNamespace = "http://schemas.microsoft.com/developer/msbuild/2003";
         var projectXName = XName.Get("Project", msbuildNamespace);
         var propertyGroupXName = XName.Get("PropertyGroup", msbuildNamespace);
@@ -362,10 +368,11 @@ class ProjectFileInfo
 
             var itemDefinitionGroups =
                 projectElement
-                .Elements(itemDefinitionGroupXName)
-                .Where(group => group.Attribute("Condition") == null ||
-                    Regex.IsMatch(group.Attribute("Condition")!.Value, $@"'$\(Configuration\)\|$\(Platform\)'\s*==\s*'{projectConfig}'"))
-                .ToList();
+                    .Elements(itemDefinitionGroupXName)
+                    .Where(group => group.Attribute("Condition") == null ||
+                                    Regex.IsMatch(group.Attribute("Condition")!.Value,
+                                        $@"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'{Regex.Escape(projectConfig)}'"))
+                    .ToList();
 
             foreach (var group in itemDefinitionGroups)
             {
