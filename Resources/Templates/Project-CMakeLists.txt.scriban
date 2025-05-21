@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.0)
+﻿cmake_minimum_required(VERSION 3.13)
 project({{ project_name }} LANGUAGES {{ languages | array.join " " }})
 
 {{~ if qt_modules.size > 0 ~}}
@@ -73,6 +73,27 @@ target_compile_definitions({{ project_name }} PUBLIC
     {{~ end ~}}
     {{~ for define in defines.x64 ~}}
     $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{{ define }}>
+    {{~ end ~}}
+)
+
+{{~ end -}}
+
+{{~ if !linker_paths.is_empty ~}}
+target_link_directories({{ project_name }} PUBLIC
+    {{~ for path in linker_paths.common ~}}
+    {{ path | translate_msbuild_macros | normalize_path }}
+    {{~ end ~}}
+    {{~ for path in linker_paths.debug ~}}
+    $<$<CONFIG:Debug>:{{ path | translate_msbuild_macros | normalize_path }}>
+    {{~ end ~}}
+    {{~ for path in linker_paths.release ~}}
+    $<$<CONFIG:Release>:{{ path | translate_msbuild_macros | normalize_path }}>
+    {{~ end ~}}
+    {{~ for path in linker_paths.x86 ~}}
+    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x86>:{{ path | translate_msbuild_macros | normalize_path }}>
+    {{~ end ~}}
+    {{~ for path in linker_paths.x64 ~}}
+    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{{ path | translate_msbuild_macros | normalize_path }}>
     {{~ end ~}}
 )
 

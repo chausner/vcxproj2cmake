@@ -11,8 +11,10 @@ static class Program
     {
         var projectOption = new Option<List<string>?>(
             name: "--project",
-            description: "Path(s) to .vcxproj file(s)");
-        projectOption.AllowMultipleArgumentsPerToken = true;
+            description: "Path(s) to .vcxproj file(s)")
+        {
+            AllowMultipleArgumentsPerToken = true
+        };
 
         var solutionOption = new Option<string?>(
             name: "--solution",
@@ -170,7 +172,7 @@ static class Program
     static Dictionary<string, ConanPackage> LoadConanPackageInfo()
     {
         var assembly = Assembly.GetExecutingAssembly();
-        using var stream = assembly.GetManifestResourceStream("vcxproj2cmake.Resources.conan-packages.csv");
+        using var stream = assembly.GetManifestResourceStream("vcxproj2cmake.Resources.conan-packages.csv")!;
         using var streamReader = new StreamReader(stream);
 
         return
@@ -184,7 +186,7 @@ static class Program
     static Template LoadTemplate(string resourceName)
     {
         var assembly = Assembly.GetExecutingAssembly();        
-        using var stream = assembly.GetManifestResourceStream(resourceName);
+        using var stream = assembly.GetManifestResourceStream(resourceName)!;
         using var streamReader = new StreamReader(stream);
         string content = streamReader.ReadToEnd();
         return Template.Parse(content);
@@ -203,13 +205,13 @@ static class Program
 
         // Remove ./ prefix(es)
         while (normalizedPath.StartsWith("./"))
-            normalizedPath = normalizedPath.Substring(2);
+            normalizedPath = normalizedPath[2..];
         if (normalizedPath == string.Empty)
             return ".";
 
         // Remove /. suffix(es)
         while (normalizedPath.EndsWith("/."))
-            normalizedPath = normalizedPath.Substring(0, normalizedPath.Length - 2);
+            normalizedPath = normalizedPath[..^2];
         if (normalizedPath == string.Empty)
             return "/";
 
@@ -217,8 +219,8 @@ static class Program
         normalizedPath = normalizedPath.Replace("/./", "/");
 
         // Remove trailing separator
-        if (normalizedPath.EndsWith("/") && normalizedPath != "/")
-            normalizedPath = normalizedPath.Substring(0, normalizedPath.Length - 1);
+        if (normalizedPath.EndsWith('/') && normalizedPath != "/")
+            normalizedPath = normalizedPath[..^1];
 
         return normalizedPath;
     }
@@ -309,6 +311,7 @@ class ProjectFileInfo
     public required string? LanguageStandard { get; init; }
     public required string[] SourceFiles { get; init; }
     public required ConfigDependentSetting IncludePaths { get; init; }
+    public required ConfigDependentSetting LinkerPaths { get; init; }
     public required ConfigDependentSetting Libraries { get; init; }
     public required ConfigDependentSetting Defines { get; init; }
     public required ConfigDependentSetting Options { get; init; }
@@ -335,7 +338,7 @@ class ProjectFileInfo
         var projectReferenceXName = XName.Get("ProjectReference", msbuildNamespace);
 
         var doc = XDocument.Load(projectPath);
-        var projectElement = doc.Element(projectXName);
+        var projectElement = doc.Element(projectXName)!;
 
         var projectConfigurations =
             projectElement
@@ -438,8 +441,11 @@ class ProjectFileInfo
         var includePaths = ConfigDependentSetting.Parse(
             compilerSettings.GetValueOrDefault("AdditionalIncludeDirectories"), ParseIncludePaths);
 
+        var linkerPaths = ConfigDependentSetting.Parse(
+            linkerSettings.GetValueOrDefault("AdditionalLibraryDirectories"), ParseLinkerPaths);
+
         var libraries = ConfigDependentSetting.Parse(
-            compilerSettings.GetValueOrDefault("AdditionalDependencies"), ParseLibraries);
+            linkerSettings.GetValueOrDefault("AdditionalDependencies"), ParseLibraries);
 
         var defines = ConfigDependentSetting.Parse(
             compilerSettings.GetValueOrDefault("PreprocessorDefinitions"), ParseDefines);
@@ -455,7 +461,7 @@ class ProjectFileInfo
                 return match.Success ? match.Groups[1].Value : null;
             })
             .Where(packageName => packageName != null)
-            .Select(packageName => conanPackageInfo.GetValueOrDefault(packageName, new ConanPackage(packageName, packageName)))
+            .Select(packageName => conanPackageInfo.GetValueOrDefault(packageName!, new ConanPackage(packageName!, packageName!)))
             .ToArray();
 
         return new ProjectFileInfo
@@ -467,6 +473,7 @@ class ProjectFileInfo
             LanguageStandard = languageStandard,
             SourceFiles = sourceFiles.ToArray(),
             IncludePaths = includePaths,
+            LinkerPaths = linkerPaths,
             Libraries = libraries,
             Defines = defines,
             Options = options,
@@ -487,6 +494,8 @@ class ProjectFileInfo
 
     static string[] ParseIncludePaths(string includePaths) => ParseList(includePaths, ';', "%(AdditionalIncludeDirectories)");
 
+    static string[] ParseLinkerPaths(string linkerPaths) => ParseList(linkerPaths, ';', "%(AdditionalLibraryDirectories)");
+
     static string[] ParseLibraries(string libraries) => ParseList(libraries, ';', "%(AdditionalDependencies)");
 
     static string[] ParseDefines(string defines) => ParseList(defines, ';', "%(PreprocessorDefinitions)");
@@ -495,7 +504,7 @@ class ProjectFileInfo
 
     static string[] DetectLanguages(IEnumerable<string> sourceFiles)
     {
-        List<string> result = new List<string>();
+        List<string> result = new();
 
         if (sourceFiles.Any(file => file.EndsWith(".c", StringComparison.OrdinalIgnoreCase)))
             result.Add("C");
