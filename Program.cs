@@ -45,55 +45,55 @@ static class Program
 
         var conanPackageInfo = LoadConanPackageInfo();
 
-        SolutionFileInfo? solutionFileInfo = null;
-        List<ProjectFileInfo> projectFileInfos = new();
+        SolutionInfo? solutionInfo = null;
+        List<ProjectInfo> projectInfos = new();
 
         if (hasProjects)
         {
             foreach (var projectPath in projects!)
             {
-                projectFileInfos.Add(ProjectFileInfo.ParseProjectFile(projectPath, conanPackageInfo));
+                projectInfos.Add(ProjectInfo.ParseProjectFile(projectPath, conanPackageInfo));
             }
         }
         else if (hasSolution)
         {
-            solutionFileInfo = SolutionFileInfo.ParseSolutionFile(solution!);
+            solutionInfo = SolutionInfo.ParseSolutionFile(solution!);
 
-            if (solutionFileInfo.Projects.Length == 0)
+            if (solutionInfo.Projects.Length == 0)
             {
                 Console.Error.WriteLine($"Error: No .vcxproj files found in solution: {solution}");
                 Environment.Exit(1);
             }
 
-            foreach (var projectReference in solutionFileInfo.Projects)
+            foreach (var projectReference in solutionInfo.Projects)
             {
                 string absolutePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(solution)!, projectReference.Path));
-                projectReference.ProjectFileInfo = ProjectFileInfo.ParseProjectFile(absolutePath, conanPackageInfo);
-                projectFileInfos.Add(projectReference.ProjectFileInfo);
+                projectReference.ProjectFileInfo = ProjectInfo.ParseProjectFile(absolutePath, conanPackageInfo);
+                projectInfos.Add(projectReference.ProjectFileInfo);
             }
         }
 
-        ValidateFolders(solutionFileInfo, projectFileInfos);
+        ValidateFolders(solutionInfo, projectInfos);
 
-        ResolveProjectReferences(projectFileInfos);
+        ResolveProjectReferences(projectInfos);
 
         var projectCMakeListsTemplate = LoadTemplate("vcxproj2cmake.Resources.Templates.Project-CMakeLists.txt.scriban");
         var solutionCMakeListsTemplate = LoadTemplate("vcxproj2cmake.Resources.Templates.Solution-CMakeLists.txt.scriban");
 
-        foreach (var projectFileInfo in projectFileInfos)
-            GenerateCMakeForProject(projectFileInfo, projectCMakeListsTemplate, dryRun);
+        foreach (var projectInfo in projectInfos)
+            GenerateCMakeForProject(projectInfo, projectCMakeListsTemplate, dryRun);
 
-        if (solutionFileInfo != null)
-            GenerateCMakeForSolution(solutionFileInfo, solutionCMakeListsTemplate, dryRun);
+        if (solutionInfo != null)
+            GenerateCMakeForSolution(solutionInfo, solutionCMakeListsTemplate, dryRun);
     }
 
-    static void ValidateFolders(SolutionFileInfo? solutionFileInfo, List<ProjectFileInfo> projectFileInfos)
+    static void ValidateFolders(SolutionInfo? solutionInfo, List<ProjectInfo> projectInfos)
     {
         HashSet<string> folders = new();
 
-        foreach (var projectFileInfo in projectFileInfos)
+        foreach (var projectInfo in projectInfos)
         {
-            var folder = Path.GetDirectoryName(projectFileInfo.AbsoluteProjectPath)!;
+            var folder = Path.GetDirectoryName(projectInfo.AbsoluteProjectPath)!;
             if (!folders.Add(folder))
             {
                 Console.Error.WriteLine($"Error: Directory {folder} contains two or more projects. This is not supported.");
@@ -101,26 +101,26 @@ static class Program
             }
         }
 
-        if (solutionFileInfo != null && !folders.Add(Path.GetDirectoryName(solutionFileInfo.AbsoluteSolutionPath)!))
+        if (solutionInfo != null && !folders.Add(Path.GetDirectoryName(solutionInfo.AbsoluteSolutionPath)!))
         {
             Console.Error.WriteLine($"Error: The solution file and at least one project file are located in the same directory. This is not supported.");
             Environment.Exit(1);
         }
     }
 
-    static void ResolveProjectReferences(List<ProjectFileInfo> projectFileInfos)
+    static void ResolveProjectReferences(List<ProjectInfo> projectInfos)
     {
-        foreach (var projectFileInfo in projectFileInfos)
+        foreach (var projectInfo in projectInfos)
         {
-            foreach (var projectReference in projectFileInfo.ProjectReferences)
+            foreach (var projectReference in projectInfo.ProjectReferences)
             {
-                var absoluteReference = Path.GetFullPath(projectReference.Path, Path.GetDirectoryName(projectFileInfo.AbsoluteProjectPath)!);
+                var absoluteReference = Path.GetFullPath(projectReference.Path, Path.GetDirectoryName(projectInfo.AbsoluteProjectPath)!);
 
-                var referencedProjectFileInfo = projectFileInfos.FirstOrDefault(p => p.AbsoluteProjectPath == absoluteReference);
+                var referencedProjectFileInfo = projectInfos.FirstOrDefault(p => p.AbsoluteProjectPath == absoluteReference);
 
                 if (referencedProjectFileInfo == null)
                 {
-                    Console.Error.WriteLine($"Error: Project {projectFileInfo.AbsoluteProjectPath} references project {absoluteReference} which is not part of the solution or the list of projects.");
+                    Console.Error.WriteLine($"Error: Project {projectInfo.AbsoluteProjectPath} references project {absoluteReference} which is not part of the solution or the list of projects.");
                     Environment.Exit(1);
                 }
 
@@ -155,18 +155,18 @@ static class Program
         }
     }
 
-    static void GenerateCMakeForProject(ProjectFileInfo projectFileInfo, Template cmakeListsTemplate, bool dryRun)
+    static void GenerateCMakeForProject(ProjectInfo projectInfo, Template cmakeListsTemplate, bool dryRun)
     {
-        string cmakeListsPath = Path.Combine(Path.GetDirectoryName(projectFileInfo.AbsoluteProjectPath)!, "CMakeLists.txt");
+        string cmakeListsPath = Path.Combine(Path.GetDirectoryName(projectInfo.AbsoluteProjectPath)!, "CMakeLists.txt");
 
-        GenerateCMake(projectFileInfo, cmakeListsPath, cmakeListsTemplate, dryRun);       
+        GenerateCMake(projectInfo, cmakeListsPath, cmakeListsTemplate, dryRun);       
     }
 
-    static void GenerateCMakeForSolution(SolutionFileInfo solutionFileInfo, Template cmakeListsTemplate, bool dryRun)
+    static void GenerateCMakeForSolution(SolutionInfo solutionInfo, Template cmakeListsTemplate, bool dryRun)
     {
-        string cmakeListsPath = Path.Combine(Path.GetDirectoryName(solutionFileInfo.AbsoluteSolutionPath)!, "CMakeLists.txt");
+        string cmakeListsPath = Path.Combine(Path.GetDirectoryName(solutionInfo.AbsoluteSolutionPath)!, "CMakeLists.txt");
 
-        GenerateCMake(solutionFileInfo, cmakeListsPath, cmakeListsTemplate, dryRun);
+        GenerateCMake(solutionInfo, cmakeListsPath, cmakeListsTemplate, dryRun);
     }
 
     static Dictionary<string, ConanPackage> LoadConanPackageInfo()
@@ -273,13 +273,13 @@ static class Program
     }
 }
 
-class SolutionFileInfo
+class SolutionInfo
 {
     public required string AbsoluteSolutionPath { get; init; }
     public required string SolutionName { get; init; }
     public required ProjectReference[] Projects { get; init; }
 
-    public static SolutionFileInfo ParseSolutionFile(string solutionPath)
+    public static SolutionInfo ParseSolutionFile(string solutionPath)
     {
         Console.WriteLine($"Parsing {solutionPath}");
 
@@ -293,7 +293,7 @@ class SolutionFileInfo
                 projectPaths.Add(match.Groups[1].Value);
         }
 
-        return new SolutionFileInfo
+        return new SolutionInfo
         {
             AbsoluteSolutionPath = Path.GetFullPath(solutionPath),
             SolutionName = Path.GetFileNameWithoutExtension(solutionPath),
@@ -302,7 +302,7 @@ class SolutionFileInfo
     }
 }
 
-class ProjectFileInfo
+class ProjectInfo
 {
     public required string AbsoluteProjectPath { get; init; }
     public required string ProjectName { get; init; }
@@ -319,7 +319,7 @@ class ProjectFileInfo
     public required string[] QtModules { get; init; }
     public required ConanPackage[] ConanPackages { get; init; }
 
-    public static ProjectFileInfo ParseProjectFile(string projectPath, Dictionary<string, ConanPackage> conanPackageInfo)
+    public static ProjectInfo ParseProjectFile(string projectPath, Dictionary<string, ConanPackage> conanPackageInfo)
     {
         Console.WriteLine($"Parsing {projectPath}");
 
@@ -464,7 +464,7 @@ class ProjectFileInfo
             .Select(packageName => conanPackageInfo.GetValueOrDefault(packageName!, new ConanPackage(packageName!, packageName!)))
             .ToArray();
 
-        return new ProjectFileInfo
+        return new ProjectInfo
         {
             AbsoluteProjectPath = Path.GetFullPath(projectPath),
             ProjectName = Path.GetFileNameWithoutExtension(projectPath),
@@ -578,5 +578,5 @@ record ConanPackage(string CMakeConfigName, string CMakeTargetName);
 class ProjectReference
 {
     public required string Path { get; init; }
-    public ProjectFileInfo? ProjectFileInfo { get; set; }
+    public ProjectInfo? ProjectFileInfo { get; set; }
 }
