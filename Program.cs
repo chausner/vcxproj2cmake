@@ -201,7 +201,7 @@ static class Program
     static string TranslateMSBuildMacros(string value)
     {
         string translatedValue = value;
-        translatedValue = Regex.Replace(translatedValue, @"\$\(ConfigurationName\)", "${CMAKE_BUILD_TYPE}/");
+        translatedValue = Regex.Replace(translatedValue, @"\$\(Configuration(Name)?\)", "${CMAKE_BUILD_TYPE}/");
         translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectDir\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/");
         translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectName\)", "${PROJECT_NAME}");
         translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/");
@@ -209,8 +209,10 @@ static class Program
 
         if (Regex.Match(translatedValue, @"\$\([A-Za-z0-9_]+\)").Success)
         {
-            Console.WriteLine($"Warning: value contains unsupported MSBuild macro/property: {value}");
+            Console.WriteLine($"Warning: value contains unsupported MSBuild macros/properties: {value}");
         }
+
+        translatedValue = Regex.Replace(translatedValue, @"\$\(([A-Za-z0-9_]+)\)", "${$1}");
 
         return translatedValue;
     }
