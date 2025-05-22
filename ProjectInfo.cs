@@ -15,10 +15,10 @@ class ProjectInfo
     public required ConfigDependentSetting Defines { get; init; }
     public required ConfigDependentSetting Options { get; init; }
     public required ProjectReference[] ProjectReferences { get; init; }
-    public required string[] QtModules { get; init; }
+    public required QtModule[] QtModules { get; init; }
     public required ConanPackage[] ConanPackages { get; init; }
 
-    public static ProjectInfo ParseProjectFile(string projectPath, Dictionary<string, ConanPackage> conanPackageInfo)
+    public static ProjectInfo ParseProjectFile(string projectPath, ConanPackageInfoRepository conanPackageInfoRepository)
     {
         Console.WriteLine($"Parsing {projectPath}");
 
@@ -160,8 +160,7 @@ class ProjectInfo
                     return match.Success ? match.Groups[1].Value : null;
                 })
                 .Where(packageName => packageName != null)
-                .Select(packageName => conanPackageInfo.GetValueOrDefault(packageName!,
-                    new ConanPackage(packageName!, $"{packageName!}::{packageName!}")))
+                .Select(packageName => conanPackageInfoRepository.GetConanPackageInfo(packageName!))
                 .ToArray();
 
         return new ProjectInfo
@@ -178,7 +177,7 @@ class ProjectInfo
             Defines = defines,
             Options = options,
             ProjectReferences = projectReferences.Select(pr => new ProjectReference { Path = pr }).ToArray(),
-            QtModules = qtModules,
+            QtModules = qtModules.Select(module => QtModuleInfoRepository.GetQtModuleInfo(module)).ToArray(),
             ConanPackages = conanPackages
         };
     }
@@ -278,5 +277,3 @@ class ProjectReference
     public required string Path { get; init; }
     public ProjectInfo? ProjectFileInfo { get; set; }
 }
-
-record ConanPackage(string CMakeConfigName, string CMakeTargetName);

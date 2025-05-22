@@ -1,5 +1,4 @@
 ﻿using System.CommandLine;
-using System.Reflection;
 
 static class Program
 {
@@ -39,7 +38,7 @@ static class Program
             Environment.Exit(1);
         }
 
-        var conanPackageInfo = LoadConanPackageInfo();
+        var conanPackageInfoRepository = new ConanPackageInfoRepository();
 
         SolutionInfo? solutionInfo = null;
         List<ProjectInfo> projectInfos = new();
@@ -48,7 +47,7 @@ static class Program
         {
             foreach (var projectPath in projects!)
             {
-                projectInfos.Add(ProjectInfo.ParseProjectFile(projectPath, conanPackageInfo));
+                projectInfos.Add(ProjectInfo.ParseProjectFile(projectPath, conanPackageInfoRepository));
             }
         }
         else if (hasSolution)
@@ -64,7 +63,7 @@ static class Program
             foreach (var projectReference in solutionInfo.Projects)
             {
                 string absolutePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(solution)!, projectReference.Path));
-                projectReference.ProjectFileInfo = ProjectInfo.ParseProjectFile(absolutePath, conanPackageInfo);
+                projectReference.ProjectFileInfo = ProjectInfo.ParseProjectFile(absolutePath, conanPackageInfoRepository);
                 projectInfos.Add(projectReference.ProjectFileInfo);
             }
         }
@@ -72,20 +71,6 @@ static class Program
         ResolveProjectReferences(projectInfos);
 
         CMakeGenerator.Generate(solutionInfo, projectInfos, dryRun);
-    }
-
-    static Dictionary<string, ConanPackage> LoadConanPackageInfo()
-    {
-        var assembly = Assembly.GetExecutingAssembly();
-        using var stream = assembly.GetManifestResourceStream("vcxproj2cmake.Resources.conan-packages.csv")!;
-        using var streamReader = new StreamReader(stream);
-
-        return
-            streamReader.ReadToEnd()
-            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(line => line.Split(','))
-            .Select(tokens => (tokens[0], new ConanPackage(tokens[1], tokens[2])))
-            .ToDictionary();
     }
 
     static void ResolveProjectReferences(List<ProjectInfo> projectInfos)
