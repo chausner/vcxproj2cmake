@@ -268,6 +268,8 @@ class ConfigDependentSetting
 
         return result;
     }
+
+    public bool IsEmpty => !Common.Concat(Debug).Concat(Release).Concat(X86).Concat(X64).Any();
 }
 
 class ProjectReference
