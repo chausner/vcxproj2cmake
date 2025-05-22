@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
 
 static class Program
@@ -35,7 +36,24 @@ static class Program
         });
         rootCommand.SetHandler(Run, projectOption, solutionOption, dryRunOption);
 
-        return rootCommand.Invoke(args);
+        var parser = new CommandLineBuilder(rootCommand)
+            .UseHelp()
+            .UseTypoCorrections()
+            .UseParseErrorReporting()
+            .UseExceptionHandler((ex, context) => { 
+                if (ex is CatastrophicFailureException)
+                {
+                    Console.Error.WriteLine($"Error: {ex.Message}");
+                    Console.Error.WriteLine("Aborting.");
+                }
+                else
+                {
+                    Console.Error.WriteLine($"Unexpected error: {ex}");
+                }
+            })
+            .Build();
+
+        return parser.Invoke(args);
     }
 
     static void Run(List<string>? projects, string? solution, bool dryRun)
@@ -44,7 +62,7 @@ static class Program
 
         SolutionInfo? solutionInfo = null;
         List<ProjectInfo> projectInfos = new();
-
+        
         if (projects != null && projects.Any())
         {
             foreach (var projectPath in projects!)
@@ -57,10 +75,7 @@ static class Program
             solutionInfo = SolutionInfo.ParseSolutionFile(solution!);
 
             if (solutionInfo.Projects.Length == 0)
-            {
-                Console.Error.WriteLine($"Error: No .vcxproj files found in solution: {solution}");
-                Environment.Exit(1);
-            }
+                throw new CatastrophicFailureException($"No .vcxproj files found in solution: {solution}");
 
             foreach (var projectReference in solutionInfo.Projects)
             {
@@ -86,10 +101,7 @@ static class Program
                 var referencedProjectFileInfo = projectInfos.FirstOrDefault(p => p.AbsoluteProjectPath == absoluteReference);
 
                 if (referencedProjectFileInfo == null)
-                {
-                    Console.Error.WriteLine($"Error: Project {projectInfo.AbsoluteProjectPath} references project {absoluteReference} which is not part of the solution or the list of projects.");
-                    Environment.Exit(1);
-                }
+                    throw new CatastrophicFailureException($"Project {projectInfo.AbsoluteProjectPath} references project {absoluteReference} which is not part of the solution or the list of projects.");
 
                 projectReference.ProjectFileInfo = referencedProjectFileInfo;
             }
@@ -97,3 +109,9 @@ static class Program
     }
 }
 
+public class CatastrophicFailureException : Exception
+{
+    public CatastrophicFailureException() { }
+    public CatastrophicFailureException(string message) : base(message) { }
+    public CatastrophicFailureException(string message, Exception inner) : base(message, inner) { }
+}

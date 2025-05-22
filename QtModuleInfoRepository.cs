@@ -5,7 +5,7 @@ class QtModuleInfoRepository
     public static QtModule GetQtModuleInfo(string moduleName)
     {
         if (!qtModuleToCMakeComponentName.TryGetValue(moduleName, out var cmakeComponentName))
-            throw new ArgumentException($"Unknown Qt module: {moduleName}");
+            throw new CatastrophicFailureException($"Unknown Qt module: {moduleName}");
 
         return new QtModule(moduleName, cmakeComponentName, "Qt5::" + cmakeComponentName);
     }

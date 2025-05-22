@@ -27,24 +27,18 @@ class CMakeGenerator
         {
             var folder = Path.GetDirectoryName(projectInfo.AbsoluteProjectPath)!;
             if (!folders.Add(folder))
-            {
-                Console.Error.WriteLine($"Error: Directory {folder} contains two or more projects. This is not supported.");
-                Environment.Exit(1);
-            }
+                throw new CatastrophicFailureException($"Directory {folder} contains two or more projects. This is not supported.");
         }
 
         if (solutionInfo != null && !folders.Add(Path.GetDirectoryName(solutionInfo.AbsoluteSolutionPath)!))
-        {
-            Console.Error.WriteLine($"Error: The solution file and at least one project file are located in the same directory. This is not supported.");
-            Environment.Exit(1);
-        }
+            throw new CatastrophicFailureException($"The solution file and at least one project file are located in the same directory. This is not supported.");
     }
 
     static void GenerateCMake(object model, string destinationPath, Template cmakeListsTemplate, bool dryRun)
     {
         var scriptObject = new ScriptObject();
         scriptObject.Import(model);
-        scriptObject.Import("fail", new Action<string>(error => throw new Exception(error)));
+        scriptObject.Import("fail", new Action<string>(error => throw new CatastrophicFailureException(error)));
         scriptObject.Import("translate_msbuild_macros", TranslateMSBuildMacros);
         scriptObject.Import("normalize_path", NormalizePath);
         scriptObject.Import("order_projects_by_dependencies", OrderProjectsByDependencies);
@@ -149,6 +143,7 @@ class CMakeGenerator
         while (unorderedProjectReferences.Count > 0)
         {
             bool found = false;
+
             foreach (var projectReference in unorderedProjectReferences)
             {
                 if (projectReference.ProjectFileInfo!.ProjectReferences.All(pr => orderedProjectReferences.Any(pr2 => pr2.ProjectFileInfo == pr.ProjectFileInfo)))
@@ -159,11 +154,9 @@ class CMakeGenerator
                     break;
                 }
             }
+
             if (!found)
-            {
-                Console.Error.WriteLine("Could not determine project dependency tree");
-                Environment.Exit(1);
-            }
+                throw new CatastrophicFailureException("Could not determine project dependency tree");
         }
 
         return orderedProjectReferences.ToArray();
