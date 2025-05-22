@@ -2,7 +2,7 @@
 project({{ project_name }} LANGUAGES {{ languages | array.join " " }})
 
 {{~ if qt_modules.size > 0 ~}}
-find_package(Qt5 REQUIRED COMPONENTS {{ qt_modules | array.join " " }})
+find_package(Qt5 REQUIRED COMPONENTS {{ for module in qt_modules }}{{ module | get_cmake_component_for_qt_module }} {{ end }})
 {{~ end -}}
 {{~ for package in conan_packages ~}}
 find_package({{ package.cmake_config_name }} REQUIRED CONFIG)
@@ -117,7 +117,7 @@ target_link_libraries({{ project_name }} PUBLIC
     $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{{ library | translate_msbuild_macros | normalize_path }}>
     {{~ end ~}}
     {{~ for module in qt_modules ~}}
-    Qt5::{{ module }}
+    {{ module | get_cmake_target_for_qt_module }}
     {{~ end ~}}
     {{~ for package in conan_packages ~}}
     {{ package.cmake_target_name }}

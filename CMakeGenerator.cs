@@ -49,6 +49,10 @@ class CMakeGenerator
         scriptObject.Import("normalize_path", NormalizePath);
         scriptObject.Import("order_projects_by_dependencies", OrderProjectsByDependencies);
         scriptObject.Import("get_directory_name", new Func<string?, string?>(Path.GetDirectoryName));
+        scriptObject.Import("get_cmake_component_for_qt_module",
+            new Func<string, string>(QtModules.GetCMakeComponentForQtModule));
+        scriptObject.Import("get_cmake_target_for_qt_module",
+            new Func<string, string>(QtModules.GetCMakeTargetForQtModule));
 
         var context = new TemplateContext();
         context.PushGlobal(scriptObject);
