@@ -154,14 +154,15 @@ class ProjectInfo
 
         var conanPackages =
             imports
-            .Select(import =>
-            {
-                var match = Regex.Match(import, @"conan_([A-Za-z0-9-_]+)\.props");
-                return match.Success ? match.Groups[1].Value : null;
-            })
-            .Where(packageName => packageName != null)
-            .Select(packageName => conanPackageInfo.GetValueOrDefault(packageName!, new ConanPackage(packageName!, packageName!)))
-            .ToArray();
+                .Select(import =>
+                {
+                    var match = Regex.Match(import, @"conan_([A-Za-z0-9-_]+)\.props");
+                    return match.Success ? match.Groups[1].Value : null;
+                })
+                .Where(packageName => packageName != null)
+                .Select(packageName => conanPackageInfo.GetValueOrDefault(packageName!,
+                    new ConanPackage(packageName!, $"{packageName!}::{packageName!}")))
+                .ToArray();
 
         return new ProjectInfo
         {
