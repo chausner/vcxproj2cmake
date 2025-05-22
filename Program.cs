@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.CommandLine.Parsing;
 
 static class Program
 {
@@ -23,6 +24,15 @@ static class Program
         rootCommand.AddOption(projectOption);
         rootCommand.AddOption(solutionOption);
         rootCommand.AddOption(dryRunOption);
+        rootCommand.AddValidator(result =>
+        {
+            var hasProjects = result.GetValueForOption(projectOption)?.Count > 0;
+            var hasSolution = !string.IsNullOrEmpty(result.GetValueForOption(solutionOption));
+            if (hasProjects == hasSolution)
+            {
+                result.ErrorMessage = "Specify either --project or --solution, but not both.";
+            }
+        });
         rootCommand.SetHandler(Run, projectOption, solutionOption, dryRunOption);
 
         return rootCommand.Invoke(args);
@@ -30,27 +40,19 @@ static class Program
 
     static void Run(List<string>? projects, string? solution, bool dryRun)
     {
-        bool hasProjects = projects != null && projects.Count > 0;
-        bool hasSolution = !string.IsNullOrEmpty(solution);
-        if (hasProjects == hasSolution)
-        {
-            Console.Error.WriteLine("Error: Specify either --project or --solution, but not both.");
-            Environment.Exit(1);
-        }
-
         var conanPackageInfoRepository = new ConanPackageInfoRepository();
 
         SolutionInfo? solutionInfo = null;
         List<ProjectInfo> projectInfos = new();
 
-        if (hasProjects)
+        if (projects != null && projects.Any())
         {
             foreach (var projectPath in projects!)
             {
                 projectInfos.Add(ProjectInfo.ParseProjectFile(projectPath, conanPackageInfoRepository));
             }
         }
-        else if (hasSolution)
+        else if (solution != null)
         {
             solutionInfo = SolutionInfo.ParseSolutionFile(solution!);
 
