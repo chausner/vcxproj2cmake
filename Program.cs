@@ -85,12 +85,33 @@ static class Program
             }
         }
 
+        AssignUniqueProjectNames(projectInfos);
         ResolveProjectReferences(projectInfos);
 
         CMakeGenerator.Generate(solutionInfo, projectInfos, dryRun);
     }
 
-    static void ResolveProjectReferences(List<ProjectInfo> projectInfos)
+    static void AssignUniqueProjectNames(IEnumerable<ProjectInfo> projectInfos)
+    {
+        HashSet<string> assignedNames = [];
+
+        foreach (var projectInfo in projectInfos)
+        {
+            if (assignedNames.Add(projectInfo.ProjectName))
+            {
+                projectInfo.UniqueName = projectInfo.ProjectName;
+            }
+            else
+            {
+                int i = 2;
+                while (!assignedNames.Add($"{projectInfo.ProjectName}{i}"))
+                    i++;
+                projectInfo.UniqueName = $"{projectInfo.ProjectName}{i}";
+            }
+        }
+    }
+
+    static void ResolveProjectReferences(IEnumerable<ProjectInfo> projectInfos)
     {
         foreach (var projectInfo in projectInfos)
         {

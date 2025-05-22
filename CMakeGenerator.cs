@@ -43,6 +43,7 @@ class CMakeGenerator
         scriptObject.Import("normalize_path", NormalizePath);
         scriptObject.Import("order_projects_by_dependencies", OrderProjectsByDependencies);
         scriptObject.Import("get_directory_name", new Func<string?, string?>(Path.GetDirectoryName));
+        scriptObject.Import("get_relative_path", new Func<string, string, string?>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));
 
         var context = new TemplateContext();
         context.PushGlobal(scriptObject);

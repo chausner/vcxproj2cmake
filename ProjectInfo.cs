@@ -5,6 +5,7 @@ class ProjectInfo
 {
     public required string AbsoluteProjectPath { get; init; }
     public required string ProjectName { get; init; }
+    public string? UniqueName { get; set; }
     public required string[] Languages { get; init; }
     public required string ConfigurationType { get; init; }
     public required string? LanguageStandard { get; init; }
