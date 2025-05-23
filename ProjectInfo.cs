@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.CommandLine;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 class ProjectInfo
@@ -163,23 +164,38 @@ class ProjectInfo
             Console.WriteLine("Warning: Language standard could not be determined.");
 
         var includePaths = ConfigDependentMultiSetting.Parse(
-            compilerSettings.GetValueOrDefault("AdditionalIncludeDirectories"), ParseIncludePaths);
+            compilerSettings.GetValueOrDefault("AdditionalIncludeDirectories"),
+            value => ParseList(value, ';', "%(AdditionalIncludeDirectories)"));
 
         var linkerPaths = ConfigDependentMultiSetting.Parse(
-            linkerSettings.GetValueOrDefault("AdditionalLibraryDirectories"), ParseLinkerPaths);
+            linkerSettings.GetValueOrDefault("AdditionalLibraryDirectories"), 
+            value => ParseList(value, ';', "%(AdditionalLibraryDirectories)"));
 
         var libraries = ConfigDependentMultiSetting.Parse(
-            linkerSettings.GetValueOrDefault("AdditionalDependencies"), ParseLibraries);
+            linkerSettings.GetValueOrDefault("AdditionalDependencies"), 
+            value => ParseList(value, ';', "%(AdditionalDependencies)"));
 
         var defines = ConfigDependentMultiSetting.Parse(
-            compilerSettings.GetValueOrDefault("PreprocessorDefinitions"), ParseDefines);
+            compilerSettings.GetValueOrDefault("PreprocessorDefinitions"), 
+            value => ParseList(value, ';', "%(PreprocessorDefinitions)"));
 
         var options = ConfigDependentMultiSetting.Parse(
-            compilerSettings.GetValueOrDefault("AdditionalOptions"), ParseOptions);
+            compilerSettings.GetValueOrDefault("AdditionalOptions"), 
+            value => ParseList(value, ' ', "%(AdditionalOptions)"));
 
-        var characterSet = ConfigDependentSetting.Parse(otherSettings.GetValueOrDefault("CharacterSet"));
+        var characterSet = ConfigDependentSetting.Parse(
+            otherSettings.GetValueOrDefault("CharacterSet"));
 
-        defines = ApplyCharacterSetSetting(characterSet, defines);
+        var disableSpecificWarnings = ConfigDependentMultiSetting.Parse(
+            compilerSettings.GetValueOrDefault("DisableSpecificWarnings"),
+            value => ParseList(value, ';', "%(DisableSpecificWarnings)"));
+
+        var treatSpecificWarningsAsErrors = ConfigDependentMultiSetting.Parse(
+            compilerSettings.GetValueOrDefault("TreatSpecificWarningsAsErrors"),
+            value => ParseList(value, ';', "%(TreatSpecificWarningsAsErrors)"));
+
+        var treatWarningAsError = ConfigDependentSetting.Parse(
+            compilerSettings.GetValueOrDefault("TreatWarningAsError"));
 
         var conanPackages =
             imports
@@ -191,6 +207,11 @@ class ProjectInfo
                 .Where(packageName => packageName != null)
                 .Select(packageName => conanPackageInfoRepository.GetConanPackageInfo(packageName!))
                 .ToArray();
+
+        defines = ApplyCharacterSetSetting(characterSet, defines);
+        options = ApplyDisableSpecificWarnings(disableSpecificWarnings, options);
+        options = ApplyTreatSpecificWarningsAsErrors(treatSpecificWarningsAsErrors, options);
+        options = ApplyTreatWarningAsError(treatWarningAsError, options);
 
         return new ProjectInfo
         {
@@ -220,16 +241,6 @@ class ProjectInfo
             .ToArray();
     }
 
-    static string[] ParseIncludePaths(string includePaths) => ParseList(includePaths, ';', "%(AdditionalIncludeDirectories)");
-
-    static string[] ParseLinkerPaths(string linkerPaths) => ParseList(linkerPaths, ';', "%(AdditionalLibraryDirectories)");
-
-    static string[] ParseLibraries(string libraries) => ParseList(libraries, ';', "%(AdditionalDependencies)");
-
-    static string[] ParseDefines(string defines) => ParseList(defines, ';', "%(PreprocessorDefinitions)");
-
-    static string[] ParseOptions(string options) => ParseList(options, ' ', "%(AdditionalOptions)");
-
     static string[] DetectLanguages(IEnumerable<string> sourceFiles)
     {
         List<string> result = new();
@@ -247,30 +258,37 @@ class ProjectInfo
 
     static ConfigDependentMultiSetting ApplyCharacterSetSetting(ConfigDependentSetting characterSet, ConfigDependentMultiSetting defines)
     {
-        string[] GetUpdatedDefines(string? characterSetSetting, string[] defines)
+        return defines.Map((defines, charSet) => charSet switch
         {
-            switch (characterSetSetting)
-            {
-                case "Unicode":
-                    return [.. defines, "UNICODE", "_UNICODE"];
-                case "NotSet":
-                case "MultiByte":
-                case "":
-                case null:
-                    // not set/default value
-                    return defines;
-                case var value:
-                    throw new CatastrophicFailureException($"Invalid value for CharacterSet: {value}");
-            }
-        }
+            "Unicode" => [.. defines, "UNICODE", "_UNICODE"],
+            "MultiByte" => [.. defines, "_MBCS"],
+            "NotSet" or "" or null => defines,
+            _ => throw new CatastrophicFailureException($"Invalid value for CharacterSet: {charSet}")
+        }, characterSet);
+    }
 
-        return new ConfigDependentMultiSetting {
-            Common = GetUpdatedDefines(characterSet.Common, defines.Common),
-            Debug = GetUpdatedDefines(characterSet.Debug, defines.Debug),
-            Release = GetUpdatedDefines(characterSet.Release, defines.Release),
-            X86 = GetUpdatedDefines(characterSet.X86, defines.X86),
-            X64 = GetUpdatedDefines(characterSet.X64, defines.X64)
-        };
+    static ConfigDependentMultiSetting ApplyDisableSpecificWarnings(ConfigDependentMultiSetting disableSpecificWarnings, ConfigDependentMultiSetting options)
+    {
+        return options.Map(
+            (options, warnings) => [.. options, .. warnings.Select(w => Convert.ToInt32(w)).Select(w => $"/wd{w}")],
+            disableSpecificWarnings);
+    }
+
+    static ConfigDependentMultiSetting ApplyTreatSpecificWarningsAsErrors(ConfigDependentMultiSetting treatSpecificWarningsAsErrors, ConfigDependentMultiSetting options)
+    {
+        return options.Map(
+            (options, warnings) => [.. options, .. warnings.Select(w => Convert.ToInt32(w)).Select(w => $"/we{w}")],
+            treatSpecificWarningsAsErrors);
+    }
+
+    static ConfigDependentMultiSetting ApplyTreatWarningAsError(ConfigDependentSetting treatWarningAsError, ConfigDependentMultiSetting options)
+    {
+        return options.Map((options, treatAsError) => (treatAsError?.ToLowerInvariant()) switch
+        {
+            "true" => [.. options, "/WX"],
+            "false" or "" or null => options,
+            _ => throw new CatastrophicFailureException($"Invalid value for TreatWarningAsError: {treatAsError}"),
+        }, treatWarningAsError);
     }
 }
 
