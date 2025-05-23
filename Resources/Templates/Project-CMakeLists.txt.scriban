@@ -105,7 +105,7 @@ target_link_directories({{ project_name }} PUBLIC
 
 {{~ end -}}
 
-{{~ if !libraries.is_empty || qt_modules.size > 0 ~}}
+{{~ if !libraries.is_empty || qt_modules.size > 0 || conan_packages.size > 0 ~}}
 target_link_libraries({{ project_name }} PUBLIC
     {{~ for library in libraries.common ~}}
     {{ library | translate_msbuild_macros | normalize_path }}

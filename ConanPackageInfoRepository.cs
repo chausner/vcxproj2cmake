@@ -1,5 +1,4 @@
-﻿using System.Collections.ObjectModel;
-using System.Reflection;
+﻿using System.Reflection;
 
 record ConanPackage(string PackageName, string CMakeConfigName, string CMakeTargetName);
 
@@ -15,10 +14,18 @@ internal class ConanPackageInfoRepository
 
         return
             streamReader.ReadToEnd()
-            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(line => line.Split(','))
-            .Select(tokens => (tokens[0], new ConanPackage(tokens[0], tokens[1], tokens[2])))
-            .ToDictionary();
+                .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(line => line.Split(','))
+                .Select(tokens =>
+                {
+                    var packageName = tokens[0];
+                    var cmakeConfigName = !string.IsNullOrWhiteSpace(tokens[1]) ? tokens[1] : packageName;
+                    var cmakeTargetName = !string.IsNullOrWhiteSpace(tokens[2])
+                        ? tokens[2]
+                        : $"{packageName}::{packageName}";
+                    return (packageName, new ConanPackage(packageName, cmakeConfigName, cmakeTargetName));
+                })
+                .ToDictionary();
     }
 
     public ConanPackage GetConanPackageInfo(string packageName)
