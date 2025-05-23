@@ -4,7 +4,7 @@ project({{ project_name }} LANGUAGES {{ languages | array.join " " }})
 {{~ for project in project_references | order_projects_by_dependencies ~}}
 if(NOT TARGET {{ project.project_file_info.project_name }})
     add_subdirectory({{ project.project_file_info.absolute_project_path | get_directory_name | get_relative_path (absolute_project_path | get_directory_name) | normalize_path }} "${CMAKE_BINARY_DIR}/_deps/{{ project.project_file_info.unique_name }}-build")
-end()
+endif()
 {{~ end ~}}
 
 {{~ if qt_modules.size > 0 ~}}
