@@ -10,11 +10,11 @@ class ProjectInfo
     public required string ConfigurationType { get; init; }
     public required string? LanguageStandard { get; init; }
     public required string[] SourceFiles { get; init; }
-    public required ConfigDependentSetting IncludePaths { get; init; }
-    public required ConfigDependentSetting LinkerPaths { get; init; }
-    public required ConfigDependentSetting Libraries { get; init; }
-    public required ConfigDependentSetting Defines { get; init; }
-    public required ConfigDependentSetting Options { get; init; }
+    public required ConfigDependentMultiSetting IncludePaths { get; init; }
+    public required ConfigDependentMultiSetting LinkerPaths { get; init; }
+    public required ConfigDependentMultiSetting Libraries { get; init; }
+    public required ConfigDependentMultiSetting Defines { get; init; }
+    public required ConfigDependentMultiSetting Options { get; init; }
     public required ProjectReference[] ProjectReferences { get; init; }
     public required QtModule[] QtModules { get; init; }
     public required ConanPackage[] ConanPackages { get; init; }
@@ -87,6 +87,7 @@ class ProjectInfo
 
         Dictionary<string, Dictionary<string, string>> compilerSettings = [];
         Dictionary<string, Dictionary<string, string>> linkerSettings = [];
+        Dictionary<string, Dictionary<string, string>> otherSettings = [];
 
         foreach (var projectConfig in projectConfigurations)
         {
@@ -99,6 +100,14 @@ class ProjectInfo
             var itemDefinitionGroups =
                 projectElement
                     .Elements(itemDefinitionGroupXName)
+                    .Where(group => group.Attribute("Condition") == null ||
+                                    Regex.IsMatch(group.Attribute("Condition")!.Value,
+                                        $@"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'{Regex.Escape(projectConfig)}'"))
+                    .ToList();
+
+            var propertyGroups =
+                projectElement
+                    .Elements(propertyGroupXName)
                     .Where(group => group.Attribute("Condition") == null ||
                                     Regex.IsMatch(group.Attribute("Condition")!.Value,
                                         $@"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'{Regex.Escape(projectConfig)}'"))
@@ -132,26 +141,42 @@ class ProjectInfo
                     linkerSettings[setting.Key][projectConfig] = setting.Value;
                 }
             }
+
+            var projectConfigOtherSettings = new Dictionary<string, string>();
+            foreach (var element in propertyGroups.SelectMany(element => element.Elements()))
+            {
+                projectConfigOtherSettings[element.Name.LocalName] = element.Value;
+            }
+
+            foreach (var setting in projectConfigOtherSettings)
+            {
+                otherSettings.TryAdd(setting.Key, []);
+                otherSettings[setting.Key][projectConfig] = setting.Value;
+            }
         }
 
         var languageStandard = compilerSettings.GetValueOrDefault("LanguageStandard")?.Values.Distinct().SingleOrDefault();
         if (languageStandard == null)
             Console.WriteLine("Warning: Language standard could not be determined.");
 
-        var includePaths = ConfigDependentSetting.Parse(
+        var includePaths = ConfigDependentMultiSetting.Parse(
             compilerSettings.GetValueOrDefault("AdditionalIncludeDirectories"), ParseIncludePaths);
 
-        var linkerPaths = ConfigDependentSetting.Parse(
+        var linkerPaths = ConfigDependentMultiSetting.Parse(
             linkerSettings.GetValueOrDefault("AdditionalLibraryDirectories"), ParseLinkerPaths);
 
-        var libraries = ConfigDependentSetting.Parse(
+        var libraries = ConfigDependentMultiSetting.Parse(
             linkerSettings.GetValueOrDefault("AdditionalDependencies"), ParseLibraries);
 
-        var defines = ConfigDependentSetting.Parse(
+        var defines = ConfigDependentMultiSetting.Parse(
             compilerSettings.GetValueOrDefault("PreprocessorDefinitions"), ParseDefines);
 
-        var options = ConfigDependentSetting.Parse(
+        var options = ConfigDependentMultiSetting.Parse(
             compilerSettings.GetValueOrDefault("AdditionalOptions"), ParseOptions);
+
+        var characterSet = ConfigDependentSetting.Parse(otherSettings.GetValueOrDefault("CharacterSet"));
+
+        ApplyCharacterSetSetting(characterSet, ref defines);
 
         var conanPackages =
             imports
@@ -216,9 +241,90 @@ class ProjectInfo
 
         return result.ToArray();
     }
+
+    static void ApplyCharacterSetSetting(ConfigDependentSetting characterSet, ref ConfigDependentMultiSetting defines)
+    {
+        if (characterSet.IsEmpty)
+            return;
+
+        if (characterSet.Common != null)
+        {
+            switch (characterSet.Common)
+            {
+                case "Unicode":
+                    defines = defines with { Common = [.. defines.Common, "UNICODE", "_UNICODE"] };
+                    break;
+                case "NotSet":
+                case "MultiByte":
+                case "":
+                    // not set/default value
+                    break;
+                default:
+                    throw new CatastrophicFailureException($"Invalid value for CharacterSet: {characterSet.Common}");
+            }
+        }
+        else
+        {
+            throw new CatastrophicFailureException(
+                "Configuration-dependent CharacterSet values are currently not supported");
+        }
+    }
 }
 
-class ConfigDependentSetting
+record ConfigDependentSetting
+{
+    public required string? Common { get; init; }
+    public required string? Debug { get; init; }
+    public required string? Release { get; init; }
+    public required string? X86 { get; init; }
+    public required string? X64 { get; init; }
+
+    public static readonly ConfigDependentSetting Empty = new()
+    {
+        Common = null,
+        Debug = null,
+        Release = null,
+        X86 = null,
+        X64 = null
+    };
+
+    public static ConfigDependentSetting Parse(Dictionary<string, string>? settings)
+    {
+        if (settings == null || settings.Count == 0)
+            return Empty;
+
+        var allSettingValues = settings.Values.Distinct().ToArray();
+
+        var commonSettingValue = allSettingValues.SingleOrDefault(s => settings.All(kvp => kvp.Value == s));
+
+        string? FilterValues(Func<string, bool> selector)
+        {
+            return allSettingValues
+                .Where(s => settings.All(kvp => selector(kvp.Key) == (kvp.Value == s)))
+                .SingleOrDefault(s => s != commonSettingValue);
+        }
+
+        var result = new ConfigDependentSetting
+        {
+            Common = commonSettingValue,
+            Debug = FilterValues(config => config.StartsWith("Debug|")),
+            Release = FilterValues(config => config.StartsWith("Release|")),
+            X86 = FilterValues(config => config.EndsWith("|Win32") || config.EndsWith("|x86")),
+            X64 = FilterValues(config => config.EndsWith("|x64"))
+        };
+
+        var skippedSettings = settings.Values.Except([result.Common]).Except([result.Debug]).Except([result.Release])
+            .Except([result.X86]).Except([result.X64]).ToArray();
+        if (skippedSettings.Length > 0)
+            Console.WriteLine($"Warning: some settings were skipped: {string.Join(", ", skippedSettings)}");
+
+        return result;
+    }
+
+    public bool IsEmpty => Common == null && Debug == null && Release == null && X86 == null && X64 == null;
+}
+
+record ConfigDependentMultiSetting
 {
     public required string[] Common { get; init; }
     public required string[] Debug { get; init; }
@@ -226,7 +332,7 @@ class ConfigDependentSetting
     public required string[] X86 { get; init; }
     public required string[] X64 { get; init; }
 
-    public static readonly ConfigDependentSetting Empty = new()
+    public static readonly ConfigDependentMultiSetting Empty = new()
     {
         Common = [],
         Debug = [],
@@ -235,7 +341,7 @@ class ConfigDependentSetting
         X64 = []
     };
 
-    public static ConfigDependentSetting Parse(Dictionary<string, string>? settings, Func<string, string[]> parser)
+    public static ConfigDependentMultiSetting Parse(Dictionary<string, string>? settings, Func<string, string[]> parser)
     {
         if (settings == null || settings.Count == 0)
             return Empty;
@@ -254,7 +360,7 @@ class ConfigDependentSetting
                 .ToArray();
         }
 
-        var result = new ConfigDependentSetting
+        var result = new ConfigDependentMultiSetting
         {
             Common = commonSettingValues,
             Debug = FilterValues(config => config.StartsWith("Debug|")),
