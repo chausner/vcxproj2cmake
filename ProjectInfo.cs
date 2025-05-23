@@ -32,6 +32,7 @@ class ProjectInfo
         var projectConfigurationXName = XName.Get("ProjectConfiguration", msbuildNamespace);
         var itemDefinitionGroupXName = XName.Get("ItemDefinitionGroup", msbuildNamespace);
         var linkXName = XName.Get("Link", msbuildNamespace);
+        var libXName = XName.Get("Lib", msbuildNamespace);
         var qtModulesXName = XName.Get("QtModules", msbuildNamespace);
         var importXName = XName.Get("Import", msbuildNamespace);
         var importGroupXName = XName.Get("ImportGroup", msbuildNamespace);
@@ -124,7 +125,9 @@ class ProjectInfo
                 }
 
                 var projectConfigLinkerSettings = new Dictionary<string, string>();
-                foreach (var element in group.Elements(linkXName).SelectMany(element => element.Elements()))
+                foreach (var element in group.Elements()
+                             .Where(element => element.Name == linkXName || element.Name == libXName)
+                             .SelectMany(element => element.Elements()))
                 {
                     projectConfigLinkerSettings[element.Name.LocalName] = element.Value;
                 }
