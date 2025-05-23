@@ -179,7 +179,7 @@ class ProjectInfo
 
         var characterSet = ConfigDependentSetting.Parse(otherSettings.GetValueOrDefault("CharacterSet"));
 
-        ApplyCharacterSetSetting(characterSet, ref defines);
+        defines = ApplyCharacterSetSetting(characterSet, defines);
 
         var conanPackages =
             imports
@@ -245,32 +245,32 @@ class ProjectInfo
         return result.ToArray();
     }
 
-    static void ApplyCharacterSetSetting(ConfigDependentSetting characterSet, ref ConfigDependentMultiSetting defines)
+    static ConfigDependentMultiSetting ApplyCharacterSetSetting(ConfigDependentSetting characterSet, ConfigDependentMultiSetting defines)
     {
-        if (characterSet.IsEmpty)
-            return;
-
-        if (characterSet.Common != null)
+        string[] GetUpdatedDefines(string? characterSetSetting, string[] defines)
         {
-            switch (characterSet.Common)
+            switch (characterSetSetting)
             {
                 case "Unicode":
-                    defines = defines with { Common = [.. defines.Common, "UNICODE", "_UNICODE"] };
-                    break;
+                    return [.. defines, "UNICODE", "_UNICODE"];
                 case "NotSet":
                 case "MultiByte":
                 case "":
+                case null:
                     // not set/default value
-                    break;
-                default:
-                    throw new CatastrophicFailureException($"Invalid value for CharacterSet: {characterSet.Common}");
+                    return defines;
+                case var value:
+                    throw new CatastrophicFailureException($"Invalid value for CharacterSet: {value}");
             }
         }
-        else
-        {
-            throw new CatastrophicFailureException(
-                "Configuration-dependent CharacterSet values are currently not supported");
-        }
+
+        return new ConfigDependentMultiSetting {
+            Common = GetUpdatedDefines(characterSet.Common, defines.Common),
+            Debug = GetUpdatedDefines(characterSet.Debug, defines.Debug),
+            Release = GetUpdatedDefines(characterSet.Release, defines.Release),
+            X86 = GetUpdatedDefines(characterSet.X86, defines.X86),
+            X64 = GetUpdatedDefines(characterSet.X64, defines.X64)
+        };
     }
 }
 
