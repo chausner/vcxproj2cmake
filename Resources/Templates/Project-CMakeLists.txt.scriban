@@ -104,8 +104,18 @@ target_link_directories({{ project_name }} PUBLIC
 )
 
 {{~ end -}}
-
-{{~ if !libraries.is_empty || qt_modules.size > 0 || conan_packages.size > 0 ~}}
+{{~
+  link_library_dependencies_effective = false
+  if link_library_dependencies_enabled
+    for project in project_references
+      if project.project_file_info.configuration_type == "StaticLibrary" || project.project_file_info.configuration_type == "DynamicLibrary"
+        link_library_dependencies_effective = true
+        break
+      end
+    end
+  end
+~}}
+{{~ if !libraries.is_empty || link_library_dependencies_effective || qt_modules.size > 0 || conan_packages.size > 0 ~}}
 target_link_libraries({{ project_name }} PUBLIC
     {{~ for library in libraries.common ~}}
     {{ library | translate_msbuild_macros | normalize_path }}
@@ -121,6 +131,13 @@ target_link_libraries({{ project_name }} PUBLIC
     {{~ end ~}}
     {{~ for library in libraries.x64 ~}}
     $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{{ library | translate_msbuild_macros | normalize_path }}>
+    {{~ end ~}}
+    {{~ if link_library_dependencies_enabled ~}}
+    {{~ for project in project_references | order_projects_by_dependencies ~}}
+    {{~ if project.project_file_info.configuration_type == "StaticLibrary" || project.project_file_info.configuration_type == "DynamicLibrary" ~}}
+    {{ project.project_file_info.project_name }}
+    {{~ end ~}}
+    {{~ end ~}}
     {{~ end ~}}
     {{~ for module in qt_modules ~}}
     {{ module.cmake_target_name }}

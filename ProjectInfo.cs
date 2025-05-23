@@ -16,6 +16,7 @@ class ProjectInfo
     public required ConfigDependentMultiSetting Defines { get; init; }
     public required ConfigDependentMultiSetting Options { get; init; }
     public required ProjectReference[] ProjectReferences { get; init; }
+    public required bool LinkLibraryDependenciesEnabled { get; init; }
     public required QtModule[] QtModules { get; init; }
     public required ConanPackage[] ConanPackages { get; init; }
 
@@ -37,6 +38,7 @@ class ProjectInfo
         var importXName = XName.Get("Import", msbuildNamespace);
         var importGroupXName = XName.Get("ImportGroup", msbuildNamespace);
         var projectReferenceXName = XName.Get("ProjectReference", msbuildNamespace);
+        var linkLibraryDependenciesXName = XName.Get("LinkLibraryDependencies", msbuildNamespace);
 
         var doc = XDocument.Load(projectPath);
         var projectElement = doc.Element(projectXName)!;
@@ -54,7 +56,8 @@ class ProjectInfo
             .SelectMany(group => group.Elements(configurationTypeXName))
             .Select(element => element.Value)
             .Distinct()
-            .Single();
+            .DefaultIfEmpty()
+            .SingleOrDefault() ?? throw new CatastrophicFailureException("Configuration type is absent or inconsistent between configurations");
 
         var sourceFiles =
             projectElement
@@ -69,7 +72,9 @@ class ProjectInfo
             .SelectMany(group => group.Elements(qtModulesXName))
             .Select(element => element.Value)
             .Distinct()
-            .SingleOrDefault() ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            .DefaultIfEmpty(string.Empty)
+            .SingleOrDefault() ?? throw new CatastrophicFailureException("Qt modules are inconsistent between configurations"))
+            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         var imports =
             projectElement
@@ -85,6 +90,22 @@ class ProjectInfo
             .Select(element => element.Attribute("Include")!.Value)
             .Distinct()
             .ToList();
+
+        var linkLibraryDependenciesEnabled =
+            projectElement
+            .Elements(itemDefinitionGroupXName)
+            .SelectMany(group => group.Elements(projectReferenceXName))
+            .SelectMany(element => element.Elements(linkLibraryDependenciesXName))
+            .Select(element => element.Value switch
+            {
+                "true" => true,
+                "false" => false,
+                _ => throw new CatastrophicFailureException($"Invalid value for LinkLibraryDependencies: {element.Value}")
+            })
+            .Distinct()
+            .DefaultIfEmpty(true)
+            .Select(b => new bool?(b))
+            .SingleOrDefault((bool?)null) ?? throw new CatastrophicFailureException("LinkLibraryDependencies property is inconsistent between configurations");
 
         Dictionary<string, Dictionary<string, string>> compilerSettings = [];
         Dictionary<string, Dictionary<string, string>> linkerSettings = [];
@@ -226,6 +247,7 @@ class ProjectInfo
             Defines = defines,
             Options = options,
             ProjectReferences = projectReferences.Select(pr => new ProjectReference { Path = pr }).ToArray(),
+            LinkLibraryDependenciesEnabled = linkLibraryDependenciesEnabled,
             QtModules = qtModules.Select(module => QtModuleInfoRepository.GetQtModuleInfo(module)).ToArray(),
             ConanPackages = conanPackages
         };
