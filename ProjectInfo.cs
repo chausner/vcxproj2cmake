@@ -1,5 +1,4 @@
-﻿using System.CommandLine;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 class ProjectInfo
@@ -334,8 +333,9 @@ record ConfigDependentSetting
             X64 = FilterValues(config => config.EndsWith("|x64"))
         };
 
-        var skippedSettings = settings.Values.Except([result.Common]).Except([result.Debug]).Except([result.Release])
-            .Except([result.X86]).Except([result.X64]).ToArray();
+        var skippedSettings = settings.Values
+            .Except([result.Common, result.Debug, result.Release, result.X86, result.X64])
+            .ToArray();
         if (skippedSettings.Length > 0)
             Console.WriteLine($"Warning: some settings were skipped: {string.Join(", ", skippedSettings)}");
 
@@ -390,14 +390,17 @@ record ConfigDependentMultiSetting
             X64 = FilterValues(config => config.EndsWith("|x64"))
         };
 
-        var skippedSettings = parsedSettings.Values.SelectMany(s => s).Except(result.Common).Except(result.Debug).Except(result.Release).Except(result.X86).Except(result.X64).ToArray();
+        var skippedSettings = parsedSettings.Values
+            .SelectMany(s => s)
+            .Except([.. result.Common, .. result.Debug, .. result.Release, .. result.X86, .. result.X64])
+            .ToArray();
         if (skippedSettings.Length > 0)
             Console.WriteLine($"Warning: some settings were skipped: {string.Join(", ", skippedSettings)}");
 
         return result;
     }
 
-    public bool IsEmpty => !Common.Concat(Debug).Concat(Release).Concat(X86).Concat(X64).Any();
+    public bool IsEmpty => !Enumerable.Any([.. Common, .. Debug, .. Release, .. X86, .. X64]);
 }
 
 class ProjectReference
