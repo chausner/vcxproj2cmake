@@ -39,6 +39,9 @@ class ProjectInfo
         var importGroupXName = XName.Get("ImportGroup", msbuildNamespace);
         var projectReferenceXName = XName.Get("ProjectReference", msbuildNamespace);
         var linkLibraryDependenciesXName = XName.Get("LinkLibraryDependencies", msbuildNamespace);
+        var warningLevelXName = XName.Get("WarningLevel", msbuildNamespace);
+        var externalWarningLevelXName = XName.Get("ExternalWarningLevel", msbuildNamespace);
+        var treatAngleIncludeAsExternalXName = XName.Get("TreatAngleIncludeAsExternal", msbuildNamespace);
 
         var doc = XDocument.Load(projectPath);
         var projectElement = doc.Element(projectXName)!;
@@ -216,6 +219,15 @@ class ProjectInfo
         var treatWarningAsError = ConfigDependentSetting.Parse(
             compilerSettings.GetValueOrDefault("TreatWarningAsError"));
 
+        var warningLevel = ConfigDependentSetting.Parse(
+            compilerSettings.GetValueOrDefault("WarningLevel"));
+
+        var externalWarningLevel = ConfigDependentSetting.Parse(
+            compilerSettings.GetValueOrDefault("ExternalWarningLevel"));
+
+        var treatAngleIncludeAsExternal = ConfigDependentSetting.Parse(
+            compilerSettings.GetValueOrDefault("TreatAngleIncludeAsExternal"));
+
         var conanPackages =
             imports
                 .Select(import =>
@@ -231,6 +243,9 @@ class ProjectInfo
         options = ApplyDisableSpecificWarnings(disableSpecificWarnings, options);
         options = ApplyTreatSpecificWarningsAsErrors(treatSpecificWarningsAsErrors, options);
         options = ApplyTreatWarningAsError(treatWarningAsError, options);
+        options = ApplyWarningLevel(warningLevel, options);
+        options = ApplyExternalWarningLevel(externalWarningLevel, options);
+        options = ApplyTreatAngleIncludeAsExternal(treatAngleIncludeAsExternal, options);
 
         return new ProjectInfo
         {
@@ -309,6 +324,44 @@ class ProjectInfo
             "false" or "" or null => options,
             _ => throw new CatastrophicFailureException($"Invalid value for TreatWarningAsError: {treatAsError}"),
         }, treatWarningAsError);
+    }
+
+    static ConfigDependentMultiSetting ApplyWarningLevel(ConfigDependentSetting warningLevel, ConfigDependentMultiSetting options)
+    {
+        return options.Map((options, level) =>
+        {
+            if (string.IsNullOrEmpty(level))
+                return options;
+            var match = Regex.Match(level, @"^(Level)?([0-4])$");
+            if (match.Success)
+                return [.. options, $"/W{match.Groups[2].Value}"];
+            else
+                throw new CatastrophicFailureException($"Invalid value for WarningLevel: {level}");
+        }, warningLevel);
+    }
+
+    static ConfigDependentMultiSetting ApplyExternalWarningLevel(ConfigDependentSetting externalWarningLevel, ConfigDependentMultiSetting options)
+    {
+        return options.Map((options, level) =>
+        {
+            if (string.IsNullOrEmpty(level))
+                return options;
+            var match = Regex.Match(level, @"^(Level)?([0-4])$");
+            if (match.Success)
+                return [.. options, $"/external:W{match.Groups[2].Value}"];
+            else
+                throw new CatastrophicFailureException($"Invalid value for ExternalWarningLevel: {level}");
+        }, externalWarningLevel);
+    }
+
+    static ConfigDependentMultiSetting ApplyTreatAngleIncludeAsExternal(ConfigDependentSetting treatAngleIncludeAsExternal, ConfigDependentMultiSetting options)
+    {
+        return options.Map((options, treatAsExternal) => (treatAsExternal?.ToLowerInvariant()) switch
+        {
+            "true" => [.. options, "/external:anglebrackets"],
+            "false" or "" or null => options,
+            _ => throw new CatastrophicFailureException($"Invalid value for TreatAngleIncludeAsExternal: {treatAsExternal}"),
+        }, treatAngleIncludeAsExternal);
     }
 }
 
