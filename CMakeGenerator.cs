@@ -15,8 +15,8 @@ class CMakeGenerator
         foreach (var projectInfo in projectInfos)
             GenerateCMakeForProject(projectInfo, projectCMakeListsTemplate, dryRun);
 
-        //if (solutionInfo != null)
-        //    GenerateCMakeForSolution(solutionInfo, solutionCMakeListsTemplate, dryRun);
+        if (solutionInfo != null)
+            GenerateCMakeForSolution(solutionInfo, solutionCMakeListsTemplate, dryRun);
     }
 
     static void ValidateFolders(SolutionInfo? solutionInfo, IEnumerable<ProjectInfo> projectInfos)
@@ -170,6 +170,7 @@ class CMakeGenerator
                 }
 
                 //throw new CatastrophicFailureException("Could not determine project dependency tree");
+                orderedProjectReferences.AddRange(unorderedProjectReferences);
                 break;
             }
         }
