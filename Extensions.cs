@@ -48,3 +48,30 @@ static class ConfigDependentSettingExtensions
         };
     }
 }
+
+static class EnumerableExtensions
+{
+    public static TSource SingleWithException<TSource>(this IEnumerable<TSource> source, Func<Exception> exception)
+    {
+        try
+        {
+            return source.Single();
+        }
+        catch (InvalidOperationException)
+        {
+            throw exception();
+        }
+    }
+
+    public static TSource SingleOrDefaultWithException<TSource>(this IEnumerable<TSource> source, TSource defaultValue, Func<Exception> exception)
+    {
+        try
+        {
+            return source.SingleOrDefault(defaultValue);
+        }
+        catch (InvalidOperationException)
+        {
+            throw exception();
+        }
+    }
+}

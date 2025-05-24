@@ -56,8 +56,7 @@ class ProjectInfo
             .SelectMany(group => group.Elements(configurationTypeXName))
             .Select(element => element.Value)
             .Distinct()
-            .DefaultIfEmpty()
-            .SingleOrDefault() ?? throw new CatastrophicFailureException("Configuration type is absent or inconsistent between configurations");
+            .SingleWithException(() => throw new CatastrophicFailureException("Configuration type is absent or inconsistent between configurations"));
 
         var sourceFiles =
             projectElement
@@ -67,13 +66,12 @@ class ProjectInfo
             .ToList();
 
         var qtModules =
-            (projectElement
+            projectElement
             .Elements(propertyGroupXName)
             .SelectMany(group => group.Elements(qtModulesXName))
             .Select(element => element.Value)
             .Distinct()
-            .DefaultIfEmpty(string.Empty)
-            .SingleOrDefault() ?? throw new CatastrophicFailureException("Qt modules are inconsistent between configurations"))
+            .SingleOrDefaultWithException(string.Empty, () => throw new CatastrophicFailureException("Qt modules are inconsistent between configurations"))
             .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         var imports =
@@ -103,9 +101,7 @@ class ProjectInfo
                 _ => throw new CatastrophicFailureException($"Invalid value for LinkLibraryDependencies: {element.Value}")
             })
             .Distinct()
-            .DefaultIfEmpty(true)
-            .Select(b => new bool?(b))
-            .SingleOrDefault((bool?)null) ?? throw new CatastrophicFailureException("LinkLibraryDependencies property is inconsistent between configurations");
+            .SingleOrDefaultWithException(true, () => throw new CatastrophicFailureException("LinkLibraryDependencies property is inconsistent between configurations"));
 
         Dictionary<string, Dictionary<string, string>> compilerSettings = [];
         Dictionary<string, Dictionary<string, string>> linkerSettings = [];
@@ -179,7 +175,10 @@ class ProjectInfo
             }
         }
 
-        var languageStandard = compilerSettings.GetValueOrDefault("LanguageStandard")?.Values.Distinct().SingleOrDefault();
+        var languageStandard = 
+            compilerSettings.GetValueOrDefault("LanguageStandard")?.Values
+            .Distinct()
+            .SingleOrDefaultWithException(null, () => throw new CatastrophicFailureException("LanguageStandard property is inconsistent between configurations"));
         if (languageStandard == null)
             Console.WriteLine("Warning: Language standard could not be determined.");
 
@@ -337,13 +336,13 @@ record ConfigDependentSetting
 
         var allSettingValues = settings.Values.Distinct().ToArray();
 
-        var commonSettingValue = allSettingValues.SingleOrDefault(s => settings.All(kvp => kvp.Value == s));
+        var commonSettingValue = allSettingValues.FirstOrDefault(s => settings.All(kvp => kvp.Value == s));
 
         string? FilterValues(Func<string, bool> selector)
         {
             return allSettingValues
                 .Where(s => settings.All(kvp => selector(kvp.Key) == (kvp.Value == s)))
-                .SingleOrDefault(s => s != commonSettingValue);
+                .FirstOrDefault(s => s != commonSettingValue);
         }
 
         var result = new ConfigDependentSetting
