@@ -87,6 +87,7 @@ static class Program
 
         AssignUniqueProjectNames(projectInfos);
         ResolveProjectReferences(projectInfos);
+        projectInfos = RemoveObsoleteLibrariesFromProjectReferences(projectInfos);
 
         CMakeGenerator.Generate(solutionInfo, projectInfos, dryRun);
     }
@@ -127,6 +128,44 @@ static class Program
                 projectReference.ProjectFileInfo = referencedProjectFileInfo;
             }
         }
+    }
+
+    static List<ProjectInfo> RemoveObsoleteLibrariesFromProjectReferences(IEnumerable<ProjectInfo> projectInfos)
+    {
+        return projectInfos.Select(projectInfo =>
+        {
+            if (!projectInfo.LinkLibraryDependenciesEnabled)
+                return projectInfo;
+
+            // Assumes that the output library names have not been customized and are the same as the project names with a .lib extension
+            var dependencyTargets = projectInfo.GetAllReferencedProjects(projectInfos)
+                .Where(project => project.ConfigurationType == "StaticLibrary" || project.ConfigurationType == "DynamicLibrary")
+                .Select(project => project.ProjectName + ".lib")
+                .ToArray();
+
+            var filteredLibraries = projectInfo.Libraries.Map(libraries => libraries.Except(dependencyTargets, StringComparer.OrdinalIgnoreCase).ToArray());
+
+            return new ProjectInfo
+            {
+                AbsoluteProjectPath = projectInfo.AbsoluteProjectPath,
+                ProjectName = projectInfo.ProjectName,
+                UniqueName = projectInfo.UniqueName,
+                Languages = projectInfo.Languages,
+                ConfigurationType = projectInfo.ConfigurationType,
+                LanguageStandard = projectInfo.LanguageStandard,
+                SourceFiles = projectInfo.SourceFiles,
+                IncludePaths = projectInfo.IncludePaths,
+                LinkerPaths = projectInfo.LinkerPaths,
+                Libraries = filteredLibraries,
+                Defines = projectInfo.Defines,
+                Options = projectInfo.Options,
+                ProjectReferences = projectInfo.ProjectReferences,
+                LinkLibraryDependenciesEnabled = projectInfo.LinkLibraryDependenciesEnabled,
+                RequiresMoc = projectInfo.RequiresMoc,
+                QtModules = projectInfo.QtModules,
+                ConanPackages = projectInfo.ConanPackages
+            };            
+        }).ToList();
     }
 }
 

@@ -372,6 +372,23 @@ class ProjectInfo
             _ => throw new CatastrophicFailureException($"Invalid value for TreatAngleIncludeAsExternal: {treatAsExternal}"),
         }, treatAngleIncludeAsExternal);
     }
+
+    public ISet<ProjectInfo> GetAllReferencedProjects(IEnumerable<ProjectInfo> allProjects)
+    {
+        var referencedProjects = new HashSet<ProjectInfo>();
+
+        void GetAllReferencedProjectsInner(ProjectInfo projectInfo)
+        {
+            foreach (var projectReference in projectInfo.ProjectReferences)
+                if (referencedProjects.Add(projectReference.ProjectFileInfo!))
+                    GetAllReferencedProjectsInner(projectReference.ProjectFileInfo!);
+
+        }
+
+        GetAllReferencedProjectsInner(this);
+
+        return referencedProjects;
+    }
 }
 
 record ConfigDependentSetting
