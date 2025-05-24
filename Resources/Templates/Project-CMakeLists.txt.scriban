@@ -8,7 +8,7 @@ endif()
 {{~ end ~}}
 
 {{~ if qt_modules.size > 0 ~}}
-find_package(Qt5 REQUIRED COMPONENTS {{ qt_modules | array.map "cmake_component_name" | array.join " " }})
+find_package(Qt5 REQUIRED COMPONENTS {{ qt_modules | array.map "cmake_component_name" | array.sort | array.join " " }})
 {{~ end -}}
 {{~ for package in conan_packages ~}}
 find_package({{ package.cmake_config_name }} REQUIRED CONFIG)
@@ -144,11 +144,11 @@ target_link_libraries({{ project_name }} PUBLIC
     {{~ end ~}}
     {{~ end ~}}
     {{~ end ~}}
-    {{~ for module in qt_modules ~}}
-    {{ module.cmake_target_name }}
+    {{~ for qt_cmake_target in qt_modules | array.map "cmake_target_name" | array.sort ~}}
+    {{ qt_cmake_target }}
     {{~ end ~}}
-    {{~ for package in conan_packages ~}}
-    {{ package.cmake_target_name }}
+    {{~ for conan_cmake_target in conan_packages | array.map "cmake_target_name" | array.sort ~}}
+    {{ conan_cmake_target }}
     {{~ end ~}}
 )
 
