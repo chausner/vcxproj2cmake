@@ -337,29 +337,27 @@ class ProjectInfo
 
     static ConfigDependentMultiSetting ApplyWarningLevel(ConfigDependentSetting warningLevel, ConfigDependentMultiSetting options)
     {
-        return options.Map((options, level) =>
+        return options.Map((options, level) => level switch
         {
-            if (string.IsNullOrEmpty(level))
-                return options;
-            var match = Regex.Match(level, @"^(Level)?([0-4])$");
-            if (match.Success)
-                return [.. options, $"/W{match.Groups[2].Value}"];
-            else
-                throw new CatastrophicFailureException($"Invalid value for WarningLevel: {level}");
+            "TurnOffAllWarnings" => [.. options, "/W0"],
+            "Level1" => [.. options, "/W1"],
+            "Level2" => [.. options, "/W2"],
+            "Level3" => [.. options, "/W3"],
+            "Level4" => [.. options, "/W4"],
+            _ => throw new CatastrophicFailureException($"Invalid value for WarningLevel: {level}")
         }, warningLevel);
     }
 
     static ConfigDependentMultiSetting ApplyExternalWarningLevel(ConfigDependentSetting externalWarningLevel, ConfigDependentMultiSetting options)
     {
-        return options.Map((options, level) =>
+        return options.Map((options, level) => level switch
         {
-            if (string.IsNullOrEmpty(level))
-                return options;
-            var match = Regex.Match(level, @"^(Level)?([0-4])$");
-            if (match.Success)
-                return [.. options, $"/external:W{match.Groups[2].Value}"];
-            else
-                throw new CatastrophicFailureException($"Invalid value for ExternalWarningLevel: {level}");
+            "TurnOffAllWarnings" => [.. options, "/external:W0"],
+            "Level1" => [.. options, "/external:W1"],
+            "Level2" => [.. options, "/external:W2"],
+            "Level3" => [.. options, "/external:W3"],
+            "Level4" => [.. options, "/external:W4"],
+            _ => throw new CatastrophicFailureException($"Invalid value for ExternalWarningLevel: {level}")
         }, externalWarningLevel);
     }
 
