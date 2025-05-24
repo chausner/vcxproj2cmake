@@ -17,6 +17,7 @@ class ProjectInfo
     public required ConfigDependentMultiSetting Options { get; init; }
     public required ProjectReference[] ProjectReferences { get; init; }
     public required bool LinkLibraryDependenciesEnabled { get; init; }
+    public required bool RequiresMoc { get; init; }
     public required QtModule[] QtModules { get; init; }
     public required ConanPackage[] ConanPackages { get; init; }
 
@@ -42,6 +43,7 @@ class ProjectInfo
         var warningLevelXName = XName.Get("WarningLevel", msbuildNamespace);
         var externalWarningLevelXName = XName.Get("ExternalWarningLevel", msbuildNamespace);
         var treatAngleIncludeAsExternalXName = XName.Get("TreatAngleIncludeAsExternal", msbuildNamespace);
+        var qtMocXName = XName.Get("QtMoc", msbuildNamespace);
 
         var doc = XDocument.Load(projectPath);
         var projectElement = doc.Element(projectXName)!;
@@ -105,6 +107,12 @@ class ProjectInfo
             })
             .Distinct()
             .SingleOrDefaultWithException(true, () => throw new CatastrophicFailureException("LinkLibraryDependencies property is inconsistent between configurations"));
+
+        var requiresMoc =
+            projectElement
+            .Elements(itemGroupXName)
+            .SelectMany(group => group.Elements(qtMocXName))
+            .Any();
 
         Dictionary<string, Dictionary<string, string>> compilerSettings = [];
         Dictionary<string, Dictionary<string, string>> linkerSettings = [];
@@ -262,6 +270,7 @@ class ProjectInfo
             Options = options,
             ProjectReferences = projectReferences.Select(pr => new ProjectReference { Path = pr }).ToArray(),
             LinkLibraryDependenciesEnabled = linkLibraryDependenciesEnabled,
+            RequiresMoc = requiresMoc,
             QtModules = qtModules.Select(module => QtModuleInfoRepository.GetQtModuleInfo(module)).ToArray(),
             ConanPackages = conanPackages
         };

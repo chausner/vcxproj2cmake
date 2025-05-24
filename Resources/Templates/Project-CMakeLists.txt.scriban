@@ -28,6 +28,11 @@ add_library({{ project_name }} SHARED
     {{~ end ~}}
 )
 
+{{~ if requires_moc ~}}
+set_target_properties({{ project_name }} PROPERTIES AUTOMOC ON)
+
+{{~ end -}}
+
 {{~ if language_standard ~}}
 target_compile_features({{ project_name }} PUBLIC {{ }}
     {{- if language_standard == "stdcpplatest" -}} cxx_std_23
