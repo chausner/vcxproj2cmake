@@ -121,7 +121,12 @@ class CMakeGenerator
 
     static string PrependRelativePathsWithCMakeCurrentSourceDir(string normalizedPath)
     {
-        if (!Path.IsPathRooted(normalizedPath) && !normalizedPath.StartsWith("${CMAKE_CURRENT_SOURCE_DIR}/"))
+        var isAbsolutePath = Path.IsPathRooted(normalizedPath);
+
+        // if a path starts with a CMake variable, we just assume that the variable resolves to an absolute path
+        isAbsolutePath |= normalizedPath.StartsWith("${");
+
+        if (!isAbsolutePath)
             if (normalizedPath == ".")
                 return "${CMAKE_CURRENT_SOURCE_DIR}";
             else
