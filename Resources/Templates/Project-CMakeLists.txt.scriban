@@ -1,5 +1,9 @@
 ﻿cmake_minimum_required(VERSION 3.13)
-project({{ project_name }} LANGUAGES {{ languages | array.join " " }})
+project({{ project_name }}
+{{- if languages.size > 0 ~}}
+ LANGUAGES {{ languages | array.join " " }}
+{{- end -}}
+)
 
 {{~ if enable_standalone_project_builds && project_references.size > 0 ~}}
 {{~ for project in project_references | order_projects_by_dependencies ~}}
