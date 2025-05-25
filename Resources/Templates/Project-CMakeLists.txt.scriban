@@ -35,13 +35,13 @@ set_target_properties({{ project_name }} PROPERTIES AUTOMOC ON)
 
 {{~ if language_standard ~}}
 target_compile_features({{ project_name }} PUBLIC {{ }}
-    {{- if language_standard == "stdcpplatest" -}} cxx_std_23
-    {{- else if language_standard == "stdcpp20" -}} cxx_std_20
-    {{- else if language_standard == "stdcpp17" -}} cxx_std_17
-    {{- else if language_standard == "stdcpp14" -}} cxx_std_14
-    {{- else if language_standard == "stdcpp11" -}} cxx_std_11
-    {{- else -}}
-    {{ fail $"Unsupported language standard: {language_standard}" }}
+    {{- case language_standard -}}
+    {{- when "stdcpplatest" -}} cxx_std_23
+    {{- when "stdcpp20" -}} cxx_std_20
+    {{- when "stdcpp17" -}} cxx_std_17
+    {{- when "stdcpp14" -}} cxx_std_14
+    {{- when "stdcpp11" -}} cxx_std_11
+    {{- else -}} {{ fail $"Unsupported language standard: {language_standard}" }}
     {{- end -}}
 )
 
