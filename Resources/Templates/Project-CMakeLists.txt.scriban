@@ -50,19 +50,19 @@ target_compile_features({{ project_name }} PUBLIC {{ }}
 {{~ if !include_paths.is_empty ~}}
 target_include_directories({{ project_name }} PUBLIC
     {{~ for path in include_paths.common ~}}
-    {{ path | translate_msbuild_macros | normalize_path }}
+    {{ path | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir }}
     {{~ end ~}}
     {{~ for path in include_paths.debug ~}}
-    $<$<CONFIG:Debug>:{{ path | translate_msbuild_macros | normalize_path }}>
+    $<$<CONFIG:Debug>:{{ path | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir }}>
     {{~ end ~}}
     {{~ for path in include_paths.release ~}}
-    $<$<CONFIG:Release>:{{ path | translate_msbuild_macros | normalize_path }}>
+    $<$<CONFIG:Release>:{{ path | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir }}>
     {{~ end ~}}
     {{~ for path in include_paths.x86 ~}}
-    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x86>:{{ path | translate_msbuild_macros | normalize_path }}>
+    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x86>:{{ path | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir }}>
     {{~ end ~}}
     {{~ for path in include_paths.x64 ~}}
-    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{{ path | translate_msbuild_macros | normalize_path }}>
+    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{{ path | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir }}>
     {{~ end ~}}
 )
 

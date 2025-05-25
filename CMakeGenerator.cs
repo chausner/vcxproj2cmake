@@ -44,6 +44,7 @@ class CMakeGenerator
         scriptObject.Import("order_projects_by_dependencies", OrderProjectsByDependencies);
         scriptObject.Import("get_directory_name", new Func<string?, string?>(Path.GetDirectoryName));
         scriptObject.Import("get_relative_path", new Func<string, string, string?>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));
+        scriptObject.Import("prepend_relative_paths_with_cmake_current_source_dir", PrependRelativePathsWithCMakeCurrentSourceDir);
 
         var context = new TemplateContext();
         context.PushGlobal(scriptObject);
@@ -117,6 +118,17 @@ class CMakeGenerator
         return normalizedPath;
     }
 
+    static string PrependRelativePathsWithCMakeCurrentSourceDir(string normalizedPath)
+    {
+        if (!Path.IsPathRooted(normalizedPath) && !normalizedPath.StartsWith("${CMAKE_CURRENT_SOURCE_DIR}/"))
+            if (normalizedPath == ".")
+                return "${CMAKE_CURRENT_SOURCE_DIR}";
+            else
+                return "${CMAKE_CURRENT_SOURCE_DIR}/" + normalizedPath;
+        else
+            return normalizedPath;
+    }
+
     static string TranslateMSBuildMacros(string value)
     {
         string translatedValue = value;
@@ -126,7 +138,7 @@ class CMakeGenerator
         translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/");
         translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionName\)", "${CMAKE_PROJECT_NAME}");
 
-        if (Regex.Match(translatedValue, @"\$\([A-Za-z0-9_]+\)").Success)
+        if (Regex.IsMatch(translatedValue, @"\$\([A-Za-z0-9_]+\)"))
         {
             Console.WriteLine($"Warning: value contains unsupported MSBuild macros/properties: {value}");
         }
