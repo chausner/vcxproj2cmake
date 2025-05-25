@@ -344,6 +344,7 @@ class ProjectInfo
             "Level2" => [.. options, "/W2"],
             "Level3" => [.. options, "/W3"],
             "Level4" => [.. options, "/W4"],
+            "" or null => options,
             _ => throw new CatastrophicFailureException($"Invalid value for WarningLevel: {level}")
         }, warningLevel);
     }
@@ -357,6 +358,7 @@ class ProjectInfo
             "Level2" => [.. options, "/external:W2"],
             "Level3" => [.. options, "/external:W3"],
             "Level4" => [.. options, "/external:W4"],
+            "" or null => options,
             _ => throw new CatastrophicFailureException($"Invalid value for ExternalWarningLevel: {level}")
         }, externalWarningLevel);
     }
