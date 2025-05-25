@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 class CMakeGenerator
 {
-    public static void Generate(SolutionInfo? solutionInfo, IEnumerable<ProjectInfo> projectInfos, bool dryRun)
+    public static void Generate(SolutionInfo? solutionInfo, IEnumerable<ProjectInfo> projectInfos, CMakeGeneratorSettings settings)
     {
         var projectCMakeListsTemplate = LoadTemplate("vcxproj2cmake.Resources.Templates.Project-CMakeLists.txt.scriban");
         var solutionCMakeListsTemplate = LoadTemplate("vcxproj2cmake.Resources.Templates.Solution-CMakeLists.txt.scriban");
@@ -13,10 +13,10 @@ class CMakeGenerator
         ValidateFolders(solutionInfo, projectInfos);
 
         foreach (var projectInfo in projectInfos)
-            GenerateCMakeForProject(projectInfo, projectCMakeListsTemplate, dryRun);
+            GenerateCMakeForProject(projectInfo, projectCMakeListsTemplate, settings);
 
         if (solutionInfo != null)
-            GenerateCMakeForSolution(solutionInfo, solutionCMakeListsTemplate, dryRun);
+            GenerateCMakeForSolution(solutionInfo, solutionCMakeListsTemplate, settings);
     }
 
     static void ValidateFolders(SolutionInfo? solutionInfo, IEnumerable<ProjectInfo> projectInfos)
@@ -34,10 +34,11 @@ class CMakeGenerator
             throw new CatastrophicFailureException($"The solution file and at least one project file are located in the same directory. This is not supported.");
     }
 
-    static void GenerateCMake(object model, string destinationPath, Template cmakeListsTemplate, bool dryRun)
+    static void GenerateCMake(object model, string destinationPath, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
     {
         var scriptObject = new ScriptObject();
         scriptObject.Import(model);
+        scriptObject.Import(settings);
         scriptObject.Import("fail", new Action<string>(error => throw new CatastrophicFailureException(error)));
         scriptObject.Import("translate_msbuild_macros", TranslateMSBuildMacros);
         scriptObject.Import("normalize_path", NormalizePath);
@@ -50,7 +51,7 @@ class CMakeGenerator
         context.PushGlobal(scriptObject);
         var result = cmakeListsTemplate.Render(context);
 
-        if (dryRun)
+        if (settings.DryRun)
         {
             Console.WriteLine($"\nGenerated output for {destinationPath}\n");
             Console.WriteLine(result);
@@ -62,18 +63,18 @@ class CMakeGenerator
         }
     }
 
-    static void GenerateCMakeForProject(ProjectInfo projectInfo, Template cmakeListsTemplate, bool dryRun)
+    static void GenerateCMakeForProject(ProjectInfo projectInfo, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
     {
         string cmakeListsPath = Path.Combine(Path.GetDirectoryName(projectInfo.AbsoluteProjectPath)!, "CMakeLists.txt");
 
-        GenerateCMake(projectInfo, cmakeListsPath, cmakeListsTemplate, dryRun);
+        GenerateCMake(projectInfo, cmakeListsPath, cmakeListsTemplate, settings);
     }
 
-    static void GenerateCMakeForSolution(SolutionInfo solutionInfo, Template cmakeListsTemplate, bool dryRun)
+    static void GenerateCMakeForSolution(SolutionInfo solutionInfo, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
     {
         string cmakeListsPath = Path.Combine(Path.GetDirectoryName(solutionInfo.AbsoluteSolutionPath)!, "CMakeLists.txt");
 
-        GenerateCMake(solutionInfo, cmakeListsPath, cmakeListsTemplate, dryRun);
+        GenerateCMake(solutionInfo, cmakeListsPath, cmakeListsTemplate, settings);
     }
 
     static Template LoadTemplate(string resourceName)
@@ -190,3 +191,5 @@ class CMakeGenerator
         return orderedProjectReferences.ToArray();
     }
 }
+
+record CMakeGeneratorSettings(bool EnableStandaloneProjectBuilds, bool DryRun);

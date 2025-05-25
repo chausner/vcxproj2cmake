@@ -1,11 +1,14 @@
 ﻿cmake_minimum_required(VERSION 3.13)
 project({{ project_name }} LANGUAGES {{ languages | array.join " " }})
 
+{{~ if enable_standalone_project_builds && project_references.size > 0 ~}}
 {{~ for project in project_references | order_projects_by_dependencies ~}}
 if(NOT TARGET {{ project.project_file_info.project_name }})
     add_subdirectory({{ project.project_file_info.absolute_project_path | get_directory_name | get_relative_path (absolute_project_path | get_directory_name) | normalize_path }} "${CMAKE_BINARY_DIR}/_deps/{{ project.project_file_info.unique_name }}-build")
 endif()
 {{~ end ~}}
+
+{{~ end -}}
 
 {{~ if qt_modules.size > 0 ~}}
 find_package(Qt5 REQUIRED COMPONENTS {{ qt_modules | array.map "cmake_component_name" | array.sort | array.join " " }})

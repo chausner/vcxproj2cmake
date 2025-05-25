@@ -17,6 +17,10 @@ static class Program
             name: "--solution",
             description: "Path to .sln file");
 
+        var enableStandaloneProjectBuildsOption = new Option<bool>(
+            name: "--enable-standalone-project-builds",
+            description: "Generate necessary code to allow projects to be built standalone (not through the root CMakeLists.txt)");
+
         var dryRunOption = new Option<bool>(
             name: "--dry-run",
             description: "Print generated output to the console, do not store generated files");
@@ -24,6 +28,7 @@ static class Program
         var rootCommand = new RootCommand("Converts Microsoft Visual C++ projects and solutions to CMake");
         rootCommand.AddOption(projectOption);
         rootCommand.AddOption(solutionOption);
+        rootCommand.AddOption(enableStandaloneProjectBuildsOption);
         rootCommand.AddOption(dryRunOption);
         rootCommand.AddValidator(result =>
         {
@@ -34,7 +39,7 @@ static class Program
                 result.ErrorMessage = "Specify either --project or --solution, but not both.";
             }
         });
-        rootCommand.SetHandler(Run, projectOption, solutionOption, dryRunOption);
+        rootCommand.SetHandler(Run, projectOption, solutionOption, enableStandaloneProjectBuildsOption, dryRunOption);
 
         var parser = new CommandLineBuilder(rootCommand)
             .UseHelp()
@@ -56,7 +61,7 @@ static class Program
         return parser.Invoke(args);
     }
 
-    static void Run(List<string>? projects, string? solution, bool dryRun)
+    static void Run(List<string>? projects, string? solution, bool enableStandaloneProjectBuilds, bool dryRun)
     {
         var conanPackageInfoRepository = new ConanPackageInfoRepository();
 
@@ -89,7 +94,8 @@ static class Program
         ResolveProjectReferences(projectInfos);
         projectInfos = RemoveObsoleteLibrariesFromProjectReferences(projectInfos);
 
-        CMakeGenerator.Generate(solutionInfo, projectInfos, dryRun);
+        var settings = new CMakeGeneratorSettings(enableStandaloneProjectBuilds, dryRun);
+        CMakeGenerator.Generate(solutionInfo, projectInfos, settings);
     }
 
     static void AssignUniqueProjectNames(IEnumerable<ProjectInfo> projectInfos)
