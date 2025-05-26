@@ -166,6 +166,7 @@ static class Program
                 Defines = projectInfo.Defines,
                 Options = projectInfo.Options,
                 ProjectReferences = projectInfo.ProjectReferences,
+                LinkerSubsystem = projectInfo.LinkerSubsystem,
                 LinkLibraryDependenciesEnabled = projectInfo.LinkLibraryDependenciesEnabled,
                 RequiresMoc = projectInfo.RequiresMoc,
                 QtModules = projectInfo.QtModules,

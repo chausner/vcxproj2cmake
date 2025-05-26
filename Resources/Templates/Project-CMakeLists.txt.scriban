@@ -22,7 +22,7 @@ find_package({{ package.cmake_config_name }} REQUIRED CONFIG)
 {{~ end ~}}
 
 {{~ if configuration_type == "Application" ~}}
-add_executable({{ project_name }}
+add_executable({{ project_name }}{{ if linker_subsystem == "Windows" }} WIN32{{ end }}
 {{~ else if configuration_type == "StaticLibrary" ~}}
 add_library({{ project_name }} STATIC
 {{~ else if configuration_type == "DynamicLibrary" ~}}

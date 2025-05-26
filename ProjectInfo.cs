@@ -16,6 +16,7 @@ class ProjectInfo
     public required ConfigDependentMultiSetting Defines { get; init; }
     public required ConfigDependentMultiSetting Options { get; init; }
     public required ProjectReference[] ProjectReferences { get; init; }
+    public required string? LinkerSubsystem { get; init; }
     public required bool LinkLibraryDependenciesEnabled { get; init; }
     public required bool RequiresMoc { get; init; }
     public required QtModule[] QtModules { get; init; }
@@ -247,6 +248,11 @@ class ProjectInfo
                 .Select(packageName => conanPackageInfoRepository.GetConanPackageInfo(packageName!))
                 .ToArray();
 
+        var linkerSubsystem =
+            linkerSettings.GetValueOrDefault("SubSystem")?.Values
+            .Distinct()
+            .SingleOrDefaultWithException(null, () => throw new CatastrophicFailureException("SubSystem property is inconsistent between configurations"));
+
         defines = ApplyCharacterSetSetting(characterSet, defines);
         options = ApplyDisableSpecificWarnings(disableSpecificWarnings, options);
         options = ApplyTreatSpecificWarningsAsErrors(treatSpecificWarningsAsErrors, options);
@@ -269,6 +275,7 @@ class ProjectInfo
             Defines = defines,
             Options = options,
             ProjectReferences = projectReferences.Select(pr => new ProjectReference { Path = pr }).ToArray(),
+            LinkerSubsystem = linkerSubsystem,
             LinkLibraryDependenciesEnabled = linkLibraryDependenciesEnabled,
             RequiresMoc = requiresMoc,
             QtModules = qtModules.Select(module => QtModuleInfoRepository.GetQtModuleInfo(module)).ToArray(),
