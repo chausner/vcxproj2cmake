@@ -13,10 +13,10 @@ class CMakeGenerator
         ValidateFolders(solutionInfo, projectInfos);
 
         foreach (var projectInfo in projectInfos)
-            GenerateCMakeForProject(projectInfo, projectCMakeListsTemplate, settings);
+            GenerateCMakeForProject(projectInfo, projectInfos, projectCMakeListsTemplate, settings);
 
         if (solutionInfo != null)
-            GenerateCMakeForSolution(solutionInfo, solutionCMakeListsTemplate, settings);
+            GenerateCMakeForSolution(solutionInfo, projectInfos, solutionCMakeListsTemplate, settings);
     }
 
     static void ValidateFolders(SolutionInfo? solutionInfo, IEnumerable<ProjectInfo> projectInfos)
@@ -34,15 +34,16 @@ class CMakeGenerator
             throw new CatastrophicFailureException($"The solution file and at least one project file are located in the same directory. This is not supported.");
     }
 
-    static void GenerateCMake(object model, string destinationPath, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
+    static void GenerateCMake(object model, IEnumerable<ProjectInfo> allProjectInfos, string destinationPath, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
     {
         var scriptObject = new ScriptObject();
         scriptObject.Import(model);
         scriptObject.Import(settings);
+        scriptObject.Import(new { AllProjects = allProjectInfos });
         scriptObject.Import("fail", new Action<string>(error => throw new CatastrophicFailureException(error)));
         scriptObject.Import("translate_msbuild_macros", TranslateMSBuildMacros);
         scriptObject.Import("normalize_path", NormalizePath);
-        scriptObject.Import("order_projects_by_dependencies", OrderProjectsByDependencies);
+        scriptObject.Import("order_project_references_by_dependencies", OrderProjectReferencesByDependencies);
         scriptObject.Import("get_directory_name", new Func<string?, string?>(Path.GetDirectoryName));
         scriptObject.Import("get_relative_path", new Func<string, string, string?>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));
         scriptObject.Import("prepend_relative_paths_with_cmake_current_source_dir", PrependRelativePathsWithCMakeCurrentSourceDir);
@@ -63,18 +64,18 @@ class CMakeGenerator
         }
     }
 
-    static void GenerateCMakeForProject(ProjectInfo projectInfo, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
+    static void GenerateCMakeForProject(ProjectInfo projectInfo, IEnumerable<ProjectInfo> allProjectInfos, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
     {
         string cmakeListsPath = Path.Combine(Path.GetDirectoryName(projectInfo.AbsoluteProjectPath)!, "CMakeLists.txt");
 
-        GenerateCMake(projectInfo, cmakeListsPath, cmakeListsTemplate, settings);
+        GenerateCMake(projectInfo, allProjectInfos, cmakeListsPath, cmakeListsTemplate, settings);
     }
 
-    static void GenerateCMakeForSolution(SolutionInfo solutionInfo, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
+    static void GenerateCMakeForSolution(SolutionInfo solutionInfo, IEnumerable<ProjectInfo> allProjectInfos, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
     {
         string cmakeListsPath = Path.Combine(Path.GetDirectoryName(solutionInfo.AbsoluteSolutionPath)!, "CMakeLists.txt");
 
-        GenerateCMake(solutionInfo, cmakeListsPath, cmakeListsTemplate, settings);
+        GenerateCMake(solutionInfo, allProjectInfos, cmakeListsPath, cmakeListsTemplate, settings);
     }
 
     static Template LoadTemplate(string resourceName)
@@ -154,21 +155,21 @@ class CMakeGenerator
         return translatedValue;
     }
 
-    static ProjectReference[] OrderProjectsByDependencies(ProjectReference[] projectReferences)
+    static ProjectInfo[] OrderProjectsByDependencies(IEnumerable<ProjectInfo> projectReferences, IEnumerable<ProjectInfo>? allProjects = null)
     {
-        List<ProjectReference> orderedProjectReferences = new();
-        List<ProjectReference> unorderedProjectReferences = new(projectReferences);
+        List<ProjectInfo> orderedProjects = new();
+        List<ProjectInfo> unorderedProjects = new(allProjects ?? projectReferences);
 
-        while (unorderedProjectReferences.Count > 0)
+        while (unorderedProjects.Count > 0)
         {
             bool found = false;
 
-            foreach (var projectReference in unorderedProjectReferences)
+            foreach (var project in unorderedProjects)
             {
-                if (projectReference.ProjectFileInfo!.ProjectReferences.All(pr => orderedProjectReferences.Any(pr2 => pr2.ProjectFileInfo == pr.ProjectFileInfo)))
+                if (project.ProjectReferences.All(pr => orderedProjects.Any(pr2 => pr2.AbsoluteProjectPath == pr.ProjectFileInfo!.AbsoluteProjectPath)))
                 {
-                    orderedProjectReferences.Add(projectReference);
-                    unorderedProjectReferences.Remove(projectReference);
+                    orderedProjects.Add(project);
+                    unorderedProjects.Remove(project);
                     found = true;
                     break;
                 }
@@ -177,23 +178,30 @@ class CMakeGenerator
             if (!found)
             {
                 Console.Error.WriteLine("Could not determine project dependency tree");
-                foreach (var projectReference in unorderedProjectReferences)
+                foreach (var project in unorderedProjects)
                 {
-                    Console.Error.WriteLine("  " + projectReference.Path);
-                    foreach (var missingReference in projectReference.ProjectFileInfo!.ProjectReferences.Where(pr =>
-                                 orderedProjectReferences.All(pr2 => pr2.ProjectFileInfo != pr.ProjectFileInfo)))
+                    Console.Error.WriteLine("  " + project.ProjectName);
+                    foreach (var missingReference in project.ProjectReferences.Where(pr =>
+                                 orderedProjects.All(pr2 => pr2.AbsoluteProjectPath != pr.ProjectFileInfo.AbsoluteProjectPath)))
                     {
                         Console.Error.WriteLine("    missing dependency " + missingReference.Path);
                     }
                 }
 
-                //throw new CatastrophicFailureException("Could not determine project dependency tree");
-                orderedProjectReferences.AddRange(unorderedProjectReferences);
-                break;
+                throw new CatastrophicFailureException("Could not determine project dependency tree");
             }
         }
 
-        return orderedProjectReferences.ToArray();
+        return orderedProjects.ToArray();
+    }
+
+    static ProjectReference[] OrderProjectReferencesByDependencies(IEnumerable<ProjectReference> projectReferences, IEnumerable<ProjectInfo>? allProjects = null)
+    {
+        var orderedProjects = OrderProjectsByDependencies(projectReferences.Select(pr => pr.ProjectFileInfo!).ToArray(), allProjects);
+
+        return projectReferences
+            .OrderBy(pr => Array.IndexOf(orderedProjects, pr.ProjectFileInfo!))
+            .ToArray();
     }
 }
 

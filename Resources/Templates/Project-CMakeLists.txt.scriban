@@ -6,7 +6,7 @@ project({{ project_name }}
 )
 
 {{~ if enable_standalone_project_builds && project_references.size > 0 ~}}
-{{~ for project in project_references | order_projects_by_dependencies ~}}
+{{~ for project in project_references | order_project_references_by_dependencies all_projects ~}}
 if(NOT TARGET {{ project.project_file_info.project_name }})
     add_subdirectory({{ project.project_file_info.absolute_project_path | get_directory_name | get_relative_path (absolute_project_path | get_directory_name) | normalize_path }} "${CMAKE_BINARY_DIR}/_deps/{{ project.project_file_info.unique_name }}-build")
 endif()
@@ -145,7 +145,7 @@ target_link_libraries({{ project_name }} PUBLIC
     $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{{ library | translate_msbuild_macros | normalize_path }}>
     {{~ end ~}}
     {{~ if link_library_dependencies_enabled ~}}
-    {{~ for project in project_references | order_projects_by_dependencies ~}}
+    {{~ for project in project_references | order_project_references_by_dependencies all_projects ~}}
     {{~ if project.project_file_info.configuration_type == "StaticLibrary" || project.project_file_info.configuration_type == "DynamicLibrary" ~}}
     {{ project.project_file_info.project_name }}
     {{~ end ~}}
