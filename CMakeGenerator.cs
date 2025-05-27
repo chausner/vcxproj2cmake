@@ -155,34 +155,33 @@ class CMakeGenerator
         return translatedValue;
     }
 
-    static ProjectInfo[] OrderProjectsByDependencies(IEnumerable<ProjectInfo> projectReferences, IEnumerable<ProjectInfo>? allProjects = null)
+    static ProjectInfo[] OrderProjectsByDependencies(IEnumerable<ProjectInfo> projects)
     {
         List<ProjectInfo> orderedProjects = new();
-        List<ProjectInfo> unorderedProjects = new(allProjects ?? projectReferences);
+        List<ProjectInfo> unorderedProjects = new(projects);
 
         while (unorderedProjects.Count > 0)
         {
-            bool found = false;
+            var projectsWithAllDependenciesSatisfied = unorderedProjects
+                .Where(project => project.ProjectReferences.All(p => orderedProjects.Any(p2 => p2.AbsoluteProjectPath == p.ProjectFileInfo!.AbsoluteProjectPath)))
+                .ToArray();
 
-            foreach (var project in unorderedProjects)
+            if (projectsWithAllDependenciesSatisfied.Length > 0)
             {
-                if (project.ProjectReferences.All(pr => orderedProjects.Any(pr2 => pr2.AbsoluteProjectPath == pr.ProjectFileInfo!.AbsoluteProjectPath)))
+                foreach (var project in projectsWithAllDependenciesSatisfied.OrderBy(p => p.AbsoluteProjectPath))
                 {
                     orderedProjects.Add(project);
                     unorderedProjects.Remove(project);
-                    found = true;
-                    break;
                 }
             }
-
-            if (!found)
+            else
             {
                 Console.Error.WriteLine("Could not determine project dependency tree");
                 foreach (var project in unorderedProjects)
                 {
                     Console.Error.WriteLine("  " + project.ProjectName);
                     foreach (var missingReference in project.ProjectReferences.Where(pr =>
-                                 orderedProjects.All(pr2 => pr2.AbsoluteProjectPath != pr.ProjectFileInfo.AbsoluteProjectPath)))
+                                 orderedProjects.All(p => p.AbsoluteProjectPath != pr.ProjectFileInfo!.AbsoluteProjectPath)))
                     {
                         Console.Error.WriteLine("    missing dependency " + missingReference.Path);
                     }
@@ -197,10 +196,10 @@ class CMakeGenerator
 
     static ProjectReference[] OrderProjectReferencesByDependencies(IEnumerable<ProjectReference> projectReferences, IEnumerable<ProjectInfo>? allProjects = null)
     {
-        var orderedProjects = OrderProjectsByDependencies(projectReferences.Select(pr => pr.ProjectFileInfo!).ToArray(), allProjects);
+        var orderedProjects = OrderProjectsByDependencies(allProjects ?? projectReferences.Select(pr => pr.ProjectFileInfo!));
 
         return projectReferences
-            .OrderBy(pr => Array.IndexOf(orderedProjects, pr.ProjectFileInfo!))
+            .OrderBy(pr => Array.FindIndex(orderedProjects, p => p.AbsoluteProjectPath == pr.ProjectFileInfo!.AbsoluteProjectPath))
             .ToArray();
     }
 }
