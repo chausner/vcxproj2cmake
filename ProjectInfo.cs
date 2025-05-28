@@ -41,9 +41,6 @@ class ProjectInfo
         var importGroupXName = XName.Get("ImportGroup", msbuildNamespace);
         var projectReferenceXName = XName.Get("ProjectReference", msbuildNamespace);
         var linkLibraryDependenciesXName = XName.Get("LinkLibraryDependencies", msbuildNamespace);
-        var warningLevelXName = XName.Get("WarningLevel", msbuildNamespace);
-        var externalWarningLevelXName = XName.Get("ExternalWarningLevel", msbuildNamespace);
-        var treatAngleIncludeAsExternalXName = XName.Get("TreatAngleIncludeAsExternal", msbuildNamespace);
         var qtMocXName = XName.Get("QtMoc", msbuildNamespace);
 
         var doc = XDocument.Load(projectPath);
