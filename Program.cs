@@ -10,16 +10,20 @@ static class Program
 
     static int Main(string[] args)
     {
-        var projectOption = new Option<List<string>?>(
-            name: "--project",
-            description: "Path(s) to .vcxproj file(s)")
+        var projectsOption = new Option<List<string>?>(
+            name: "--projects",
+            description: "Paths to one or multiple .vcxproj files")
         {
-            AllowMultipleArgumentsPerToken = true
+            AllowMultipleArgumentsPerToken = true,
+            ArgumentHelpName = "path(s)"
         };
 
         var solutionOption = new Option<string?>(
             name: "--solution",
-            description: "Path to .sln file");
+            description: "Path to a solution .sln file")
+        { 
+            ArgumentHelpName = "path" 
+        };
 
         var enableStandaloneProjectBuildsOption = new Option<bool>(
             name: "--enable-standalone-project-builds",
@@ -36,21 +40,21 @@ static class Program
         );
 
         var rootCommand = new RootCommand("Converts Microsoft Visual C++ projects and solutions to CMake");
-        rootCommand.AddOption(projectOption);
+        rootCommand.AddOption(projectsOption);
         rootCommand.AddOption(solutionOption);
         rootCommand.AddOption(enableStandaloneProjectBuildsOption);
         rootCommand.AddOption(dryRunOption);
         rootCommand.AddOption(logLevelOption);
         rootCommand.AddValidator(result =>
         {
-            var hasProjects = result.GetValueForOption(projectOption)?.Count > 0;
+            var hasProjects = result.GetValueForOption(projectsOption)?.Count > 0;
             var hasSolution = !string.IsNullOrEmpty(result.GetValueForOption(solutionOption));
             if (hasProjects == hasSolution)
             {
                 result.ErrorMessage = "Specify either --project or --solution, but not both.";
             }
         });
-        rootCommand.SetHandler(Run, projectOption, solutionOption, enableStandaloneProjectBuildsOption, dryRunOption, logLevelOption);
+        rootCommand.SetHandler(Run, projectsOption, solutionOption, enableStandaloneProjectBuildsOption, dryRunOption, logLevelOption);
 
         var parser = new CommandLineBuilder(rootCommand)
             .UseHelp()
