@@ -48,63 +48,69 @@ class ProjectInfo
 
         var projectConfigurations =
             projectElement
-            .Elements(itemGroupXName)
-            .SelectMany(group => group.Elements(projectConfigurationXName))
-            .Select(element => element.Attribute("Include")!.Value)
-            .ToList();
+                .Elements(itemGroupXName)
+                .SelectMany(group => group.Elements(projectConfigurationXName))
+                .Select(element => element.Attribute("Include")!.Value.Trim())
+                .ToList();
 
         var configurationType =
             projectElement
-            .Elements(propertyGroupXName)
-            .SelectMany(group => group.Elements(configurationTypeXName))
-            .Select(element => element.Value)
-            .Distinct()
-            .SingleWithException(() => throw new CatastrophicFailureException("Configuration type is absent or inconsistent between configurations"));
+                .Elements(propertyGroupXName)
+                .SelectMany(group => group.Elements(configurationTypeXName))
+                .Select(element => element.Value.Trim())
+                .Distinct()
+                .SingleWithException(() =>
+                    throw new CatastrophicFailureException(
+                        "Configuration type is absent or inconsistent between configurations"));
 
         var sourceFiles =
             projectElement
-            .Elements(itemGroupXName)
-            .SelectMany(group => group.Elements(clCompileXName))
-            .Select(element => element.Attribute("Include")!.Value)
-            .ToList();
+                .Elements(itemGroupXName)
+                .SelectMany(group => group.Elements(clCompileXName))
+                .Select(element => element.Attribute("Include")!.Value.Trim())
+                .ToList();
 
         var qtModules =
             projectElement
-            .Elements(propertyGroupXName)
-            .SelectMany(group => group.Elements(qtModulesXName))
-            .Select(element => element.Value)
-            .Distinct()
-            .SingleOrDefaultWithException(string.Empty, () => throw new CatastrophicFailureException("Qt modules are inconsistent between configurations"))
-            .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                .Elements(propertyGroupXName)
+                .SelectMany(group => group.Elements(qtModulesXName))
+                .Select(element => element.Value.Trim())
+                .Distinct()
+                .SingleOrDefaultWithException(string.Empty,
+                    () => throw new CatastrophicFailureException("Qt modules are inconsistent between configurations"))
+                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
         var imports =
             projectElement
-            .Elements(importXName)
-            .Concat(projectElement.Elements(importGroupXName).SelectMany(group => group.Elements(importXName)))
-            .Select(import => import.Attribute("Project")!.Value)
-            .ToList();
+                .Elements(importXName)
+                .Concat(projectElement.Elements(importGroupXName).SelectMany(group => group.Elements(importXName)))
+                .Select(import => import.Attribute("Project")!.Value.Trim())
+                .ToList();
 
         var projectReferences =
             projectElement
-            .Elements(itemGroupXName)
-            .SelectMany(group => group.Elements(projectReferenceXName))
-            .Select(element => element.Attribute("Include")!.Value)
-            .Distinct()
-            .ToList();
+                .Elements(itemGroupXName)
+                .SelectMany(group => group.Elements(projectReferenceXName))
+                .Select(element => element.Attribute("Include")!.Value.Trim())
+                .Distinct()
+                .ToList();
 
         var linkLibraryDependenciesEnabled =
             projectElement
-            .Elements(itemDefinitionGroupXName)
-            .SelectMany(group => group.Elements(projectReferenceXName))
-            .SelectMany(element => element.Elements(linkLibraryDependenciesXName))
-            .Select(element => element.Value switch
-            {
-                "true" => true,
-                "false" => false,
-                _ => throw new CatastrophicFailureException($"Invalid value for LinkLibraryDependencies: {element.Value}")
-            })
-            .Distinct()
-            .SingleOrDefaultWithException(true, () => throw new CatastrophicFailureException("LinkLibraryDependencies property is inconsistent between configurations"));
+                .Elements(itemDefinitionGroupXName)
+                .SelectMany(group => group.Elements(projectReferenceXName))
+                .SelectMany(element => element.Elements(linkLibraryDependenciesXName))
+                .Select(element => element.Value.Trim() switch
+                {
+                    "true" => true,
+                    "false" => false,
+                    _ => throw new CatastrophicFailureException(
+                        $"Invalid value for LinkLibraryDependencies: {element.Value}")
+                })
+                .Distinct()
+                .SingleOrDefaultWithException(true,
+                    () => throw new CatastrophicFailureException(
+                        "LinkLibraryDependencies property is inconsistent between configurations"));
 
         var requiresMoc =
             projectElement
@@ -147,7 +153,7 @@ class ProjectInfo
                 var projectConfigCompilerSettings = new Dictionary<string, string>();
                 foreach (var element in group.Elements(clCompileXName).SelectMany(element => element.Elements()))
                 {
-                    projectConfigCompilerSettings[element.Name.LocalName] = element.Value;
+                    projectConfigCompilerSettings[element.Name.LocalName] = element.Value.Trim();
                 }
 
                 var projectConfigLinkerSettings = new Dictionary<string, string>();
@@ -155,7 +161,7 @@ class ProjectInfo
                              .Where(element => element.Name == linkXName || element.Name == libXName)
                              .SelectMany(element => element.Elements()))
                 {
-                    projectConfigLinkerSettings[element.Name.LocalName] = element.Value;
+                    projectConfigLinkerSettings[element.Name.LocalName] = element.Value.Trim();
                 }
 
                 foreach (var setting in projectConfigCompilerSettings)
@@ -174,7 +180,7 @@ class ProjectInfo
             var projectConfigOtherSettings = new Dictionary<string, string>();
             foreach (var element in propertyGroups.SelectMany(element => element.Elements()))
             {
-                projectConfigOtherSettings[element.Name.LocalName] = element.Value;
+                projectConfigOtherSettings[element.Name.LocalName] = element.Value.Trim();
             }
 
             foreach (var setting in projectConfigOtherSettings)
@@ -247,8 +253,10 @@ class ProjectInfo
 
         var linkerSubsystem =
             linkerSettings.GetValueOrDefault("SubSystem")?.Values
-            .Distinct()
-            .SingleOrDefaultWithException(null, () => throw new CatastrophicFailureException("SubSystem property is inconsistent between configurations"));
+                .Distinct()
+                .SingleOrDefaultWithException(null,
+                    () => throw new CatastrophicFailureException(
+                        "SubSystem property is inconsistent between configurations"));
 
         defines = ApplyCharacterSetSetting(characterSet, defines);
         options = ApplyDisableSpecificWarnings(disableSpecificWarnings, options);
