@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using Microsoft.Extensions.Logging;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
 class ProjectInfo
@@ -22,9 +23,9 @@ class ProjectInfo
     public required QtModule[] QtModules { get; init; }
     public required ConanPackage[] ConanPackages { get; init; }
 
-    public static ProjectInfo ParseProjectFile(string projectPath, ConanPackageInfoRepository conanPackageInfoRepository)
+    public static ProjectInfo ParseProjectFile(string projectPath, ConanPackageInfoRepository conanPackageInfoRepository, ILogger logger)
     {
-        Console.WriteLine($"Parsing {projectPath}");
+        logger.LogInformation($"Parsing {projectPath}");
 
         var msbuildNamespace = "http://schemas.microsoft.com/developer/msbuild/2003";
         var projectXName = XName.Get("Project", msbuildNamespace);
@@ -126,7 +127,7 @@ class ProjectInfo
         {
             if (!Regex.IsMatch(projectConfig, @"(Debug|Release)\|(Win32|x86|x64)"))
             {
-                Console.WriteLine($"Warning: skipping unsupported project configuration: {projectConfig}");
+                logger.LogWarning($"Skipping unsupported project configuration: {projectConfig}");
                 continue;
             }
 
@@ -195,50 +196,62 @@ class ProjectInfo
             .Distinct()
             .SingleOrDefaultWithException(null, () => throw new CatastrophicFailureException("LanguageStandard property is inconsistent between configurations"));
         if (languageStandard == null)
-            Console.WriteLine("Warning: Language standard could not be determined.");
+            logger.LogWarning("Language standard could not be determined.");
 
         var includePaths = ConfigDependentMultiSetting.Parse(
             compilerSettings.GetValueOrDefault("AdditionalIncludeDirectories"),
-            value => ParseList(value, ';', "%(AdditionalIncludeDirectories)"));
+            value => ParseList(value, ';', "%(AdditionalIncludeDirectories)"),
+            logger);
 
         var linkerPaths = ConfigDependentMultiSetting.Parse(
             linkerSettings.GetValueOrDefault("AdditionalLibraryDirectories"), 
-            value => ParseList(value, ';', "%(AdditionalLibraryDirectories)"));
+            value => ParseList(value, ';', "%(AdditionalLibraryDirectories)"),
+            logger);
 
         var libraries = ConfigDependentMultiSetting.Parse(
             linkerSettings.GetValueOrDefault("AdditionalDependencies"), 
-            value => ParseList(value, ';', "%(AdditionalDependencies)"));
+            value => ParseList(value, ';', "%(AdditionalDependencies)"),
+            logger);
 
         var defines = ConfigDependentMultiSetting.Parse(
             compilerSettings.GetValueOrDefault("PreprocessorDefinitions"), 
-            value => ParseList(value, ';', "%(PreprocessorDefinitions)"));
+            value => ParseList(value, ';', "%(PreprocessorDefinitions)"),
+            logger);
 
         var options = ConfigDependentMultiSetting.Parse(
             compilerSettings.GetValueOrDefault("AdditionalOptions"), 
-            value => ParseList(value, ' ', "%(AdditionalOptions)"));
+            value => ParseList(value, ' ', "%(AdditionalOptions)"),
+            logger);
 
         var characterSet = ConfigDependentSetting.Parse(
-            otherSettings.GetValueOrDefault("CharacterSet"));
+            otherSettings.GetValueOrDefault("CharacterSet"),
+            logger);
 
         var disableSpecificWarnings = ConfigDependentMultiSetting.Parse(
             compilerSettings.GetValueOrDefault("DisableSpecificWarnings"),
-            value => ParseList(value, ';', "%(DisableSpecificWarnings)"));
+            value => ParseList(value, ';', "%(DisableSpecificWarnings)"),
+            logger);
 
         var treatSpecificWarningsAsErrors = ConfigDependentMultiSetting.Parse(
             compilerSettings.GetValueOrDefault("TreatSpecificWarningsAsErrors"),
-            value => ParseList(value, ';', "%(TreatSpecificWarningsAsErrors)"));
+            value => ParseList(value, ';', "%(TreatSpecificWarningsAsErrors)"),
+            logger);
 
         var treatWarningAsError = ConfigDependentSetting.Parse(
-            compilerSettings.GetValueOrDefault("TreatWarningAsError"));
+            compilerSettings.GetValueOrDefault("TreatWarningAsError"),
+            logger);
 
         var warningLevel = ConfigDependentSetting.Parse(
-            compilerSettings.GetValueOrDefault("WarningLevel"));
+            compilerSettings.GetValueOrDefault("WarningLevel"),
+            logger);
 
         var externalWarningLevel = ConfigDependentSetting.Parse(
-            compilerSettings.GetValueOrDefault("ExternalWarningLevel"));
+            compilerSettings.GetValueOrDefault("ExternalWarningLevel"),
+            logger);
 
         var treatAngleIncludeAsExternal = ConfigDependentSetting.Parse(
-            compilerSettings.GetValueOrDefault("TreatAngleIncludeAsExternal"));
+            compilerSettings.GetValueOrDefault("TreatAngleIncludeAsExternal"),
+            logger);
 
         var conanPackages =
             imports
@@ -270,7 +283,7 @@ class ProjectInfo
         {
             AbsoluteProjectPath = Path.GetFullPath(projectPath),
             ProjectName = Path.GetFileNameWithoutExtension(projectPath),
-            Languages = DetectLanguages(sourceFiles),
+            Languages = DetectLanguages(sourceFiles, logger),
             ConfigurationType = configurationType,
             LanguageStandard = languageStandard,
             SourceFiles = sourceFiles.ToArray(),
@@ -297,7 +310,7 @@ class ProjectInfo
             .ToArray();
     }
 
-    static string[] DetectLanguages(IEnumerable<string> sourceFiles)
+    static string[] DetectLanguages(IEnumerable<string> sourceFiles, ILogger logger)
     {
         List<string> result = new();
 
@@ -307,7 +320,7 @@ class ProjectInfo
             result.Add("CXX");
 
         if (result.Count == 0)
-            Console.WriteLine("Warning: could not detect languages for project");
+            logger.LogWarning("Could not detect languages for project");
 
         return result.ToArray();
     }
@@ -420,7 +433,7 @@ record ConfigDependentSetting
         X64 = null
     };
 
-    public static ConfigDependentSetting Parse(Dictionary<string, string>? settings)
+    public static ConfigDependentSetting Parse(Dictionary<string, string>? settings, ILogger logger)
     {
         if (settings == null || settings.Count == 0)
             return Empty;
@@ -449,7 +462,7 @@ record ConfigDependentSetting
             .Except([result.Common, result.Debug, result.Release, result.X86, result.X64])
             .ToArray();
         if (skippedSettings.Length > 0)
-            Console.WriteLine($"Warning: some settings were skipped: {string.Join(", ", skippedSettings)}");
+            logger.LogWarning($"Some settings were skipped: {string.Join(", ", skippedSettings)}");
 
         return result;
     }
@@ -474,7 +487,7 @@ record ConfigDependentMultiSetting
         X64 = []
     };
 
-    public static ConfigDependentMultiSetting Parse(Dictionary<string, string>? settings, Func<string, string[]> parser)
+    public static ConfigDependentMultiSetting Parse(Dictionary<string, string>? settings, Func<string, string[]> parser, ILogger logger)
     {
         if (settings == null || settings.Count == 0)
             return Empty;
@@ -507,7 +520,7 @@ record ConfigDependentMultiSetting
             .Except([.. result.Common, .. result.Debug, .. result.Release, .. result.X86, .. result.X64])
             .ToArray();
         if (skippedSettings.Length > 0)
-            Console.WriteLine($"Warning: some settings were skipped: {string.Join(", ", skippedSettings)}");
+            logger.LogWarning($"Some settings were skipped: {string.Join(", ", skippedSettings)}");
 
         return result;
     }

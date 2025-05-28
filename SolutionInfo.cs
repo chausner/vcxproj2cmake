@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using Microsoft.Extensions.Logging;
+using System.Text.RegularExpressions;
 
 class SolutionInfo
 {
@@ -6,9 +7,9 @@ class SolutionInfo
     public required string SolutionName { get; init; }
     public required ProjectReference[] Projects { get; init; }
 
-    public static SolutionInfo ParseSolutionFile(string solutionPath)
+    public static SolutionInfo ParseSolutionFile(string solutionPath, ILogger logger)
     {
-        Console.WriteLine($"Parsing {solutionPath}");
+        logger.LogInformation($"Parsing {solutionPath}");
 
         var projectPaths = new List<string>();
         var regex = new Regex(@"Project\(.*?\) = .*?, ""(.*?\.vcxproj)""", RegexOptions.IgnoreCase);

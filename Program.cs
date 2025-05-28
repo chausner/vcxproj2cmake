@@ -1,9 +1,13 @@
-﻿using System.CommandLine;
+﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
+using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
 
 static class Program
 {
+    static ILogger? logger;
+
     static int Main(string[] args)
     {
         var projectOption = new Option<List<string>?>(
@@ -25,11 +29,18 @@ static class Program
             name: "--dry-run",
             description: "Print generated output to the console, do not store generated files");
 
+        var logLevelOption = new Option<LogLevel>(
+            name: "--log-level",
+            description: "Set the minimum log level",
+            getDefaultValue: () => LogLevel.Information
+        );
+
         var rootCommand = new RootCommand("Converts Microsoft Visual C++ projects and solutions to CMake");
         rootCommand.AddOption(projectOption);
         rootCommand.AddOption(solutionOption);
         rootCommand.AddOption(enableStandaloneProjectBuildsOption);
         rootCommand.AddOption(dryRunOption);
+        rootCommand.AddOption(logLevelOption);
         rootCommand.AddValidator(result =>
         {
             var hasProjects = result.GetValueForOption(projectOption)?.Count > 0;
@@ -39,21 +50,32 @@ static class Program
                 result.ErrorMessage = "Specify either --project or --solution, but not both.";
             }
         });
-        rootCommand.SetHandler(Run, projectOption, solutionOption, enableStandaloneProjectBuildsOption, dryRunOption);
+        rootCommand.SetHandler(Run, projectOption, solutionOption, enableStandaloneProjectBuildsOption, dryRunOption, logLevelOption);
 
         var parser = new CommandLineBuilder(rootCommand)
             .UseHelp()
             .UseTypoCorrections()
             .UseParseErrorReporting()
-            .UseExceptionHandler((ex, context) => { 
+            .UseExceptionHandler((ex, context) => {
                 if (ex is CatastrophicFailureException)
                 {
-                    Console.Error.WriteLine($"Error: {ex.Message}");
-                    Console.Error.WriteLine("Aborting.");
+                    if (logger != null)
+                    {
+                        logger.LogCritical($"Error: {ex.Message}");
+                        logger.LogCritical("Aborting.");
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine($"Error: {ex.Message}");
+                        Console.Error.WriteLine("Aborting.");
+                    }
                 }
                 else
                 {
-                    Console.Error.WriteLine($"Unexpected error: {ex}");
+                    if (logger != null)
+                        logger.LogCritical(ex, "Unexpected error");
+                    else
+                        Console.Error.WriteLine($"Unexpected error: {ex}");
                 }
             })
             .Build();
@@ -61,8 +83,10 @@ static class Program
         return parser.Invoke(args);
     }
 
-    static void Run(List<string>? projects, string? solution, bool enableStandaloneProjectBuilds, bool dryRun)
+    static void Run(List<string>? projects, string? solution, bool enableStandaloneProjectBuilds, bool dryRun, LogLevel logLevel)
     {
+        logger = CreateLogger(logLevel);
+
         var conanPackageInfoRepository = new ConanPackageInfoRepository();
 
         SolutionInfo? solutionInfo = null;
@@ -72,12 +96,12 @@ static class Program
         {
             foreach (var projectPath in projects!)
             {
-                projectInfos.Add(ProjectInfo.ParseProjectFile(projectPath, conanPackageInfoRepository));
+                projectInfos.Add(ProjectInfo.ParseProjectFile(projectPath, conanPackageInfoRepository, logger));
             }
         }
         else if (solution != null)
         {
-            solutionInfo = SolutionInfo.ParseSolutionFile(solution!);
+            solutionInfo = SolutionInfo.ParseSolutionFile(solution!, logger);
 
             if (solutionInfo.Projects.Length == 0)
                 throw new CatastrophicFailureException($"No .vcxproj files found in solution: {solution}");
@@ -85,7 +109,7 @@ static class Program
             foreach (var projectReference in solutionInfo.Projects)
             {
                 string absolutePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(solution)!, projectReference.Path));
-                projectReference.ProjectFileInfo = ProjectInfo.ParseProjectFile(absolutePath, conanPackageInfoRepository);
+                projectReference.ProjectFileInfo = ProjectInfo.ParseProjectFile(absolutePath, conanPackageInfoRepository, logger);
                 projectInfos.Add(projectReference.ProjectFileInfo);
             }
         }
@@ -95,7 +119,21 @@ static class Program
         projectInfos = RemoveObsoleteLibrariesFromProjectReferences(projectInfos);
 
         var settings = new CMakeGeneratorSettings(enableStandaloneProjectBuilds, dryRun);
-        CMakeGenerator.Generate(solutionInfo, projectInfos, settings);
+        var cmakeGenerator = new CMakeGenerator(logger);
+        cmakeGenerator.Generate(solutionInfo, projectInfos, settings);
+    }
+
+    static ILogger CreateLogger(LogLevel logLevel)
+    {
+        using var loggerFactory = LoggerFactory.Create(builder =>
+        {
+            builder
+                .SetMinimumLevel(logLevel)
+                .AddConsole(options => options.FormatterName = nameof(CustomConsoleFormatter))
+                .AddConsoleFormatter<CustomConsoleFormatter, ConsoleFormatterOptions>();    
+        });
+
+        return loggerFactory.CreateLogger("vcxproj2cmake");
     }
 
     static void AssignUniqueProjectNames(IEnumerable<ProjectInfo> projectInfos)

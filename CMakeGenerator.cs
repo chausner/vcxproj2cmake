@@ -1,11 +1,20 @@
-﻿using Scriban;
+﻿using Microsoft.Extensions.Logging;
+using Scriban;
 using Scriban.Runtime;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 
 class CMakeGenerator
 {
-    public static void Generate(SolutionInfo? solutionInfo, IEnumerable<ProjectInfo> projectInfos, CMakeGeneratorSettings settings)
+    ILogger logger;
+
+    public CMakeGenerator(ILogger logger)
+    {
+        this.logger = logger;
+    }
+
+    public void Generate(SolutionInfo? solutionInfo, IEnumerable<ProjectInfo> projectInfos, CMakeGeneratorSettings settings)
     {
         var projectCMakeListsTemplate = LoadTemplate("vcxproj2cmake.Resources.Templates.Project-CMakeLists.txt.scriban");
         var solutionCMakeListsTemplate = LoadTemplate("vcxproj2cmake.Resources.Templates.Solution-CMakeLists.txt.scriban");
@@ -34,9 +43,9 @@ class CMakeGenerator
             throw new CatastrophicFailureException($"The solution file and at least one project file are located in the same directory. This is not supported.");
     }
 
-    static void GenerateCMake(object model, IEnumerable<ProjectInfo> allProjectInfos, string destinationPath, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
+    void GenerateCMake(object model, IEnumerable<ProjectInfo> allProjectInfos, string destinationPath, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
     {
-        Console.WriteLine($"Generating {destinationPath}");
+        logger.LogInformation($"Generating {destinationPath}");
 
         var scriptObject = new ScriptObject();
         scriptObject.Import(model);
@@ -56,9 +65,7 @@ class CMakeGenerator
 
         if (settings.DryRun)
         {
-            Console.WriteLine($"Generated output for {destinationPath}:\n");
-            Console.WriteLine(result);
-            Console.WriteLine();
+            logger.LogInformation($"Generated output for {destinationPath}:\r\n\r\n{result}");
         }
         else
         {            
@@ -66,14 +73,14 @@ class CMakeGenerator
         }
     }
 
-    static void GenerateCMakeForProject(ProjectInfo projectInfo, IEnumerable<ProjectInfo> allProjectInfos, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
+    void GenerateCMakeForProject(ProjectInfo projectInfo, IEnumerable<ProjectInfo> allProjectInfos, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
     {
         string cmakeListsPath = Path.Combine(Path.GetDirectoryName(projectInfo.AbsoluteProjectPath)!, "CMakeLists.txt");
 
         GenerateCMake(projectInfo, allProjectInfos, cmakeListsPath, cmakeListsTemplate, settings);
     }
 
-    static void GenerateCMakeForSolution(SolutionInfo solutionInfo, IEnumerable<ProjectInfo> allProjectInfos, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
+    void GenerateCMakeForSolution(SolutionInfo solutionInfo, IEnumerable<ProjectInfo> allProjectInfos, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
     {
         string cmakeListsPath = Path.Combine(Path.GetDirectoryName(solutionInfo.AbsoluteSolutionPath)!, "CMakeLists.txt");
 
@@ -138,7 +145,7 @@ class CMakeGenerator
             return normalizedPath;
     }
 
-    static string TranslateMSBuildMacros(string value)
+    string TranslateMSBuildMacros(string value)
     {
         string translatedValue = value;
         translatedValue = Regex.Replace(translatedValue, @"\$\(Configuration(Name)?\)", "${CMAKE_BUILD_TYPE}/");
@@ -149,7 +156,7 @@ class CMakeGenerator
 
         if (Regex.IsMatch(translatedValue, @"\$\([A-Za-z0-9_]+\)"))
         {
-            Console.WriteLine($"Warning: value contains unsupported MSBuild macros/properties: {value}");
+            logger.LogWarning($"Value contains unsupported MSBuild macros/properties: {value}");
         }
 
         translatedValue = Regex.Replace(translatedValue, @"\$\(([A-Za-z0-9_]+)\)", "${$1}");
@@ -157,7 +164,7 @@ class CMakeGenerator
         return translatedValue;
     }
 
-    static ProjectInfo[] OrderProjectsByDependencies(IEnumerable<ProjectInfo> projects)
+    ProjectInfo[] OrderProjectsByDependencies(IEnumerable<ProjectInfo> projects)
     {
         List<ProjectInfo> orderedProjects = new();
         List<ProjectInfo> unorderedProjects = new(projects);
@@ -178,16 +185,20 @@ class CMakeGenerator
             }
             else
             {
-                Console.Error.WriteLine("Could not determine project dependency tree");
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine("Could not determine project dependency tree");
+
                 foreach (var project in unorderedProjects)
                 {
-                    Console.Error.WriteLine("  " + project.ProjectName);
+                    sb.AppendLine($"Project {project.ProjectName}");
                     foreach (var missingReference in project.ProjectReferences.Where(pr =>
                                  orderedProjects.All(p => p.AbsoluteProjectPath != pr.ProjectFileInfo!.AbsoluteProjectPath)))
                     {
-                        Console.Error.WriteLine("    missing dependency " + missingReference.Path);
+                        sb.AppendLine($"  missing dependency {missingReference.Path}");
                     }
                 }
+
+                logger.LogError(sb.ToString());
 
                 throw new CatastrophicFailureException("Could not determine project dependency tree");
             }
@@ -196,7 +207,7 @@ class CMakeGenerator
         return orderedProjects.ToArray();
     }
 
-    static ProjectReference[] OrderProjectReferencesByDependencies(IEnumerable<ProjectReference> projectReferences, IEnumerable<ProjectInfo>? allProjects = null)
+    ProjectReference[] OrderProjectReferencesByDependencies(IEnumerable<ProjectReference> projectReferences, IEnumerable<ProjectInfo>? allProjects = null)
     {
         var orderedProjects = OrderProjectsByDependencies(allProjects ?? projectReferences.Select(pr => pr.ProjectFileInfo!));
 
