@@ -36,6 +36,8 @@ class CMakeGenerator
 
     static void GenerateCMake(object model, IEnumerable<ProjectInfo> allProjectInfos, string destinationPath, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
     {
+        Console.WriteLine($"Generating {destinationPath}");
+
         var scriptObject = new ScriptObject();
         scriptObject.Import(model);
         scriptObject.Import(settings);
@@ -54,12 +56,12 @@ class CMakeGenerator
 
         if (settings.DryRun)
         {
-            Console.WriteLine($"\nGenerated output for {destinationPath}\n");
+            Console.WriteLine($"Generated output for {destinationPath}:\n");
             Console.WriteLine(result);
+            Console.WriteLine();
         }
         else
-        {
-            Console.WriteLine($"Generating {destinationPath}");
+        {            
             File.WriteAllText(destinationPath, result);
         }
     }
