@@ -65,7 +65,7 @@ static class Program
                 {
                     if (logger != null)
                     {
-                        logger.LogCritical($"Error: {ex.Message}");
+                        logger.LogCritical(ex.Message);
                         logger.LogCritical("Aborting.");
                     }
                     else
