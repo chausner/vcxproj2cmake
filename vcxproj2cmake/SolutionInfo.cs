@@ -12,13 +12,19 @@ class SolutionInfo
         logger.LogInformation($"Parsing {solutionPath}");
 
         var projectPaths = new List<string>();
-        var regex = new Regex(@"Project\(.*?\) = .*?, ""(.*?\.vcxproj)""", RegexOptions.IgnoreCase);
+        var regex = new Regex(@"Project\(.*?\) = .*?, ""(.*?)""");
 
         foreach (var line in File.ReadLines(solutionPath))
         {
             var match = regex.Match(line);
-            if (match.Success)
-                projectPaths.Add(match.Groups[1].Value);
+            if (!match.Success)
+                continue;
+
+            var projectFilePath = match.Groups[1].Value;
+            if (projectFilePath.EndsWith(".vcxproj", StringComparison.OrdinalIgnoreCase))
+                projectPaths.Add(projectFilePath);
+            else
+                logger.LogWarning($"Ignoring non-vcxproj project: {projectFilePath}");
         }
 
         return new SolutionInfo
