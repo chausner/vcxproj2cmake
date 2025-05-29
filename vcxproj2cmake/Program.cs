@@ -191,6 +191,16 @@ static class Program
                 .Select(project => project.ProjectName + ".lib")
                 .ToArray();
 
+            foreach (var dependencyTarget in dependencyTargets)
+                if (projectInfo.Libraries.Common.Contains(dependencyTarget, StringComparer.OrdinalIgnoreCase) ||
+                    projectInfo.Libraries.Debug.Contains(dependencyTarget, StringComparer.OrdinalIgnoreCase) ||
+                    projectInfo.Libraries.Release.Contains(dependencyTarget, StringComparer.OrdinalIgnoreCase) ||
+                    projectInfo.Libraries.X86.Contains(dependencyTarget, StringComparer.OrdinalIgnoreCase) ||
+                    projectInfo.Libraries.X64.Contains(dependencyTarget, StringComparer.OrdinalIgnoreCase))
+                {
+                    logger!.LogInformation($"Removing explicit library dependency {dependencyTarget} from project {projectInfo.ProjectName} since LinkLibraryDependencies is enabled.");
+                }
+
             var filteredLibraries = projectInfo.Libraries.Map(libraries => libraries.Except(dependencyTargets, StringComparer.OrdinalIgnoreCase).ToArray());
 
             return new ProjectInfo
