@@ -15,7 +15,7 @@ endif()
 {{~ end -}}
 
 {{~ if qt_modules.size > 0 ~}}
-find_package(Qt5 REQUIRED COMPONENTS {{ qt_modules | array.map "cmake_component_name" | array.sort | array.join " " }})
+find_package(Qt{{ qt_version }} REQUIRED COMPONENTS {{ qt_modules | array.map "cmake_component_name" | array.sort | array.join " " }})
 {{~ end -}}
 {{~ for package in conan_packages ~}}
 find_package({{ package.cmake_config_name }} REQUIRED CONFIG)

@@ -25,6 +25,11 @@ static class Program
             ArgumentHelpName = "path" 
         };
 
+        var qtVersionOption = new Option<int?>(
+            name: "--qt-version",
+            description: "Set Qt version (required for Qt projects)")
+            .FromAmong("5", "6");
+
         var enableStandaloneProjectBuildsOption = new Option<bool>(
             name: "--enable-standalone-project-builds",
             description: "Generate necessary code to allow projects to be built standalone (not through the root CMakeLists.txt)");
@@ -42,6 +47,7 @@ static class Program
         var rootCommand = new RootCommand("Converts Microsoft Visual C++ projects and solutions to CMake");
         rootCommand.AddOption(projectsOption);
         rootCommand.AddOption(solutionOption);
+        rootCommand.AddOption(qtVersionOption);
         rootCommand.AddOption(enableStandaloneProjectBuildsOption);
         rootCommand.AddOption(dryRunOption);
         rootCommand.AddOption(logLevelOption);
@@ -54,7 +60,14 @@ static class Program
                 result.ErrorMessage = "Specify either --project or --solution, but not both.";
             }
         });
-        rootCommand.SetHandler(Run, projectsOption, solutionOption, enableStandaloneProjectBuildsOption, dryRunOption, logLevelOption);
+        rootCommand.SetHandler(
+            Run, 
+            projectsOption, 
+            solutionOption, 
+            qtVersionOption, 
+            enableStandaloneProjectBuildsOption, 
+            dryRunOption, 
+            logLevelOption);
 
         var parser = new CommandLineBuilder(rootCommand)
             .UseHelp()
@@ -87,7 +100,7 @@ static class Program
         return parser.Invoke(args);
     }
 
-    static void Run(List<string>? projects, string? solution, bool enableStandaloneProjectBuilds, bool dryRun, LogLevel logLevel)
+    static void Run(List<string>? projects, string? solution, int? qtVersion, bool enableStandaloneProjectBuilds, bool dryRun, LogLevel logLevel)
     {
         logger = CreateLogger(logLevel);
 
@@ -100,7 +113,7 @@ static class Program
         {
             foreach (var projectPath in projects!)
             {
-                projectInfos.Add(ProjectInfo.ParseProjectFile(projectPath, conanPackageInfoRepository, logger));
+                projectInfos.Add(ProjectInfo.ParseProjectFile(projectPath, qtVersion, conanPackageInfoRepository, logger));
             }
         }
         else if (solution != null)
@@ -113,7 +126,7 @@ static class Program
             foreach (var projectReference in solutionInfo.Projects)
             {
                 string absolutePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(solution)!, projectReference.Path));
-                projectReference.ProjectFileInfo = ProjectInfo.ParseProjectFile(absolutePath, conanPackageInfoRepository, logger);
+                projectReference.ProjectFileInfo = ProjectInfo.ParseProjectFile(absolutePath, qtVersion, conanPackageInfoRepository, logger);
                 projectInfos.Add(projectReference.ProjectFileInfo);
             }
         }
@@ -220,6 +233,7 @@ static class Program
                 ProjectReferences = projectInfo.ProjectReferences,
                 LinkerSubsystem = projectInfo.LinkerSubsystem,
                 LinkLibraryDependenciesEnabled = projectInfo.LinkLibraryDependenciesEnabled,
+                QtVersion = projectInfo.QtVersion,
                 RequiresMoc = projectInfo.RequiresMoc,
                 QtModules = projectInfo.QtModules,
                 ConanPackages = projectInfo.ConanPackages

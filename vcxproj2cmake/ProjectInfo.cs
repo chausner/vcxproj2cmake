@@ -19,11 +19,12 @@ class ProjectInfo
     public required ProjectReference[] ProjectReferences { get; init; }
     public required string? LinkerSubsystem { get; init; }
     public required bool LinkLibraryDependenciesEnabled { get; init; }
+    public required int? QtVersion { get; init; }
     public required bool RequiresMoc { get; init; }
     public required QtModule[] QtModules { get; init; }
     public required ConanPackage[] ConanPackages { get; init; }
 
-    public static ProjectInfo ParseProjectFile(string projectPath, ConanPackageInfoRepository conanPackageInfoRepository, ILogger logger)
+    public static ProjectInfo ParseProjectFile(string projectPath, int? qtVersion, ConanPackageInfoRepository conanPackageInfoRepository, ILogger logger)
     {
         logger.LogInformation($"Parsing {projectPath}");
 
@@ -80,6 +81,9 @@ class ProjectInfo
                 .SingleOrDefaultWithException(string.Empty,
                     () => throw new CatastrophicFailureException("Qt modules are inconsistent between configurations"))
                 .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        if (qtModules.Any() && qtVersion == null)
+            throw new CatastrophicFailureException("Project uses Qt but no Qt version is set. Specify the version with --qt-version.");
 
         var imports =
             projectElement
@@ -295,8 +299,9 @@ class ProjectInfo
             ProjectReferences = projectReferences.Select(pr => new ProjectReference { Path = pr }).ToArray(),
             LinkerSubsystem = linkerSubsystem,
             LinkLibraryDependenciesEnabled = linkLibraryDependenciesEnabled,
+            QtVersion = qtVersion,
             RequiresMoc = requiresMoc,
-            QtModules = qtModules.Select(module => QtModuleInfoRepository.GetQtModuleInfo(module)).ToArray(),
+            QtModules = qtModules.Select(module => QtModuleInfoRepository.GetQtModuleInfo(module, qtVersion!.Value)).ToArray(),
             ConanPackages = conanPackages
         };
     }
