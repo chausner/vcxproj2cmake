@@ -36,4 +36,16 @@ class SolutionInfo
             Projects = projectPaths.Select(p => new ProjectReference { Path = p }).ToArray()
         };
     }
+
+    public bool SolutionIsTopLevel
+    {
+        get
+        {
+            var solutionDir = Path.GetFullPath(Path.GetDirectoryName(AbsoluteSolutionPath)!);
+
+            return Projects.All(project =>
+                !Path.IsPathFullyQualified(project.Path) && 
+                Path.GetFullPath(Path.Combine(solutionDir, project.Path)).StartsWith(solutionDir, StringComparison.OrdinalIgnoreCase));
+        }
+    }
 }
