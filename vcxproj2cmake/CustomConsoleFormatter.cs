@@ -2,6 +2,8 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
 
+namespace vcxproj2cmake;
+
 public class CustomConsoleFormatter : ConsoleFormatter
 {
     public CustomConsoleFormatter() : base(nameof(CustomConsoleFormatter)) { }

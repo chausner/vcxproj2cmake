@@ -2,6 +2,8 @@
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
+namespace vcxproj2cmake;
+
 class ProjectInfo
 {
     public required string AbsoluteProjectPath { get; init; }

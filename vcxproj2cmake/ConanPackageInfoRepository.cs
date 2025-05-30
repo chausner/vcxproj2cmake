@@ -1,5 +1,7 @@
 ﻿using System.Reflection;
 
+namespace vcxproj2cmake;
+
 record ConanPackage(string PackageName, string CMakeConfigName, string CMakeTargetName);
 
 internal class ConanPackageInfoRepository

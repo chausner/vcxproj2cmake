@@ -1,4 +1,6 @@
-﻿record QtModule(string ModuleName, string CMakeComponentName, string CMakeTargetName);
+﻿namespace vcxproj2cmake;
+
+record QtModule(string ModuleName, string CMakeComponentName, string CMakeTargetName);
 
 class QtModuleInfoRepository
 {

@@ -4,6 +4,8 @@ using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
 
+namespace vcxproj2cmake;
+
 static class Program
 {
     static ILogger? logger;

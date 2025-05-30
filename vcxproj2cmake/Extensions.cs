@@ -1,3 +1,5 @@
+namespace vcxproj2cmake;
+
 static class ConfigDependentSettingExtensions
 {
     public static ConfigDependentSetting Map(this ConfigDependentSetting self, Func<string?, string?> mapper)

@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 
+namespace vcxproj2cmake;
+
 class SolutionInfo
 {
     public required string AbsoluteSolutionPath { get; init; }

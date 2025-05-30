@@ -5,6 +5,8 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
+namespace vcxproj2cmake;
+
 class CMakeGenerator
 {
     ILogger logger;
