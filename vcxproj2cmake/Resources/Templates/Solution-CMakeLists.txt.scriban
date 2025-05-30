@@ -4,7 +4,7 @@ project({{ solution_name }})
 {{~ for project in projects | order_project_references_by_dependencies ~}}
 add_subdirectory({{ project.path | get_directory_name | normalize_path }}
 {{- if !solution_is_top_level ~}}
- "${CMAKE_BINARY_DIR}/_deps/{{ project.project_file_info.unique_name }}-build"
+ "${CMAKE_BINARY_DIR}/{{ project.project_file_info.unique_name }}"
 {{- end -}}
 )
 {{~ end ~}}
