@@ -35,8 +35,18 @@ add_library({{ project_name }} SHARED
     {{~ end ~}}
 )
 
-{{~ if requires_moc ~}}
-set_target_properties({{ project_name }} PROPERTIES AUTOMOC ON)
+{{~ if requires_qt_moc || requires_qt_uic || requires_qt_rcc ~}}
+set_target_properties({{ project_name }} PROPERTIES
+{{~ if requires_qt_moc ~}}
+    AUTOMOC ON
+{{~ end ~}}
+{{~ if requires_qt_uic ~}}
+    AUTOUIC ON
+{{~ end ~}}
+{{~ if requires_qt_rcc ~}}
+    AUTORCC ON
+{{~ end ~}}
+)
 
 {{~ end -}}
 

@@ -22,7 +22,9 @@ class ProjectInfo
     public required string? LinkerSubsystem { get; init; }
     public required bool LinkLibraryDependenciesEnabled { get; init; }
     public required int? QtVersion { get; init; }
-    public required bool RequiresMoc { get; init; }
+    public required bool RequiresQtMoc { get; init; }
+    public required bool RequiresQtUic { get; init; }
+    public required bool RequiresQtRcc { get; init; }
     public required QtModule[] QtModules { get; init; }
     public required ConanPackage[] ConanPackages { get; init; }
 
@@ -46,6 +48,8 @@ class ProjectInfo
         var projectReferenceXName = XName.Get("ProjectReference", msbuildNamespace);
         var linkLibraryDependenciesXName = XName.Get("LinkLibraryDependencies", msbuildNamespace);
         var qtMocXName = XName.Get("QtMoc", msbuildNamespace);
+        var qtUicXName = XName.Get("QtUic", msbuildNamespace);
+        var qtRccXName = XName.Get("QtRcc", msbuildNamespace);
 
         var doc = XDocument.Load(projectPath);
         var projectElement = doc.Element(projectXName)!;
@@ -70,7 +74,10 @@ class ProjectInfo
         var sourceFiles =
             projectElement
                 .Elements(itemGroupXName)
-                .SelectMany(group => group.Elements(clCompileXName))
+                .SelectMany(group => 
+                    group.Elements(clCompileXName)
+                    .Concat(group.Elements(qtUicXName))
+                    .Concat(group.Elements(qtRccXName)))
                 .Select(element => element.Attribute("Include")!.Value.Trim())
                 .ToList();
 
@@ -119,10 +126,22 @@ class ProjectInfo
                     () => throw new CatastrophicFailureException(
                         "LinkLibraryDependencies property is inconsistent between configurations"));
 
-        var requiresMoc =
+        var requiresQtMoc =
             projectElement
             .Elements(itemGroupXName)
             .SelectMany(group => group.Elements(qtMocXName))
+            .Any();
+
+        var requiresQtUic =
+            projectElement
+            .Elements(itemGroupXName)
+            .SelectMany(group => group.Elements(qtUicXName))
+            .Any();
+
+        var requiresQtRcc =
+            projectElement
+            .Elements(itemGroupXName)
+            .SelectMany(group => group.Elements(qtRccXName))
             .Any();
 
         Dictionary<string, Dictionary<string, string>> compilerSettings = [];
@@ -302,7 +321,9 @@ class ProjectInfo
             LinkerSubsystem = linkerSubsystem,
             LinkLibraryDependenciesEnabled = linkLibraryDependenciesEnabled,
             QtVersion = qtVersion,
-            RequiresMoc = requiresMoc,
+            RequiresQtMoc = requiresQtMoc,
+            RequiresQtUic = requiresQtUic,
+            RequiresQtRcc = requiresQtRcc,
             QtModules = qtModules.Select(module => QtModuleInfoRepository.GetQtModuleInfo(module, qtVersion!.Value)).ToArray(),
             ConanPackages = conanPackages
         };

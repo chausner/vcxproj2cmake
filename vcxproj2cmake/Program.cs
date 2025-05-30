@@ -236,7 +236,9 @@ static class Program
                 LinkerSubsystem = projectInfo.LinkerSubsystem,
                 LinkLibraryDependenciesEnabled = projectInfo.LinkLibraryDependenciesEnabled,
                 QtVersion = projectInfo.QtVersion,
-                RequiresMoc = projectInfo.RequiresMoc,
+                RequiresQtMoc = projectInfo.RequiresQtMoc,
+                RequiresQtUic = projectInfo.RequiresQtUic,
+                RequiresQtRcc = projectInfo.RequiresQtRcc,
                 QtModules = projectInfo.QtModules,
                 ConanPackages = projectInfo.ConanPackages
             };            
