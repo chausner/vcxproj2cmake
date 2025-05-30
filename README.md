@@ -80,3 +80,4 @@ as well as a top-level `CMakeLists.txt` file in the same directory as the `.sln`
 * Specify the `--enable-standalone-project-builds` option to include additional CMake commands in the generated project `CMakeLists.txt` files
   to allow configuring the projects directly instead of as part of the top-level solution `CMakeLists.txt`.
 * Specify the `--dry-run` option to have the generated CMake files printed to the console without writing them to disk.
+* If any of your projects use Qt, you must specify the `--qt-version` option to indicate the Qt version (5 or 6) used in the project.
