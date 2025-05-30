@@ -1,7 +1,8 @@
-﻿git clone https://github.com/conan-io/conan-center-index.git
-Set-Location conan-center-index
+﻿Push-Location Temp:
 
-Get-ChildItem -Recurse conanfile.py | foreach { 
+git clone https://github.com/conan-io/conan-center-index.git --depth 1
+
+Get-ChildItem conan-center-index -Filter conanfile.py -Recurse | foreach { 
     $packageName = $_.Directory.Parent.Name
     $content = Get-Content $_ -Raw
     
@@ -17,7 +18,15 @@ Get-ChildItem -Recurse conanfile.py | foreach {
         $cmakeFileName = $null
     }
 
+    if ($packageName -in "cmake_package","header_only") {
+        return
+    }
+
     if ($cmakeTargetName -or $cmakeFileName) { 
         "$packageName,$cmakeFileName,$cmakeTargetName"
     } 
-}
+} | Sort-Object -Stable -Unique -Property { $_ -split "," } | Out-File -FilePath $PSScriptRoot\..\vcxproj2cmake\Resources\conan-packages.csv -Encoding utf8
+
+Remove-Item -Recurse -Force conan-center-index
+
+Pop-Location

@@ -1,4 +1,4 @@
-﻿7bitconf,7bitConf,7bitConf::7bitConf
+7bitconf,7bitConf,7bitConf::7bitConf
 7bitdi,7bitDI,7bitDI::7bitDI
 abseil,absl,
 absent,absent,rvarago::absent
@@ -117,6 +117,7 @@ cpp-httplib,httplib,httplib::httplib
 cpp-jwt,cpp-jwt,cpp-jwt::cpp-jwt
 cpp-lazy,cpp-lazy,cpp-lazy::cpp-lazy
 cpp-peglib,peglib,peglib
+cpp-smtpclient-library,smtpclient,smtpclient::smtpclient
 cpp-sort,cpp-sort,cpp-sort::cpp-sort
 cpp-yyjson,cpp_yyjson,cpp_yyjson::cpp_yyjson
 cppdap,cppdap,cppdap::cppdap
@@ -244,6 +245,7 @@ glog,glog,glog::glog
 glslang,glslang,glslang::_glslang-do-not-use
 gm2calc,GM2Calc,GM2Calc::GM2Calc
 gnutls,GnuTLS,GnuTLS::GnuTLS
+graaf,graaflib,Graaf::Graaf
 greg7mdp-gtl,gtl,gtl::gtl
 grpc,gRPC,
 gsl,GSL,GSL::gsl
@@ -533,7 +535,7 @@ opus,Opus,Opus::opus
 orcania,Orcania,
 osqp,osqp,osqp::osqp
 ouster_sdk,OusterSDK,OusterSDK::OusterSDK
-pagmo2,pagmo,Pagmo::pagmo
+pagmo2,Pagmo,Pagmo::pagmo
 paho-mqtt-c,eclipse-paho-mqtt-c,
 paho-mqtt-cpp,PahoMqttCpp,
 parallel-hashmap,phmap,phmap
@@ -552,6 +554,7 @@ pistache,Pistache,Pistache::Pistache
 platform.interfaces,Platform.Interfaces,Platform.Interfaces::Platform.Interfaces
 platformfolders,platform_folders,sago::platform_folders
 playrho,PlayRho,PlayRho::PlayRho
+pmp,pmp,pmp::pmp
 poco,Poco,Poco::Poco
 polymorphic_value,polymorphic_value,
 poselib,PoseLib,PoseLib::PoseLib
@@ -649,6 +652,7 @@ spscqueue,SPSCQueue,SPSCQueue::SPSCQueue
 sqlite_orm,SqliteOrm,sqlite_orm::sqlite_orm
 sqlite3,SQLite3,SQLite::SQLite3
 sqlitecpp,SQLiteCpp,SQLiteCpp
+sqlitemap,sqlitemap,sqlitemap::sqlitemap
 sqlpp11,Sqlpp11,sqlpp11::sqlpp11
 squirrel,squirrel,squirrel::squirel-all-do-not-use
 status-code,status-code,status-code::hl
