@@ -225,57 +225,69 @@ class ProjectInfo
 
         var includePaths = ConfigDependentMultiSetting.Parse(
             compilerSettings.GetValueOrDefault("AdditionalIncludeDirectories"),
+            "AdditionalIncludeDirectories",
             value => ParseList(value, ';', "%(AdditionalIncludeDirectories)"),
             logger);
 
         var linkerPaths = ConfigDependentMultiSetting.Parse(
-            linkerSettings.GetValueOrDefault("AdditionalLibraryDirectories"), 
+            linkerSettings.GetValueOrDefault("AdditionalLibraryDirectories"),
+            "AdditionalLibraryDirectories",
             value => ParseList(value, ';', "%(AdditionalLibraryDirectories)"),
             logger);
 
         var libraries = ConfigDependentMultiSetting.Parse(
-            linkerSettings.GetValueOrDefault("AdditionalDependencies"), 
+            linkerSettings.GetValueOrDefault("AdditionalDependencies"),
+            "AdditionalDependencies",
             value => ParseList(value, ';', "%(AdditionalDependencies)"),
             logger);
 
         var defines = ConfigDependentMultiSetting.Parse(
-            compilerSettings.GetValueOrDefault("PreprocessorDefinitions"), 
+            compilerSettings.GetValueOrDefault("PreprocessorDefinitions"),
+            "PreprocessorDefinitions",
             value => ParseList(value, ';', "%(PreprocessorDefinitions)"),
             logger);
 
         var options = ConfigDependentMultiSetting.Parse(
-            compilerSettings.GetValueOrDefault("AdditionalOptions"), 
+            compilerSettings.GetValueOrDefault("AdditionalOptions"),
+            "AdditionalOptions",
             value => ParseList(value, ' ', "%(AdditionalOptions)"),
             logger);
 
         var characterSet = ConfigDependentSetting.Parse(
             otherSettings.GetValueOrDefault("CharacterSet"),
+            "CharacterSet",
             logger);
 
         var disableSpecificWarnings = ConfigDependentMultiSetting.Parse(
             compilerSettings.GetValueOrDefault("DisableSpecificWarnings"),
+            "DisableSpecificWarnings",
             value => ParseList(value, ';', "%(DisableSpecificWarnings)"),
             logger);
 
         var treatSpecificWarningsAsErrors = ConfigDependentMultiSetting.Parse(
             compilerSettings.GetValueOrDefault("TreatSpecificWarningsAsErrors"),
+            "TreatSpecificWarningsAsErrors",
             value => ParseList(value, ';', "%(TreatSpecificWarningsAsErrors)"),
             logger);
 
         var treatWarningAsError = ConfigDependentSetting.Parse(
             compilerSettings.GetValueOrDefault("TreatWarningAsError"),
+            "TreatWarningAsError",
             logger);
 
         var warningLevel = ConfigDependentSetting.Parse(
             compilerSettings.GetValueOrDefault("WarningLevel"),
+            "WarningLevel",
             logger);
 
         var externalWarningLevel = ConfigDependentSetting.Parse(
             compilerSettings.GetValueOrDefault("ExternalWarningLevel"),
+            "ExternalWarningLevel",
             logger);
 
         var treatAngleIncludeAsExternal = ConfigDependentSetting.Parse(
             compilerSettings.GetValueOrDefault("TreatAngleIncludeAsExternal"),
+            "TreatAngleIncludeAsExternal",
             logger);
 
         var conanPackages =
@@ -461,7 +473,7 @@ record ConfigDependentSetting
         X64 = null
     };
 
-    public static ConfigDependentSetting Parse(Dictionary<string, string>? settings, ILogger logger)
+    public static ConfigDependentSetting Parse(Dictionary<string, string>? settings, string settingName, ILogger logger)
     {
         if (settings == null || settings.Count == 0)
             return Empty;
@@ -490,7 +502,7 @@ record ConfigDependentSetting
             .Except([result.Common, result.Debug, result.Release, result.X86, result.X64])
             .ToArray();
         if (skippedSettings.Length > 0)
-            logger.LogWarning($"Some settings were skipped: {string.Join(", ", skippedSettings)}");
+            logger.LogWarning($"The following values for setting {settingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings)}");
 
         return result;
     }
@@ -515,7 +527,7 @@ record ConfigDependentMultiSetting
         X64 = []
     };
 
-    public static ConfigDependentMultiSetting Parse(Dictionary<string, string>? settings, Func<string, string[]> parser, ILogger logger)
+    public static ConfigDependentMultiSetting Parse(Dictionary<string, string>? settings, string settingName, Func<string, string[]> parser, ILogger logger)
     {
         if (settings == null || settings.Count == 0)
             return Empty;
@@ -548,7 +560,7 @@ record ConfigDependentMultiSetting
             .Except([.. result.Common, .. result.Debug, .. result.Release, .. result.X86, .. result.X64])
             .ToArray();
         if (skippedSettings.Length > 0)
-            logger.LogWarning($"Some settings were skipped: {string.Join(", ", skippedSettings)}");
+            logger.LogWarning($"The following values for setting {settingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings)}");
 
         return result;
     }
