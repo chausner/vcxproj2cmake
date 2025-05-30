@@ -4,7 +4,7 @@ namespace vcxproj2cmake;
 
 record ConanPackage(string PackageName, string CMakeConfigName, string CMakeTargetName);
 
-internal class ConanPackageInfoRepository
+class ConanPackageInfoRepository
 {
     static readonly Dictionary<string, ConanPackage> conanPackageInfo = LoadConanPackageInfo();
 

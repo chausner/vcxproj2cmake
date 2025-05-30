@@ -148,7 +148,6 @@ static class TextWriterExtensions
             ConsoleColor.Magenta => "\x1B[1m\x1B[35m",
             ConsoleColor.Cyan => "\x1B[1m\x1B[36m",
             ConsoleColor.White => "\x1B[1m\x1B[37m",
-
             _ => DefaultForegroundColor
         };
 
@@ -163,7 +162,6 @@ static class TextWriterExtensions
             ConsoleColor.DarkMagenta => "\x1B[45m",
             ConsoleColor.DarkCyan => "\x1B[46m",
             ConsoleColor.Gray => "\x1B[47m",
-
             _ => DefaultBackgroundColor
         };
 }
