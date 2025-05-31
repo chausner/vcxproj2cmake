@@ -230,6 +230,7 @@ static class Program
                 Options = projectInfo.Options,
                 ProjectReferences = projectInfo.ProjectReferences,
                 LinkerSubsystem = projectInfo.LinkerSubsystem,
+                PublicIncludePaths = projectInfo.PublicIncludePaths,
                 LinkLibraryDependenciesEnabled = projectInfo.LinkLibraryDependenciesEnabled,
                 QtVersion = projectInfo.QtVersion,
                 RequiresQtMoc = projectInfo.RequiresQtMoc,

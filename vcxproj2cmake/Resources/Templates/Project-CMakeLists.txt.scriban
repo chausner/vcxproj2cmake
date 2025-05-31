@@ -64,35 +64,48 @@ target_compile_features({{ project_name }} PUBLIC {{ }}
 
 {{~ end -}}
 
+{{~ if !public_include_paths.is_empty || !include_paths.is_empty ~}}
+target_include_directories({{ project_name }}
+{{~ if !public_include_paths.is_empty ~}}
+    INTERFACE
+        {{~ for kvp in public_include_paths.values ~}}
+        {{~ for path in kvp.value ~}}
+        {{ string.replace kvp.key.cmake_expression "{0}" (path | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir) }}
+        {{~ end ~}}  
+        {{~ end ~}}  
+{{~ end ~}}
 {{~ if !include_paths.is_empty ~}}
-target_include_directories({{ project_name }} PUBLIC
-    {{~ for kvp in include_paths.values ~}}
-    {{~ for path in kvp.value ~}}
-    {{ string.replace kvp.key.cmake_expression "{0}" (path | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir) }}
-    {{~ end ~}}  
-    {{~ end ~}}  
+    PUBLIC
+        {{~ for kvp in include_paths.values ~}}
+        {{~ for path in kvp.value ~}}
+        {{ string.replace kvp.key.cmake_expression "{0}" (path | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir) }}
+        {{~ end ~}}  
+        {{~ end ~}}  
+{{~ end ~}}
 )
 
 {{~ end -}}
 
 {{~ if !defines.is_empty ~}}
-target_compile_definitions({{ project_name }} PUBLIC
-    {{~ for kvp in defines.values ~}}
-    {{~ for define in kvp.value ~}}
-    {{ string.replace kvp.key.cmake_expression "{0}" define }}
-    {{~ end ~}}
-    {{~ end ~}}     
+target_compile_definitions({{ project_name }}
+    PUBLIC
+        {{~ for kvp in defines.values ~}}
+        {{~ for define in kvp.value ~}}
+        {{ string.replace kvp.key.cmake_expression "{0}" define }}
+        {{~ end ~}}
+        {{~ end ~}}     
 )
 
 {{~ end -}}
 
 {{~ if !linker_paths.is_empty ~}}
-target_link_directories({{ project_name }} PUBLIC
-    {{~ for kvp in linker_paths.values ~}}
-    {{~ for path in kvp.value ~}}
-    {{ string.replace kvp.key.cmake_expression "{0}" (path | translate_msbuild_macros | normalize_path) }}
-    {{~ end ~}}  
-    {{~ end ~}}      
+target_link_directories({{ project_name }}
+    PUBLIC
+        {{~ for kvp in linker_paths.values ~}}
+        {{~ for path in kvp.value ~}}
+        {{ string.replace kvp.key.cmake_expression "{0}" (path | translate_msbuild_macros | normalize_path) }}
+        {{~ end ~}}  
+        {{~ end ~}}      
 )
 
 {{~ end -}}
@@ -108,36 +121,38 @@ target_link_directories({{ project_name }} PUBLIC
   end
 ~}}
 {{~ if !libraries.is_empty || link_library_dependencies_effective || qt_modules.size > 0 || conan_packages.size > 0 ~}}
-target_link_libraries({{ project_name }} PUBLIC
-    {{~ for kvp in libraries.values ~}}
-    {{~ for library in kvp.value ~}}
-    {{ string.replace kvp.key.cmake_expression "{0}" (library | translate_msbuild_macros | normalize_path) }}
-    {{~ end ~}}  
-    {{~ end ~}}     
-    {{~ if link_library_dependencies_enabled ~}}
-    {{~ for project in project_references | order_project_references_by_dependencies all_projects ~}}
-    {{~ if project.project_file_info.configuration_type == "StaticLibrary" || project.project_file_info.configuration_type == "DynamicLibrary" ~}}
-    {{ project.project_file_info.project_name }}
-    {{~ end ~}}
-    {{~ end ~}}
-    {{~ end ~}}
-    {{~ for qt_cmake_target in qt_modules | array.map "cmake_target_name" | array.sort ~}}
-    {{ qt_cmake_target }}
-    {{~ end ~}}
-    {{~ for conan_cmake_target in conan_packages | array.map "cmake_target_name" | array.sort ~}}
-    {{ conan_cmake_target }}
-    {{~ end ~}}
+target_link_libraries({{ project_name }}
+    PUBLIC
+        {{~ for kvp in libraries.values ~}}
+        {{~ for library in kvp.value ~}}
+        {{ string.replace kvp.key.cmake_expression "{0}" (library | translate_msbuild_macros | normalize_path) }}
+        {{~ end ~}}  
+        {{~ end ~}}     
+        {{~ if link_library_dependencies_enabled ~}}
+        {{~ for project in project_references | order_project_references_by_dependencies all_projects ~}}
+        {{~ if project.project_file_info.configuration_type == "StaticLibrary" || project.project_file_info.configuration_type == "DynamicLibrary" ~}}
+        {{ project.project_file_info.project_name }}
+        {{~ end ~}}
+        {{~ end ~}}
+        {{~ end ~}}
+        {{~ for qt_cmake_target in qt_modules | array.map "cmake_target_name" | array.sort ~}}
+        {{ qt_cmake_target }}
+        {{~ end ~}}
+        {{~ for conan_cmake_target in conan_packages | array.map "cmake_target_name" | array.sort ~}}
+        {{ conan_cmake_target }}
+        {{~ end ~}}
 )
 
 {{~ end -}}
 
 {{~ if !options.is_empty ~}}
-target_compile_options({{ project_name }} PUBLIC
-    {{~ for kvp in options.values ~}}
-    {{~ for option in kvp.value ~}}
-    {{ string.replace kvp.key.cmake_expression "{0}" option }}
-    {{~ end ~}}
-    {{~ end ~}}     
+target_compile_options({{ project_name }}
+    PUBLIC
+        {{~ for kvp in options.values ~}}
+        {{~ for option in kvp.value ~}}
+        {{ string.replace kvp.key.cmake_expression "{0}" option }}
+        {{~ end ~}}
+        {{~ end ~}}     
 )
 
 {{~ end -}}

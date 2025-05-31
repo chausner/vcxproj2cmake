@@ -20,6 +20,7 @@ class ProjectInfo
     public required ConfigDependentMultiSetting Options { get; init; }
     public required ProjectReference[] ProjectReferences { get; init; }
     public required string? LinkerSubsystem { get; init; }
+    public required ConfigDependentMultiSetting PublicIncludePaths { get; init; }
     public required bool LinkLibraryDependenciesEnabled { get; init; }
     public required int? QtVersion { get; init; }
     public required bool RequiresQtMoc { get; init; }
@@ -290,6 +291,17 @@ class ProjectInfo
             "TreatAngleIncludeAsExternal",
             logger);
 
+        var publicIncludePaths = ConfigDependentMultiSetting.Parse(
+            otherSettings.GetValueOrDefault("PublicIncludeDirectories"),
+            "PublicIncludeDirectories",
+            value => ParseList(value, ';', "%(PublicIncludeDirectories)"),
+            logger);
+
+        var allProjectIncludesArePublic = ConfigDependentSetting.Parse(
+            otherSettings.GetValueOrDefault("AllProjectIncludesArePublic"),
+            "AllProjectIncludesArePublic",
+            logger);
+
         var conanPackages =
             imports
                 .Select(import =>
@@ -315,6 +327,7 @@ class ProjectInfo
         options = ApplyWarningLevel(warningLevel, options);
         options = ApplyExternalWarningLevel(externalWarningLevel, options);
         options = ApplyTreatAngleIncludeAsExternal(treatAngleIncludeAsExternal, options);
+        publicIncludePaths = ApplyAllProjectIncludesArePublic(allProjectIncludesArePublic, publicIncludePaths);
 
         return new ProjectInfo
         {
@@ -331,6 +344,7 @@ class ProjectInfo
             Options = options,
             ProjectReferences = projectReferences.Select(pr => new ProjectReference { Path = pr }).ToArray(),
             LinkerSubsystem = linkerSubsystem,
+            PublicIncludePaths = publicIncludePaths,
             LinkLibraryDependenciesEnabled = linkLibraryDependenciesEnabled,
             QtVersion = qtVersion,
             RequiresQtMoc = requiresQtMoc,
@@ -437,6 +451,17 @@ class ProjectInfo
             _ => throw new CatastrophicFailureException($"Invalid value for TreatAngleIncludeAsExternal: {treatAsExternal}"),
         }, treatAngleIncludeAsExternal);
     }
+
+    static ConfigDependentMultiSetting ApplyAllProjectIncludesArePublic(ConfigDependentSetting allProjectIncludesArePublic, ConfigDependentMultiSetting publicIncludeDirectories)
+    {
+        return publicIncludeDirectories.Map((directories, allArePublic) => (allArePublic?.ToLowerInvariant()) switch
+        {
+            "true" => [.. directories, "$(ProjectDir)"],
+            "false" or "" or null => directories,
+            _ => throw new CatastrophicFailureException($"Invalid value for AllProjectIncludesArePublic: {allArePublic}"),
+        }, allProjectIncludesArePublic);
+    }
+
 
     public ISet<ProjectInfo> GetAllReferencedProjects(IEnumerable<ProjectInfo> allProjects)
     {
