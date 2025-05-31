@@ -14,13 +14,13 @@ class ProjectInfo
     public required string? LanguageStandard { get; init; }
     public required string[] SourceFiles { get; init; }
     public required ConfigDependentMultiSetting IncludePaths { get; init; }
+    public required ConfigDependentMultiSetting PublicIncludePaths { get; init; }
     public required ConfigDependentMultiSetting LinkerPaths { get; init; }
     public required ConfigDependentMultiSetting Libraries { get; init; }
     public required ConfigDependentMultiSetting Defines { get; init; }
     public required ConfigDependentMultiSetting Options { get; init; }
     public required ProjectReference[] ProjectReferences { get; init; }
     public required string? LinkerSubsystem { get; init; }
-    public required ConfigDependentMultiSetting PublicIncludePaths { get; init; }
     public required bool LinkLibraryDependenciesEnabled { get; init; }
     public required int? QtVersion { get; init; }
     public required bool RequiresQtMoc { get; init; }
@@ -34,23 +34,23 @@ class ProjectInfo
         logger.LogInformation($"Parsing {projectPath}");
 
         var msbuildNamespace = "http://schemas.microsoft.com/developer/msbuild/2003";
+        var clCompileXName = XName.Get("ClCompile", msbuildNamespace);
+        var configurationTypeXName = XName.Get("ConfigurationType", msbuildNamespace);
+        var importGroupXName = XName.Get("ImportGroup", msbuildNamespace);
+        var importXName = XName.Get("Import", msbuildNamespace);
+        var itemDefinitionGroupXName = XName.Get("ItemDefinitionGroup", msbuildNamespace);
+        var itemGroupXName = XName.Get("ItemGroup", msbuildNamespace);
+        var libXName = XName.Get("Lib", msbuildNamespace);
+        var linkLibraryDependenciesXName = XName.Get("LinkLibraryDependencies", msbuildNamespace);
+        var linkXName = XName.Get("Link", msbuildNamespace);
+        var projectConfigurationXName = XName.Get("ProjectConfiguration", msbuildNamespace);
+        var projectReferenceXName = XName.Get("ProjectReference", msbuildNamespace);
         var projectXName = XName.Get("Project", msbuildNamespace);
         var propertyGroupXName = XName.Get("PropertyGroup", msbuildNamespace);
-        var configurationTypeXName = XName.Get("ConfigurationType", msbuildNamespace);
-        var itemGroupXName = XName.Get("ItemGroup", msbuildNamespace);
-        var clCompileXName = XName.Get("ClCompile", msbuildNamespace);
-        var projectConfigurationXName = XName.Get("ProjectConfiguration", msbuildNamespace);
-        var itemDefinitionGroupXName = XName.Get("ItemDefinitionGroup", msbuildNamespace);
-        var linkXName = XName.Get("Link", msbuildNamespace);
-        var libXName = XName.Get("Lib", msbuildNamespace);
-        var qtModulesXName = XName.Get("QtModules", msbuildNamespace);
-        var importXName = XName.Get("Import", msbuildNamespace);
-        var importGroupXName = XName.Get("ImportGroup", msbuildNamespace);
-        var projectReferenceXName = XName.Get("ProjectReference", msbuildNamespace);
-        var linkLibraryDependenciesXName = XName.Get("LinkLibraryDependencies", msbuildNamespace);
         var qtMocXName = XName.Get("QtMoc", msbuildNamespace);
-        var qtUicXName = XName.Get("QtUic", msbuildNamespace);
+        var qtModulesXName = XName.Get("QtModules", msbuildNamespace);
         var qtRccXName = XName.Get("QtRcc", msbuildNamespace);
+        var qtUicXName = XName.Get("QtUic", msbuildNamespace);
 
         var doc = XDocument.Load(projectPath);
         var projectElement = doc.Element(projectXName)!;
@@ -224,27 +224,20 @@ class ProjectInfo
         if (languageStandard == null)
             logger.LogWarning("Language standard could not be determined.");
 
-        ConfigDependentSetting ParseSetting(string property, Dictionary<string, Dictionary<string, string>> settings)
-            => ConfigDependentSetting.Parse(settings.GetValueOrDefault(property), property, logger);
-
-        ConfigDependentMultiSetting ParseMultiSetting(string property, char separator, Dictionary<string, Dictionary<string, string>> settings)
-            => ConfigDependentMultiSetting.Parse(settings.GetValueOrDefault(property), property,
-                value => ParseList(value, separator, $"%({property})"), logger);
-
-        var includePaths = ParseMultiSetting("AdditionalIncludeDirectories", ';', compilerSettings);
-        var linkerPaths = ParseMultiSetting("AdditionalLibraryDirectories", ';', linkerSettings);
-        var libraries = ParseMultiSetting("AdditionalDependencies", ';', linkerSettings);
-        var defines = ParseMultiSetting("PreprocessorDefinitions", ';', compilerSettings);
-        var options = ParseMultiSetting("AdditionalOptions", ' ', compilerSettings);
-        var characterSet = ParseSetting("CharacterSet", otherSettings);
-        var disableSpecificWarnings = ParseMultiSetting("DisableSpecificWarnings", ';', compilerSettings);
-        var treatSpecificWarningsAsErrors = ParseMultiSetting("TreatSpecificWarningsAsErrors", ';', compilerSettings);
-        var treatWarningAsError = ParseSetting("TreatWarningAsError", compilerSettings);
-        var warningLevel = ParseSetting("WarningLevel", compilerSettings);
-        var externalWarningLevel = ParseSetting("ExternalWarningLevel", compilerSettings);
-        var treatAngleIncludeAsExternal = ParseSetting("TreatAngleIncludeAsExternal", compilerSettings);
-        var publicIncludePaths = ParseMultiSetting("PublicIncludeDirectories", ';', otherSettings);
-        var allProjectIncludesArePublic = ParseSetting("AllProjectIncludesArePublic", otherSettings);
+        var includePaths = ParseMultiSetting("AdditionalIncludeDirectories", ';', compilerSettings, logger);
+        var publicIncludePaths = ParseMultiSetting("PublicIncludeDirectories", ';', otherSettings, logger);
+        var linkerPaths = ParseMultiSetting("AdditionalLibraryDirectories", ';', linkerSettings, logger);
+        var libraries = ParseMultiSetting("AdditionalDependencies", ';', linkerSettings, logger);
+        var defines = ParseMultiSetting("PreprocessorDefinitions", ';', compilerSettings, logger);
+        var options = ParseMultiSetting("AdditionalOptions", ' ', compilerSettings, logger);
+        var characterSet = ParseSetting("CharacterSet", otherSettings, logger);
+        var disableSpecificWarnings = ParseMultiSetting("DisableSpecificWarnings", ';', compilerSettings, logger);
+        var treatSpecificWarningsAsErrors = ParseMultiSetting("TreatSpecificWarningsAsErrors", ';', compilerSettings, logger);
+        var treatWarningAsError = ParseSetting("TreatWarningAsError", compilerSettings, logger);
+        var warningLevel = ParseSetting("WarningLevel", compilerSettings, logger);
+        var externalWarningLevel = ParseSetting("ExternalWarningLevel", compilerSettings, logger);
+        var treatAngleIncludeAsExternal = ParseSetting("TreatAngleIncludeAsExternal", compilerSettings, logger);
+        var allProjectIncludesArePublic = ParseSetting("AllProjectIncludesArePublic", otherSettings, logger);
 
         var conanPackages =
             imports
@@ -264,6 +257,7 @@ class ProjectInfo
                     () => throw new CatastrophicFailureException(
                         "SubSystem property is inconsistent between configurations"));
 
+        publicIncludePaths = ApplyAllProjectIncludesArePublic(allProjectIncludesArePublic, publicIncludePaths);
         defines = ApplyCharacterSetSetting(characterSet, defines);
         options = ApplyDisableSpecificWarnings(disableSpecificWarnings, options);
         options = ApplyTreatSpecificWarningsAsErrors(treatSpecificWarningsAsErrors, options);
@@ -271,7 +265,6 @@ class ProjectInfo
         options = ApplyWarningLevel(warningLevel, options);
         options = ApplyExternalWarningLevel(externalWarningLevel, options);
         options = ApplyTreatAngleIncludeAsExternal(treatAngleIncludeAsExternal, options);
-        publicIncludePaths = ApplyAllProjectIncludesArePublic(allProjectIncludesArePublic, publicIncludePaths);
 
         return new ProjectInfo
         {
@@ -282,13 +275,13 @@ class ProjectInfo
             LanguageStandard = languageStandard,
             SourceFiles = sourceFiles.ToArray(),
             IncludePaths = includePaths,
+            PublicIncludePaths = publicIncludePaths,
             LinkerPaths = linkerPaths,
             Libraries = libraries,
             Defines = defines,
             Options = options,
             ProjectReferences = projectReferences.Select(pr => new ProjectReference { Path = pr }).ToArray(),
             LinkerSubsystem = linkerSubsystem,
-            PublicIncludePaths = publicIncludePaths,
             LinkLibraryDependenciesEnabled = linkLibraryDependenciesEnabled,
             QtVersion = qtVersion,
             RequiresQtMoc = requiresQtMoc,
@@ -299,18 +292,25 @@ class ProjectInfo
         };
     }
 
-    static string[] ParseList(string list, char separator, string placeholder)
+    private static ConfigDependentSetting ParseSetting(string property, Dictionary<string, Dictionary<string, string>> settings, ILogger logger)
     {
-        return list
+        return ConfigDependentSetting.Parse(settings.GetValueOrDefault(property), property, logger);
+    }
+    private static ConfigDependentMultiSetting ParseMultiSetting(string property, char separator, Dictionary<string, Dictionary<string, string>> settings, ILogger logger)
+    {
+        var parser = (string value) =>
+            value
             .Split(separator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Except([placeholder])
+            .Except([$"%({property})"])
             .Distinct()
             .ToArray();
+
+        return ConfigDependentMultiSetting.Parse(settings.GetValueOrDefault(property), property, parser, logger);
     }
 
     static string[] DetectLanguages(IEnumerable<string> sourceFiles, ILogger logger)
     {
-        List<string> result = new();
+        List<string> result = [];
 
         if (sourceFiles.Any(file => file.EndsWith(".c", StringComparison.OrdinalIgnoreCase)))
             result.Add("C");
@@ -405,7 +405,6 @@ class ProjectInfo
             _ => throw new CatastrophicFailureException($"Invalid value for AllProjectIncludesArePublic: {allArePublic}"),
         }, allProjectIncludesArePublic);
     }
-
 
     public ISet<ProjectInfo> GetAllReferencedProjects(IEnumerable<ProjectInfo> allProjects)
     {

@@ -32,7 +32,7 @@ class CMakeGenerator
 
     static void ValidateFolders(SolutionInfo? solutionInfo, IEnumerable<ProjectInfo> projectInfos)
     {
-        HashSet<string> folders = new();
+        HashSet<string> folders = [];
 
         foreach (var projectInfo in projectInfos)
         {
@@ -168,7 +168,7 @@ class CMakeGenerator
 
     ProjectInfo[] OrderProjectsByDependencies(IEnumerable<ProjectInfo> projects)
     {
-        List<ProjectInfo> orderedProjects = new();
+        List<ProjectInfo> orderedProjects = [];
         List<ProjectInfo> unorderedProjects = new(projects);
 
         while (unorderedProjects.Count > 0)

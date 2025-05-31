@@ -75,28 +75,7 @@ static class Program
             .UseHelp()
             .UseTypoCorrections()
             .UseParseErrorReporting()
-            .UseExceptionHandler((ex, context) => {
-                if (ex is CatastrophicFailureException)
-                {
-                    if (logger != null)
-                    {
-                        logger.LogCritical(ex.Message);
-                        logger.LogCritical("Aborting.");
-                    }
-                    else
-                    {
-                        Console.Error.WriteLine($"Error: {ex.Message}");
-                        Console.Error.WriteLine("Aborting.");
-                    }
-                }
-                else
-                {
-                    if (logger != null)
-                        logger.LogCritical(ex, "Unexpected error");
-                    else
-                        Console.Error.WriteLine($"Unexpected error: {ex}");
-                }
-            })
+            .UseExceptionHandler((ex, context) => HandleException(ex))
             .Build();
 
         return parser.Invoke(args);
@@ -109,7 +88,7 @@ static class Program
         var conanPackageInfoRepository = new ConanPackageInfoRepository();
 
         SolutionInfo? solutionInfo = null;
-        List<ProjectInfo> projectInfos = new();
+        List<ProjectInfo> projectInfos = [];
         
         if (projects != null && projects.Any())
         {
@@ -224,13 +203,13 @@ static class Program
                 LanguageStandard = projectInfo.LanguageStandard,
                 SourceFiles = projectInfo.SourceFiles,
                 IncludePaths = projectInfo.IncludePaths,
+                PublicIncludePaths = projectInfo.PublicIncludePaths,
                 LinkerPaths = projectInfo.LinkerPaths,
                 Libraries = filteredLibraries,
                 Defines = projectInfo.Defines,
                 Options = projectInfo.Options,
                 ProjectReferences = projectInfo.ProjectReferences,
                 LinkerSubsystem = projectInfo.LinkerSubsystem,
-                PublicIncludePaths = projectInfo.PublicIncludePaths,
                 LinkLibraryDependenciesEnabled = projectInfo.LinkLibraryDependenciesEnabled,
                 QtVersion = projectInfo.QtVersion,
                 RequiresQtMoc = projectInfo.RequiresQtMoc,
@@ -240,6 +219,30 @@ static class Program
                 ConanPackages = projectInfo.ConanPackages
             };            
         }).ToList();
+    }
+
+    static void HandleException(Exception ex)
+    {
+        if (ex is CatastrophicFailureException)
+        {
+            if (logger != null)
+            {
+                logger.LogCritical(ex.Message);
+                logger.LogCritical("Aborting.");
+            }
+            else
+            {
+                Console.Error.WriteLine($"Error: {ex.Message}");
+                Console.Error.WriteLine("Aborting.");
+            }
+        }
+        else
+        {
+            if (logger != null)
+                logger.LogCritical(ex, "Unexpected error");
+            else
+                Console.Error.WriteLine($"Unexpected error: {ex}");
+        }
     }
 }
 
