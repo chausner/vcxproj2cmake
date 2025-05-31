@@ -6,70 +6,106 @@ static class ConfigDependentSettingExtensions
     {
         return new ConfigDependentSetting
         {
-            Common = mapper(self.Common),
-            Debug = mapper(self.Debug),
-            Release = mapper(self.Release),
-            X86 = mapper(self.X86),
-            X64 = mapper(self.X64)
+            Values = self.Values.SelectMany(kvp =>
+            {
+                var (config, value) = kvp;
+                var mappedValue = mapper(value);
+                if (mappedValue != null)
+                    return new[] { new KeyValuePair<Config, string>(config, mappedValue) };
+                else
+                    return [];
+            }).ToOrderedDictionary()
         };
     }
 
     public static ConfigDependentSetting Map(this ConfigDependentSetting self, Func<string?, string?, string?> mapper, ConfigDependentSetting setting)
     {
+        var configs = self.Values.Keys.Concat(setting.Values.Keys).Distinct().OrderBy(c => Array.IndexOf(Config.Configs, c));
+
         return new ConfigDependentSetting
         {
-            Common = mapper(self.Common, setting.Common),
-            Debug = mapper(self.Debug, setting.Debug),
-            Release = mapper(self.Release, setting.Release),
-            X86 = mapper(self.X86, setting.X86),
-            X64 = mapper(self.X64, setting.X64)
+            Values = configs.SelectMany(config =>
+            {
+                var value1 = self.Values.GetValueOrDefault(config);
+                var value2 = setting.Values.GetValueOrDefault(config);
+                var mappedValue = mapper(value1, value2);
+                if (mappedValue != null)
+                    return new[] { new KeyValuePair<Config, string>(config, mappedValue) };
+                else
+                    return [];
+            }).ToOrderedDictionary()
         };
     }
 
     public static ConfigDependentSetting Map(this ConfigDependentSetting self, Func<string?, string[], string?> mapper, ConfigDependentMultiSetting setting)
     {
+        var configs = self.Values.Keys.Concat(setting.Values.Keys).Distinct().OrderBy(c => Array.IndexOf(Config.Configs, c));
+
         return new ConfigDependentSetting
         {
-            Common = mapper(self.Common, setting.Common),
-            Debug = mapper(self.Debug, setting.Debug),
-            Release = mapper(self.Release, setting.Release),
-            X86 = mapper(self.X86, setting.X86),
-            X64 = mapper(self.X64, setting.X64)
+            Values = configs.SelectMany(config =>
+            {
+                var value1 = self.Values.GetValueOrDefault(config);
+                var value2 = setting.Values.GetValueOrDefault(config, []);
+                var mappedValue = mapper(value1, value2);
+                if (mappedValue != null)
+                    return new[] { new KeyValuePair<Config, string>(config, mappedValue) };
+                else
+                    return [];
+            }).ToOrderedDictionary()
         };
     }
     public static ConfigDependentMultiSetting Map(this ConfigDependentMultiSetting self, Func<string[], string[]> mapper)
     {
         return new ConfigDependentMultiSetting
         {
-            Common = mapper(self.Common),
-            Debug = mapper(self.Debug),
-            Release = mapper(self.Release),
-            X86 = mapper(self.X86),
-            X64 = mapper(self.X64)
+            Values = self.Values.SelectMany(kvp =>
+            {
+                var (config, value) = kvp;
+                var mappedValue = mapper(value);
+                if (mappedValue != null)
+                    return new[] { new KeyValuePair<Config, string[]>(config, mappedValue) };
+                else
+                    return [];
+            }).ToOrderedDictionary()
         };
     }
 
     public static ConfigDependentMultiSetting Map(this ConfigDependentMultiSetting self, Func<string[], string?, string[]> mapper, ConfigDependentSetting setting)
     {
+        var configs = self.Values.Keys.Concat(setting.Values.Keys).Distinct().OrderBy(c => Array.IndexOf(Config.Configs, c));
+
         return new ConfigDependentMultiSetting
         {
-            Common = mapper(self.Common, setting.Common),
-            Debug = mapper(self.Debug, setting.Debug),
-            Release = mapper(self.Release, setting.Release),
-            X86 = mapper(self.X86, setting.X86),
-            X64 = mapper(self.X64, setting.X64)
+            Values = configs.SelectMany(config =>
+            {
+                var value1 = self.Values.GetValueOrDefault(config, []);
+                var value2 = setting.Values.GetValueOrDefault(config);
+                var mappedValue = mapper(value1, value2);
+                if (mappedValue != null)
+                    return new[] { new KeyValuePair<Config, string[]>(config, mappedValue) };
+                else
+                    return [];
+            }).ToOrderedDictionary()
         };
     }
 
     public static ConfigDependentMultiSetting Map(this ConfigDependentMultiSetting self, Func<string[], string[], string[]> mapper, ConfigDependentMultiSetting setting)
     {
+        var configs = self.Values.Keys.Concat(setting.Values.Keys).Distinct().OrderBy(c => Array.IndexOf(Config.Configs, c));
+
         return new ConfigDependentMultiSetting
         {
-            Common = mapper(self.Common, setting.Common),
-            Debug = mapper(self.Debug, setting.Debug),
-            Release = mapper(self.Release, setting.Release),
-            X86 = mapper(self.X86, setting.X86),
-            X64 = mapper(self.X64, setting.X64)
+            Values = configs.SelectMany(config =>
+            {
+                var value1 = self.Values.GetValueOrDefault(config, []);
+                var value2 = setting.Values.GetValueOrDefault(config, []);
+                var mappedValue = mapper(value1, value2);
+                if (mappedValue != null)
+                    return new[] { new KeyValuePair<Config, string[]>(config, mappedValue) };
+                else
+                    return [];
+            }).ToOrderedDictionary()
         };
     }
 }
@@ -98,6 +134,16 @@ static class EnumerableExtensions
         {
             throw exception();
         }
+    }
+
+    public static OrderedDictionary<TKey, TValue> ToOrderedDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source) where TKey : notnull
+    {
+        OrderedDictionary<TKey, TValue> dictionary = [];
+
+        foreach (var kvp in source)
+            dictionary[kvp.Key] = kvp.Value;
+
+        return dictionary;
     }
 }
 

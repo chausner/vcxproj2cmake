@@ -150,7 +150,7 @@ class ProjectInfo
 
         foreach (var projectConfig in projectConfigurations)
         {
-            if (!Regex.IsMatch(projectConfig, @"(Debug|Release)\|(Win32|x86|x64)"))
+            if (!Config.IsMSBuildProjectConfigNameSupported(projectConfig))
             {
                 logger.LogWarning($"Skipping unsupported project configuration: {projectConfig}");
                 continue;
@@ -454,118 +454,6 @@ class ProjectInfo
 
         return referencedProjects;
     }
-}
-
-record ConfigDependentSetting
-{
-    public required string? Common { get; init; }
-    public required string? Debug { get; init; }
-    public required string? Release { get; init; }
-    public required string? X86 { get; init; }
-    public required string? X64 { get; init; }
-
-    public static readonly ConfigDependentSetting Empty = new()
-    {
-        Common = null,
-        Debug = null,
-        Release = null,
-        X86 = null,
-        X64 = null
-    };
-
-    public static ConfigDependentSetting Parse(Dictionary<string, string>? settings, string settingName, ILogger logger)
-    {
-        if (settings == null || settings.Count == 0)
-            return Empty;
-
-        var allSettingValues = settings.Values.Distinct().ToArray();
-
-        var commonSettingValue = allSettingValues.FirstOrDefault(s => settings.All(kvp => kvp.Value == s));
-
-        string? FilterValues(Func<string, bool> selector)
-        {
-            return allSettingValues
-                .Where(s => settings.All(kvp => selector(kvp.Key) == (kvp.Value == s)))
-                .FirstOrDefault(s => s != commonSettingValue);
-        }
-
-        var result = new ConfigDependentSetting
-        {
-            Common = commonSettingValue,
-            Debug = FilterValues(config => config.StartsWith("Debug|")),
-            Release = FilterValues(config => config.StartsWith("Release|")),
-            X86 = FilterValues(config => config.EndsWith("|Win32") || config.EndsWith("|x86")),
-            X64 = FilterValues(config => config.EndsWith("|x64"))
-        };
-
-        var skippedSettings = settings.Values
-            .Except([result.Common, result.Debug, result.Release, result.X86, result.X64])
-            .ToArray();
-        if (skippedSettings.Length > 0)
-            logger.LogWarning($"The following values for setting {settingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings)}");
-
-        return result;
-    }
-
-    public bool IsEmpty => Common == null && Debug == null && Release == null && X86 == null && X64 == null;
-}
-
-record ConfigDependentMultiSetting
-{
-    public required string[] Common { get; init; }
-    public required string[] Debug { get; init; }
-    public required string[] Release { get; init; }
-    public required string[] X86 { get; init; }
-    public required string[] X64 { get; init; }
-
-    public static readonly ConfigDependentMultiSetting Empty = new()
-    {
-        Common = [],
-        Debug = [],
-        Release = [],
-        X86 = [],
-        X64 = []
-    };
-
-    public static ConfigDependentMultiSetting Parse(Dictionary<string, string>? settings, string settingName, Func<string, string[]> parser, ILogger logger)
-    {
-        if (settings == null || settings.Count == 0)
-            return Empty;
-
-        var parsedSettings = settings.ToDictionary(kvp => kvp.Key, kvp => parser(kvp.Value));
-
-        var allSettingValues = parsedSettings.Values.SelectMany(s => s).Distinct().ToArray();
-
-        var commonSettingValues = allSettingValues.Where(s => parsedSettings.All(kvp => kvp.Value.Contains(s))).ToArray();
-
-        string[] FilterValues(Func<string, bool> selector)
-        {
-            return allSettingValues
-                .Where(s => parsedSettings.All(kvp => selector(kvp.Key) == kvp.Value.Contains(s)))
-                .Except(commonSettingValues)
-                .ToArray();
-        }
-
-        var result = new ConfigDependentMultiSetting
-        {
-            Common = commonSettingValues,
-            Debug = FilterValues(config => config.StartsWith("Debug|")),
-            Release = FilterValues(config => config.StartsWith("Release|")),
-            X86 = FilterValues(config => config.EndsWith("|Win32") || config.EndsWith("|x86")),
-            X64 = FilterValues(config => config.EndsWith("|x64"))
-        };
-
-        var skippedSettings = parsedSettings.Values
-            .SelectMany(s => s)
-            .Except([.. result.Common, .. result.Debug, .. result.Release, .. result.X86, .. result.X64])
-            .ToArray();
-        if (skippedSettings.Length > 0)
-            logger.LogWarning($"The following values for setting {settingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings)}");
-
-        return result;
-    }
-
-    public bool IsEmpty => !Enumerable.Any([.. Common, .. Debug, .. Release, .. X86, .. X64]);
 }
 
 class ProjectReference

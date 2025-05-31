@@ -66,63 +66,33 @@ target_compile_features({{ project_name }} PUBLIC {{ }}
 
 {{~ if !include_paths.is_empty ~}}
 target_include_directories({{ project_name }} PUBLIC
-    {{~ for path in include_paths.common ~}}
-    {{ path | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir }}
-    {{~ end ~}}
-    {{~ for path in include_paths.debug ~}}
-    $<$<CONFIG:Debug>:{{ path | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir }}>
-    {{~ end ~}}
-    {{~ for path in include_paths.release ~}}
-    $<$<CONFIG:Release>:{{ path | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir }}>
-    {{~ end ~}}
-    {{~ for path in include_paths.x86 ~}}
-    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x86>:{{ path | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir }}>
-    {{~ end ~}}
-    {{~ for path in include_paths.x64 ~}}
-    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{{ path | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir }}>
-    {{~ end ~}}
+    {{~ for kvp in include_paths.values ~}}
+    {{~ for path in kvp.value ~}}
+    {{ string.replace kvp.key.cmake_expression "{0}" (path | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir) }}
+    {{~ end ~}}  
+    {{~ end ~}}  
 )
 
 {{~ end -}}
 
 {{~ if !defines.is_empty ~}}
 target_compile_definitions({{ project_name }} PUBLIC
-    {{~ for define in defines.common ~}}
-    {{ define }}
+    {{~ for kvp in defines.values ~}}
+    {{~ for define in kvp.value ~}}
+    {{ string.replace kvp.key.cmake_expression "{0}" define }}
     {{~ end ~}}
-    {{~ for define in defines.debug ~}}
-    $<$<CONFIG:Debug>:{{ define }}>
-    {{~ end ~}}
-    {{~ for define in defines.release ~}}
-    $<$<CONFIG:Release>:{{ define }}>
-    {{~ end ~}}
-    {{~ for define in defines.x86 ~}}
-    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x86>:{{ define }}>
-    {{~ end ~}}
-    {{~ for define in defines.x64 ~}}
-    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{{ define }}>
-    {{~ end ~}}
+    {{~ end ~}}     
 )
 
 {{~ end -}}
 
 {{~ if !linker_paths.is_empty ~}}
 target_link_directories({{ project_name }} PUBLIC
-    {{~ for path in linker_paths.common ~}}
-    {{ path | translate_msbuild_macros | normalize_path }}
-    {{~ end ~}}
-    {{~ for path in linker_paths.debug ~}}
-    $<$<CONFIG:Debug>:{{ path | translate_msbuild_macros | normalize_path }}>
-    {{~ end ~}}
-    {{~ for path in linker_paths.release ~}}
-    $<$<CONFIG:Release>:{{ path | translate_msbuild_macros | normalize_path }}>
-    {{~ end ~}}
-    {{~ for path in linker_paths.x86 ~}}
-    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x86>:{{ path | translate_msbuild_macros | normalize_path }}>
-    {{~ end ~}}
-    {{~ for path in linker_paths.x64 ~}}
-    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{{ path | translate_msbuild_macros | normalize_path }}>
-    {{~ end ~}}
+    {{~ for kvp in linker_paths.values ~}}
+    {{~ for path in kvp.value ~}}
+    {{ string.replace kvp.key.cmake_expression "{0}" (path | translate_msbuild_macros | normalize_path) }}
+    {{~ end ~}}  
+    {{~ end ~}}      
 )
 
 {{~ end -}}
@@ -139,21 +109,11 @@ target_link_directories({{ project_name }} PUBLIC
 ~}}
 {{~ if !libraries.is_empty || link_library_dependencies_effective || qt_modules.size > 0 || conan_packages.size > 0 ~}}
 target_link_libraries({{ project_name }} PUBLIC
-    {{~ for library in libraries.common ~}}
-    {{ library | translate_msbuild_macros | normalize_path }}
-    {{~ end ~}}
-    {{~ for library in libraries.debug ~}}
-    $<$<CONFIG:Debug>:{{ library | translate_msbuild_macros | normalize_path }}>
-    {{~ end ~}}
-    {{~ for library in libraries.release ~}}
-    $<$<CONFIG:Release>:{{ library | translate_msbuild_macros | normalize_path }}>
-    {{~ end ~}}
-    {{~ for library in libraries.x86 ~}}
-    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x86>:{{ library | translate_msbuild_macros | normalize_path }}>
-    {{~ end ~}}
-    {{~ for library in libraries.x64 ~}}
-    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{{ library | translate_msbuild_macros | normalize_path }}>
-    {{~ end ~}}
+    {{~ for kvp in libraries.values ~}}
+    {{~ for library in kvp.value ~}}
+    {{ string.replace kvp.key.cmake_expression "{0}" (library | translate_msbuild_macros | normalize_path) }}
+    {{~ end ~}}  
+    {{~ end ~}}     
     {{~ if link_library_dependencies_enabled ~}}
     {{~ for project in project_references | order_project_references_by_dependencies all_projects ~}}
     {{~ if project.project_file_info.configuration_type == "StaticLibrary" || project.project_file_info.configuration_type == "DynamicLibrary" ~}}
@@ -173,21 +133,11 @@ target_link_libraries({{ project_name }} PUBLIC
 
 {{~ if !options.is_empty ~}}
 target_compile_options({{ project_name }} PUBLIC
-    {{~ for option in options.common ~}}
-    {{ option }}
+    {{~ for kvp in options.values ~}}
+    {{~ for option in kvp.value ~}}
+    {{ string.replace kvp.key.cmake_expression "{0}" option }}
     {{~ end ~}}
-    {{~ for option in options.debug ~}}
-    $<$<CONFIG:Debug>:{{ option }}>
-    {{~ end ~}}
-    {{~ for option in options.release ~}}
-    $<$<CONFIG:Release>:{{ option }}>
-    {{~ end ~}}
-    {{~ for option in options.x86 ~}}
-    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x86>:{{ option }}>
-    {{~ end ~}}
-    {{~ for option in options.x64 ~}}
-    $<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{{ option }}>
-    {{~ end ~}}
+    {{~ end ~}}     
 )
 
 {{~ end -}}

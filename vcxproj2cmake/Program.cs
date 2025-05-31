@@ -207,11 +207,7 @@ static class Program
                 .ToArray();
 
             foreach (var dependencyTarget in dependencyTargets)
-                if (projectInfo.Libraries.Common.Contains(dependencyTarget, StringComparer.OrdinalIgnoreCase) ||
-                    projectInfo.Libraries.Debug.Contains(dependencyTarget, StringComparer.OrdinalIgnoreCase) ||
-                    projectInfo.Libraries.Release.Contains(dependencyTarget, StringComparer.OrdinalIgnoreCase) ||
-                    projectInfo.Libraries.X86.Contains(dependencyTarget, StringComparer.OrdinalIgnoreCase) ||
-                    projectInfo.Libraries.X64.Contains(dependencyTarget, StringComparer.OrdinalIgnoreCase))
+                if (projectInfo.Libraries.Values.Values.SelectMany(s => s).Contains(dependencyTarget, StringComparer.OrdinalIgnoreCase))
                 {
                     logger!.LogInformation($"Removing explicit library dependency {dependencyTarget} from project {projectInfo.ProjectName} since LinkLibraryDependencies is enabled.");
                 }
