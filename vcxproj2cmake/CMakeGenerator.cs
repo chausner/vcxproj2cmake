@@ -52,7 +52,7 @@ class CMakeGenerator
         var scriptObject = new ScriptObject();
         scriptObject.Import(model);
         scriptObject.Import(settings);
-        scriptObject.Import(new { AllProjects = allProjectInfos });
+        scriptObject.SetValue("all_projects", allProjectInfos, true);
         scriptObject.Import("fail", new Action<string>(error => throw new CatastrophicFailureException(error)));
         scriptObject.Import("translate_msbuild_macros", TranslateMSBuildMacros);
         scriptObject.Import("normalize_path", NormalizePath);
