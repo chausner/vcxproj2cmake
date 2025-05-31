@@ -224,83 +224,27 @@ class ProjectInfo
         if (languageStandard == null)
             logger.LogWarning("Language standard could not be determined.");
 
-        var includePaths = ConfigDependentMultiSetting.Parse(
-            compilerSettings.GetValueOrDefault("AdditionalIncludeDirectories"),
-            "AdditionalIncludeDirectories",
-            value => ParseList(value, ';', "%(AdditionalIncludeDirectories)"),
-            logger);
+        ConfigDependentSetting ParseSetting(string property, Dictionary<string, Dictionary<string, string>> settings)
+            => ConfigDependentSetting.Parse(settings.GetValueOrDefault(property), property, logger);
 
-        var linkerPaths = ConfigDependentMultiSetting.Parse(
-            linkerSettings.GetValueOrDefault("AdditionalLibraryDirectories"),
-            "AdditionalLibraryDirectories",
-            value => ParseList(value, ';', "%(AdditionalLibraryDirectories)"),
-            logger);
+        ConfigDependentMultiSetting ParseMultiSetting(string property, char separator, Dictionary<string, Dictionary<string, string>> settings)
+            => ConfigDependentMultiSetting.Parse(settings.GetValueOrDefault(property), property,
+                value => ParseList(value, separator, $"%({property})"), logger);
 
-        var libraries = ConfigDependentMultiSetting.Parse(
-            linkerSettings.GetValueOrDefault("AdditionalDependencies"),
-            "AdditionalDependencies",
-            value => ParseList(value, ';', "%(AdditionalDependencies)"),
-            logger);
-
-        var defines = ConfigDependentMultiSetting.Parse(
-            compilerSettings.GetValueOrDefault("PreprocessorDefinitions"),
-            "PreprocessorDefinitions",
-            value => ParseList(value, ';', "%(PreprocessorDefinitions)"),
-            logger);
-
-        var options = ConfigDependentMultiSetting.Parse(
-            compilerSettings.GetValueOrDefault("AdditionalOptions"),
-            "AdditionalOptions",
-            value => ParseList(value, ' ', "%(AdditionalOptions)"),
-            logger);
-
-        var characterSet = ConfigDependentSetting.Parse(
-            otherSettings.GetValueOrDefault("CharacterSet"),
-            "CharacterSet",
-            logger);
-
-        var disableSpecificWarnings = ConfigDependentMultiSetting.Parse(
-            compilerSettings.GetValueOrDefault("DisableSpecificWarnings"),
-            "DisableSpecificWarnings",
-            value => ParseList(value, ';', "%(DisableSpecificWarnings)"),
-            logger);
-
-        var treatSpecificWarningsAsErrors = ConfigDependentMultiSetting.Parse(
-            compilerSettings.GetValueOrDefault("TreatSpecificWarningsAsErrors"),
-            "TreatSpecificWarningsAsErrors",
-            value => ParseList(value, ';', "%(TreatSpecificWarningsAsErrors)"),
-            logger);
-
-        var treatWarningAsError = ConfigDependentSetting.Parse(
-            compilerSettings.GetValueOrDefault("TreatWarningAsError"),
-            "TreatWarningAsError",
-            logger);
-
-        var warningLevel = ConfigDependentSetting.Parse(
-            compilerSettings.GetValueOrDefault("WarningLevel"),
-            "WarningLevel",
-            logger);
-
-        var externalWarningLevel = ConfigDependentSetting.Parse(
-            compilerSettings.GetValueOrDefault("ExternalWarningLevel"),
-            "ExternalWarningLevel",
-            logger);
-
-        var treatAngleIncludeAsExternal = ConfigDependentSetting.Parse(
-            compilerSettings.GetValueOrDefault("TreatAngleIncludeAsExternal"),
-            "TreatAngleIncludeAsExternal",
-            logger);
-
-        var publicIncludePaths = ConfigDependentMultiSetting.Parse(
-            otherSettings.GetValueOrDefault("PublicIncludeDirectories"),
-            "PublicIncludeDirectories",
-            value => ParseList(value, ';', "%(PublicIncludeDirectories)"),
-            logger);
-
-        var allProjectIncludesArePublic = ConfigDependentSetting.Parse(
-            otherSettings.GetValueOrDefault("AllProjectIncludesArePublic"),
-            "AllProjectIncludesArePublic",
-            logger);
+        var includePaths = ParseMultiSetting("AdditionalIncludeDirectories", ';', compilerSettings);
+        var linkerPaths = ParseMultiSetting("AdditionalLibraryDirectories", ';', linkerSettings);
+        var libraries = ParseMultiSetting("AdditionalDependencies", ';', linkerSettings);
+        var defines = ParseMultiSetting("PreprocessorDefinitions", ';', compilerSettings);
+        var options = ParseMultiSetting("AdditionalOptions", ' ', compilerSettings);
+        var characterSet = ParseSetting("CharacterSet", otherSettings);
+        var disableSpecificWarnings = ParseMultiSetting("DisableSpecificWarnings", ';', compilerSettings);
+        var treatSpecificWarningsAsErrors = ParseMultiSetting("TreatSpecificWarningsAsErrors", ';', compilerSettings);
+        var treatWarningAsError = ParseSetting("TreatWarningAsError", compilerSettings);
+        var warningLevel = ParseSetting("WarningLevel", compilerSettings);
+        var externalWarningLevel = ParseSetting("ExternalWarningLevel", compilerSettings);
+        var treatAngleIncludeAsExternal = ParseSetting("TreatAngleIncludeAsExternal", compilerSettings);
+        var publicIncludePaths = ParseMultiSetting("PublicIncludeDirectories", ';', otherSettings);
+        var allProjectIncludesArePublic = ParseSetting("AllProjectIncludesArePublic", otherSettings);
 
         var conanPackages =
             imports
