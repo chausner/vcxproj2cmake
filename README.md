@@ -13,23 +13,25 @@
 * Supports console, Win32, Dynamic-Link Library (DLL), and Static Library project types.
 * Leverages CMake generator expressions for property values that are specific to certain build configurations (Debug, Release, Win32, x64).
 * The following MSBuild project properties are converted/taken into account:
-  * `AdditionalDependencies`
-  * `AdditionalIncludeDirectories`
-  * `AdditionalLibraryDirectories`
-  * `AdditionalOptions`
-  * `AllProjectIncludesArePublic`
-  * `CharacterSet`
-  * `DisableSpecificWarnings`
-  * `ExternalWarningLevel`
-  * `LanguageStandard`
-  * `LinkLibraryDependencies`
-  * `PreprocessorDefinitions`
-  * `PublicIncludeDirectories`
-  * `SubSystem`
-  * `TreatAngleIncludeAsExternal`
-  * `TreatSpecificWarningsAsErrors`
-  * `TreatWarningAsError`
-  * `WarningLevel`
+
+  `AdditionalDependencies`
+  `AdditionalIncludeDirectories`
+  `AdditionalLibraryDirectories`
+  `AdditionalOptions`
+  `AllProjectIncludesArePublic`
+  `CharacterSet`
+  `DisableSpecificWarnings`
+  `ExternalWarningLevel`
+  `LanguageStandard`
+  `LanguageStandard_C`
+  `LinkLibraryDependencies`
+  `PreprocessorDefinitions`
+  `PublicIncludeDirectories`
+  `SubSystem`
+  `TreatAngleIncludeAsExternal`
+  `TreatSpecificWarningsAsErrors`
+  `TreatWarningAsError`
+  `WarningLevel`
 * For projects referencing Qt 5 or 6 via Qt/MsBuild, a corresponding `find_package(Qt... REQUIRED COMPONENTS ...)` command is generated and `AUTOMOC`/`AUTOUIC`/`AUTORCC` are enabled.
 * For projects referencing Conan packages via the MSBuildDeps generator, corresponding `find_package` commands are generated, intended to be used with the `CMakeDeps` generator.
 

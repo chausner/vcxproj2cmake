@@ -11,7 +11,8 @@ class ProjectInfo
     public string? UniqueName { get; set; }
     public required string[] Languages { get; init; }
     public required string ConfigurationType { get; init; }
-    public required string? LanguageStandard { get; init; }
+    public required string? CppLanguageStandard { get; init; }
+    public required string? CLanguageStandard { get; init; }
     public required string[] SourceFiles { get; init; }
     public required ConfigDependentMultiSetting IncludePaths { get; init; }
     public required ConfigDependentMultiSetting PublicIncludePaths { get; init; }
@@ -217,12 +218,19 @@ class ProjectInfo
             }
         }
 
-        var languageStandard = 
+        var cppLanguageStandard = 
             compilerSettings.GetValueOrDefault("LanguageStandard")?.Values
             .Distinct()
             .SingleOrDefaultWithException(null, () => throw new CatastrophicFailureException("LanguageStandard property is inconsistent between configurations"));
-        if (languageStandard == null)
-            logger.LogWarning("Language standard could not be determined.");
+        if (cppLanguageStandard == null)
+            logger.LogWarning("C++ language standard could not be determined.");
+
+        var cLanguageStandard = 
+            compilerSettings.GetValueOrDefault("LanguageStandard_C")?.Values
+            .Distinct()
+            .SingleOrDefaultWithException(null, () => throw new CatastrophicFailureException("LanguageStandard_C property is inconsistent between configurations"));
+        if (cLanguageStandard == null)
+            logger.LogWarning("C language standard could not be determined.");
 
         var includePaths = ParseMultiSetting("AdditionalIncludeDirectories", ';', compilerSettings, logger);
         var publicIncludePaths = ParseMultiSetting("PublicIncludeDirectories", ';', otherSettings, logger);
@@ -272,7 +280,8 @@ class ProjectInfo
             ProjectName = Path.GetFileNameWithoutExtension(projectPath),
             Languages = DetectLanguages(sourceFiles, logger),
             ConfigurationType = configurationType,
-            LanguageStandard = languageStandard,
+            CppLanguageStandard = cppLanguageStandard,
+            CLanguageStandard = cLanguageStandard,
             SourceFiles = sourceFiles.ToArray(),
             IncludePaths = includePaths,
             PublicIncludePaths = publicIncludePaths,

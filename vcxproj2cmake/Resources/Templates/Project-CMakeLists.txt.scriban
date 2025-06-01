@@ -50,15 +50,28 @@ set_target_properties({{ project_name }} PROPERTIES
 
 {{~ end -}}
 
-{{~ if language_standard ~}}
-target_compile_features({{ project_name }} PUBLIC {{ }}
-    {{- case language_standard -}}
-    {{- when "stdcpplatest" -}} cxx_std_23
-    {{- when "stdcpp20" -}} cxx_std_20
-    {{- when "stdcpp17" -}} cxx_std_17
-    {{- when "stdcpp14" -}} cxx_std_14
-    {{- when "stdcpp11" -}} cxx_std_11
-    {{- else -}} {{ fail $"Unsupported language standard: {language_standard}" }}
+{{~ if cpp_language_standard != null || (clanguage_standard != null && clanguage_standard != "Default") ~}}
+target_compile_features({{ project_name }} PUBLIC
+    {{- if cpp_language_standard -}}
+        {{- case cpp_language_standard -}}
+        {{- when "stdcpplatest" }} cxx_std_23
+        {{- when "stdcpp23" }} cxx_std_23
+        {{- when "stdcpp20" }} cxx_std_20
+        {{- when "stdcpp17" }} cxx_std_17
+        {{- when "stdcpp14" }} cxx_std_14
+        {{- when "stdcpp11" }} cxx_std_11
+        {{- else -}} {{ fail $"Unsupported C++ language standard: {cpp_language_standard}" }}
+        {{- end -}}
+    {{- end -}}
+    {{- if clanguage_standard -}}
+        {{- case clanguage_standard -}}
+        {{- when "stdclatest" }} c_std_23
+        {{- when "stdc23" }} c_std_23
+        {{- when "stdc17" }} c_std_17
+        {{- when "stdc11" }} c_std_11
+        {{- when "Default" -}}
+        {{- else -}} {{ fail $"Unsupported C language standard: {clanguage_standard}" }}
+        {{- end -}}
     {{- end -}}
 )
 
