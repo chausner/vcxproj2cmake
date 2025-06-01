@@ -20,6 +20,13 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build --no-restore --configuration Release
     #- name: Test
     #  run: dotnet test --no-build --verbosity normal
+    - name: Publish
+      run: dotnet publish --no-build --configuration Release --runtime win-x64
+    - name: Upload published output
+      uses: actions/upload-artifact@v4
+      with:
+        name: vcxproj2cmake-win-x64
+        path: ./vcxproj2cmake/bin/Release/net9.0/win-x64/publish
