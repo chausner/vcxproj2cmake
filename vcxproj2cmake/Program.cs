@@ -107,8 +107,8 @@ static class Program
             foreach (var projectReference in solutionInfo.Projects)
             {
                 string absolutePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(solution)!, projectReference.Path));
-                projectReference.ProjectFileInfo = ProjectInfo.ParseProjectFile(absolutePath, qtVersion, conanPackageInfoRepository, logger);
-                projectInfos.Add(projectReference.ProjectFileInfo);
+                projectReference.ProjectInfo = ProjectInfo.ParseProjectFile(absolutePath, qtVersion, conanPackageInfoRepository, logger);
+                projectInfos.Add(projectReference.ProjectInfo);
             }
         }
 
@@ -162,12 +162,12 @@ static class Program
             {
                 var absoluteReference = Path.GetFullPath(projectReference.Path, Path.GetDirectoryName(projectInfo.AbsoluteProjectPath)!);
 
-                var referencedProjectFileInfo = projectInfos.FirstOrDefault(p => p.AbsoluteProjectPath == absoluteReference);
+                var referencedProjectInfo = projectInfos.FirstOrDefault(p => p.AbsoluteProjectPath == absoluteReference);
 
-                if (referencedProjectFileInfo == null)
+                if (referencedProjectInfo == null)
                     throw new CatastrophicFailureException($"Project {projectInfo.AbsoluteProjectPath} references project {absoluteReference} which is not part of the solution or the list of projects.");
 
-                projectReference.ProjectFileInfo = referencedProjectFileInfo;
+                projectReference.ProjectInfo = referencedProjectInfo;
             }
         }
     }

@@ -174,7 +174,7 @@ class CMakeGenerator
         while (unorderedProjects.Count > 0)
         {
             var projectsWithAllDependenciesSatisfied = unorderedProjects
-                .Where(project => project.ProjectReferences.All(p => orderedProjects.Any(p2 => p2.AbsoluteProjectPath == p.ProjectFileInfo!.AbsoluteProjectPath)))
+                .Where(project => project.ProjectReferences.All(p => orderedProjects.Any(p2 => p2.AbsoluteProjectPath == p.ProjectInfo!.AbsoluteProjectPath)))
                 .ToArray();
 
             if (projectsWithAllDependenciesSatisfied.Length > 0)
@@ -194,7 +194,7 @@ class CMakeGenerator
                 {
                     sb.AppendLine($"Project {project.ProjectName}");
                     foreach (var missingReference in project.ProjectReferences.Where(pr =>
-                                 orderedProjects.All(p => p.AbsoluteProjectPath != pr.ProjectFileInfo!.AbsoluteProjectPath)))
+                                 orderedProjects.All(p => p.AbsoluteProjectPath != pr.ProjectInfo!.AbsoluteProjectPath)))
                     {
                         sb.AppendLine($"  missing dependency {missingReference.Path}");
                     }
@@ -211,10 +211,10 @@ class CMakeGenerator
 
     ProjectReference[] OrderProjectReferencesByDependencies(IEnumerable<ProjectReference> projectReferences, IEnumerable<ProjectInfo>? allProjects = null)
     {
-        var orderedProjects = OrderProjectsByDependencies(allProjects ?? projectReferences.Select(pr => pr.ProjectFileInfo!));
+        var orderedProjects = OrderProjectsByDependencies(allProjects ?? projectReferences.Select(pr => pr.ProjectInfo!));
 
         return projectReferences
-            .OrderBy(pr => Array.FindIndex(orderedProjects, p => p.AbsoluteProjectPath == pr.ProjectFileInfo!.AbsoluteProjectPath))
+            .OrderBy(pr => Array.FindIndex(orderedProjects, p => p.AbsoluteProjectPath == pr.ProjectInfo!.AbsoluteProjectPath))
             .ToArray();
     }
 }

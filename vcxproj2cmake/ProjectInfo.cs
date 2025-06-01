@@ -413,8 +413,8 @@ class ProjectInfo
         void GetAllReferencedProjectsInner(ProjectInfo projectInfo)
         {
             foreach (var projectReference in projectInfo.ProjectReferences)
-                if (referencedProjects.Add(projectReference.ProjectFileInfo!))
-                    GetAllReferencedProjectsInner(projectReference.ProjectFileInfo!);
+                if (referencedProjects.Add(projectReference.ProjectInfo!))
+                    GetAllReferencedProjectsInner(projectReference.ProjectInfo!);
 
         }
 
@@ -427,5 +427,5 @@ class ProjectInfo
 class ProjectReference
 {
     public required string Path { get; init; }
-    public ProjectInfo? ProjectFileInfo { get; set; }
+    public ProjectInfo? ProjectInfo { get; set; }
 }

@@ -7,8 +7,8 @@ project({{ project_name }}
 
 {{~ if enable_standalone_project_builds && project_references.size > 0 ~}}
 {{~ for project in project_references | order_project_references_by_dependencies all_projects ~}}
-if(NOT TARGET {{ project.project_file_info.project_name }})
-    add_subdirectory({{ project.project_file_info.absolute_project_path | get_directory_name | get_relative_path (absolute_project_path | get_directory_name) | normalize_path }} "${CMAKE_BINARY_DIR}/{{ project.project_file_info.unique_name }}")
+if(NOT TARGET {{ project.project_info.project_name }})
+    add_subdirectory({{ project.project_info.absolute_project_path | get_directory_name | get_relative_path (absolute_project_path | get_directory_name) | normalize_path }} "${CMAKE_BINARY_DIR}/{{ project.project_info.unique_name }}")
 endif()
 {{~ end ~}}
 
@@ -113,7 +113,7 @@ target_link_directories({{ project_name }}
   link_library_dependencies_effective = false
   if link_library_dependencies_enabled
     for project in project_references
-      if project.project_file_info.configuration_type == "StaticLibrary" || project.project_file_info.configuration_type == "DynamicLibrary"
+      if project.project_info.configuration_type == "StaticLibrary" || project.project_info.configuration_type == "DynamicLibrary"
         link_library_dependencies_effective = true
         break
       end
@@ -130,8 +130,8 @@ target_link_libraries({{ project_name }}
         {{~ end ~}}     
         {{~ if link_library_dependencies_enabled ~}}
         {{~ for project in project_references | order_project_references_by_dependencies all_projects ~}}
-        {{~ if project.project_file_info.configuration_type == "StaticLibrary" || project.project_file_info.configuration_type == "DynamicLibrary" ~}}
-        {{ project.project_file_info.project_name }}
+        {{~ if project.project_info.configuration_type == "StaticLibrary" || project.project_info.configuration_type == "DynamicLibrary" ~}}
+        {{ project.project_info.project_name }}
         {{~ end ~}}
         {{~ end ~}}
         {{~ end ~}}
