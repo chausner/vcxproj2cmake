@@ -86,3 +86,9 @@ as well as a top-level `CMakeLists.txt` file in the same directory as the `.sln`
   to allow configuring the projects directly instead of as part of the top-level solution `CMakeLists.txt`.
 * Specify the `--dry-run` option to have the generated CMake files printed to the console without writing them to disk.
 * If any of your projects use Qt, you must specify the `--qt-version` option to indicate the Qt version (5 or 6) used in the project.
+
+### Custom build configurations/platforms
+
+vcxproj2cmake expects project configurations and build platforms to be named `Debug`/`Release` and `Win32`/`x86`/`x64`/`ARM32`/`ARM64`, respectively.
+Configurations and platforms with other names are ignored by default.
+If you would like to add support for your custom configurations/platforms, extend `Config.Configs` in [Config.cs](vcxproj2cmake/Config.cs).
