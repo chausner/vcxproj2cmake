@@ -14,6 +14,9 @@ endif()
 
 {{~ end -}}
 
+{{~ if uses_open_mp ~}}
+find_package(OpenMP)
+{{~ end ~}}
 {{~ if qt_modules.size > 0 ~}}
 find_package(Qt{{ qt_version }} REQUIRED COMPONENTS {{ qt_modules | array.map "cmake_component_name" | array.sort | array.join " " }})
 {{~ end -}}

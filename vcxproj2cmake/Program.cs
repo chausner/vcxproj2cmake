@@ -212,6 +212,7 @@ static class Program
                 ProjectReferences = projectInfo.ProjectReferences,
                 LinkerSubsystem = projectInfo.LinkerSubsystem,
                 LinkLibraryDependenciesEnabled = projectInfo.LinkLibraryDependenciesEnabled,
+                UsesOpenMP = projectInfo.UsesOpenMP,
                 QtVersion = projectInfo.QtVersion,
                 RequiresQtMoc = projectInfo.RequiresQtMoc,
                 RequiresQtUic = projectInfo.RequiresQtUic,

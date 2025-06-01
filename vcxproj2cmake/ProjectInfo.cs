@@ -23,6 +23,7 @@ class ProjectInfo
     public required ProjectReference[] ProjectReferences { get; init; }
     public required string? LinkerSubsystem { get; init; }
     public required bool LinkLibraryDependenciesEnabled { get; init; }
+    public required bool UsesOpenMP { get; init; }
     public required int? QtVersion { get; init; }
     public required bool RequiresQtMoc { get; init; }
     public required bool RequiresQtUic { get; init; }
@@ -246,6 +247,7 @@ class ProjectInfo
         var externalWarningLevel = ParseSetting("ExternalWarningLevel", compilerSettings, logger);
         var treatAngleIncludeAsExternal = ParseSetting("TreatAngleIncludeAsExternal", compilerSettings, logger);
         var allProjectIncludesArePublic = ParseSetting("AllProjectIncludesArePublic", otherSettings, logger);
+        var openMPSupport = ParseSetting("OpenMPSupport", compilerSettings, logger);        
 
         var conanPackages =
             imports
@@ -273,6 +275,7 @@ class ProjectInfo
         options = ApplyWarningLevel(warningLevel, options);
         options = ApplyExternalWarningLevel(externalWarningLevel, options);
         options = ApplyTreatAngleIncludeAsExternal(treatAngleIncludeAsExternal, options);
+        libraries = ApplyOpenMPSupport(openMPSupport, libraries);
 
         return new ProjectInfo
         {
@@ -292,6 +295,7 @@ class ProjectInfo
             ProjectReferences = projectReferences.Select(pr => new ProjectReference { Path = pr }).ToArray(),
             LinkerSubsystem = linkerSubsystem,
             LinkLibraryDependenciesEnabled = linkLibraryDependenciesEnabled,
+            UsesOpenMP = openMPSupport.Values.Values.Contains("true", StringComparer.OrdinalIgnoreCase),
             QtVersion = qtVersion,
             RequiresQtMoc = requiresQtMoc,
             RequiresQtUic = requiresQtUic,
@@ -413,6 +417,16 @@ class ProjectInfo
             "false" or "" or null => directories,
             _ => throw new CatastrophicFailureException($"Invalid value for AllProjectIncludesArePublic: {allArePublic}"),
         }, allProjectIncludesArePublic);
+    }
+
+    static ConfigDependentMultiSetting ApplyOpenMPSupport(ConfigDependentSetting openMPSupport, ConfigDependentMultiSetting libraries)
+    {
+        return libraries.Map((libs, openMP) => (openMP?.ToLowerInvariant()) switch
+        {
+            "true" => [.. libs, "OpenMP::OpenMP_CXX"],
+            "false" or "" or null => libs,
+            _ => throw new CatastrophicFailureException($"Invalid value for OpenMPSupport: {openMP}"),
+        }, openMPSupport);
     }
 
     public ISet<ProjectInfo> GetAllReferencedProjects(IEnumerable<ProjectInfo> allProjects)
