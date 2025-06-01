@@ -39,7 +39,7 @@ At the moment, no binary releases are available.
 Therefore, you need to build the application from source:
 
 1. Make sure you have .NET 9 SDK installed.
-2. Run `dotnet run -- --help` to compile the project and see the usage instructions.
+2. Run `cd vcxproj2cmake` and `dotnet run -- --help` to compile the project and see the usage instructions.
 
 ## Usage
 
@@ -50,6 +50,7 @@ Therefore, you need to build the application from source:
 To convert a single `.vcxproj` file with no dependency to other projects, run:
 
 ```
+cd vcxproj2cmake
 dotnet run -- --projects MyProject.vcxproj
 ```
 
@@ -61,6 +62,7 @@ If the project has dependencies on other projects, or you want to convert multip
 specify the paths to all `.vcxproj` files:
 
 ```
+cd vcxproj2cmake
 dotnet run -- --projects MyProject1.vcxproj MyProject2.vcxproj
 ```
 
@@ -71,6 +73,7 @@ This will generate a `CMakeLists.txt` file for each specified project in their r
 If you have a `.sln` solution file, you can convert all projects in the solution by running:
 
 ```
+cd vcxproj2cmake
 dotnet run -- --solution MySolution.sln
 ```
 
