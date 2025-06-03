@@ -13,8 +13,8 @@ record Config(Regex MSBuildProjectConfigPattern, string CMakeExpression)
         new Config(new(@"^Release\|"), "$<$<CONFIG:Release>:{0}>"),
         new Config(new(@"\|(Win32|x86)$"), "$<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x86>:{0}>"),
         new Config(new(@"\|x64$"), "$<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{0}>"),
-        new Config(new(@"\|ARM32"), "$<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,ARM32>:{0}>"),
-        new Config(new(@"\|ARM64"), "$<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,ARM64>:{0}>")
+        new Config(new(@"\|ARM32$"), "$<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,ARM32>:{0}>"),
+        new Config(new(@"\|ARM64$"), "$<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,ARM64>:{0}>")
     ];
 
     public static bool IsMSBuildProjectConfigNameSupported(string projectConfig)
