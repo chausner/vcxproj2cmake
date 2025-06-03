@@ -59,7 +59,7 @@ static class Program
             var hasSolution = !string.IsNullOrEmpty(result.GetValueForOption(solutionOption));
             if (hasProjects == hasSolution)
             {
-                result.ErrorMessage = "Specify either --project or --solution, but not both.";
+                result.ErrorMessage = "Specify either --projects or --solution, but not both.";
             }
         });
         rootCommand.SetHandler(
