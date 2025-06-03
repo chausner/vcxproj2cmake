@@ -65,14 +65,7 @@ class CMakeGenerator
         context.PushGlobal(scriptObject);
         var result = cmakeListsTemplate.Render(context);
 
-        if (settings.DryRun)
-        {
-            logger.LogInformation($"Generated output for {destinationPath}:\r\n\r\n{result}");
-        }
-        else
-        {            
-            File.WriteAllText(destinationPath, result);
-        }
+        settings.FileWriter.WriteFile(destinationPath, result);
     }
 
     void GenerateCMakeForProject(ProjectInfo projectInfo, IEnumerable<ProjectInfo> allProjectInfos, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
@@ -219,4 +212,4 @@ class CMakeGenerator
     }
 }
 
-record CMakeGeneratorSettings(bool EnableStandaloneProjectBuilds, bool DryRun);
+record CMakeGeneratorSettings(bool EnableStandaloneProjectBuilds, ICMakeFileWriter FileWriter);
