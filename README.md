@@ -90,8 +90,19 @@ as well as a top-level `CMakeLists.txt` file in the same directory as the `.sln`
 * Specify the `--dry-run` option to have the generated CMake files printed to the console without writing them to disk.
 * If any of your projects use Qt, you must specify the `--qt-version` option to indicate the Qt version (5 or 6) used in the project.
 
-### Custom build configurations/platforms
+## Limitations
 
-vcxproj2cmake expects project configurations and build platforms to be named `Debug`/`Release` and `Win32`/`x86`/`x64`/`ARM32`/`ARM64`, respectively.
-Configurations and platforms with other names are ignored by default.
-If you would like to add support for your custom configurations/platforms, extend `Config.Configs` in [Config.cs](vcxproj2cmake/Config.cs).
+* vcxproj2cmake expects project configurations and build platforms to be named `Debug`/`Release` and `Win32`/`x86`/`x64`/`ARM32`/`ARM64`, respectively.
+  Configurations and platforms with other names are ignored by default.
+  If you would like to add support for your custom configurations/platforms, extend `Config.Configs` in [Config.cs](vcxproj2cmake/Config.cs).
+* MSBuild properties whose value depends on the build configuration or platform are only supported
+  if the value depends solely on the configuration or platform, but not both.
+  E.g. preprocessor definitions like `_DEBUG` or `WIN32` are supported.
+  They are converted to CMake generator expressions like `$<$<CONFIG:Debug>:_DEBUG>` or `$<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x86>:WIN32>`.
+  A definition that is specific to a certain combination of configuration and platform, is not supported and skipped with a warning.
+* MSBuild properties defined in imported .props or .targets files are not considered.
+* Many advanced compiler and linker options are not supported and silently ignored.
+  Only a limited set of commonly-used properties is converted, as listed in the [Features](#features) section.
+
+## Contributing
+Contributions of any kind (e.g. bug fixes, improvements or new features) are gladly accepted!
