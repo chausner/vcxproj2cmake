@@ -150,6 +150,7 @@ class ProjectInfo
         Dictionary<string, Dictionary<string, string>> compilerSettings = [];
         Dictionary<string, Dictionary<string, string>> linkerSettings = [];
         Dictionary<string, Dictionary<string, string>> otherSettings = [];
+        List<string> processedProjectConfigurations = [];
 
         foreach (var projectConfig in projectConfigurations)
         {
@@ -158,6 +159,8 @@ class ProjectInfo
                 logger.LogWarning($"Skipping unsupported project configuration: {projectConfig}");
                 continue;
             }
+
+            processedProjectConfigurations.Add(projectConfig);
 
             var itemDefinitionGroups =
                 projectElement
@@ -233,21 +236,21 @@ class ProjectInfo
         if (cLanguageStandard == null)
             logger.LogWarning("C language standard could not be determined.");
 
-        var includePaths = ParseMultiSetting("AdditionalIncludeDirectories", ';', compilerSettings, logger);
-        var publicIncludePaths = ParseMultiSetting("PublicIncludeDirectories", ';', otherSettings, logger);
-        var linkerPaths = ParseMultiSetting("AdditionalLibraryDirectories", ';', linkerSettings, logger);
-        var libraries = ParseMultiSetting("AdditionalDependencies", ';', linkerSettings, logger);
-        var defines = ParseMultiSetting("PreprocessorDefinitions", ';', compilerSettings, logger);
-        var options = ParseMultiSetting("AdditionalOptions", ' ', compilerSettings, logger);
-        var characterSet = ParseSetting("CharacterSet", otherSettings, logger);
-        var disableSpecificWarnings = ParseMultiSetting("DisableSpecificWarnings", ';', compilerSettings, logger);
-        var treatSpecificWarningsAsErrors = ParseMultiSetting("TreatSpecificWarningsAsErrors", ';', compilerSettings, logger);
-        var treatWarningAsError = ParseSetting("TreatWarningAsError", compilerSettings, logger);
-        var warningLevel = ParseSetting("WarningLevel", compilerSettings, logger);
-        var externalWarningLevel = ParseSetting("ExternalWarningLevel", compilerSettings, logger);
-        var treatAngleIncludeAsExternal = ParseSetting("TreatAngleIncludeAsExternal", compilerSettings, logger);
-        var allProjectIncludesArePublic = ParseSetting("AllProjectIncludesArePublic", otherSettings, logger);
-        var openMPSupport = ParseSetting("OpenMPSupport", compilerSettings, logger);        
+        var includePaths = ParseMultiSetting("AdditionalIncludeDirectories", ';', compilerSettings, []);
+        var publicIncludePaths = ParseMultiSetting("PublicIncludeDirectories", ';', otherSettings, []);
+        var linkerPaths = ParseMultiSetting("AdditionalLibraryDirectories", ';', linkerSettings, []);
+        var libraries = ParseMultiSetting("AdditionalDependencies", ';', linkerSettings, []);
+        var defines = ParseMultiSetting("PreprocessorDefinitions", ';', compilerSettings, []);
+        var options = ParseMultiSetting("AdditionalOptions", ' ', compilerSettings, []);
+        var characterSet = ParseSetting("CharacterSet", otherSettings, "NotSet");
+        var disableSpecificWarnings = ParseMultiSetting("DisableSpecificWarnings", ';', compilerSettings, []);
+        var treatSpecificWarningsAsErrors = ParseMultiSetting("TreatSpecificWarningsAsErrors", ';', compilerSettings, []);
+        var treatWarningAsError = ParseSetting("TreatWarningAsError", compilerSettings, "false");
+        var warningLevel = ParseSetting("WarningLevel", compilerSettings, string.Empty);
+        var externalWarningLevel = ParseSetting("ExternalWarningLevel", compilerSettings, string.Empty);
+        var treatAngleIncludeAsExternal = ParseSetting("TreatAngleIncludeAsExternal", compilerSettings, "false");
+        var allProjectIncludesArePublic = ParseSetting("AllProjectIncludesArePublic", otherSettings, "false");
+        var openMPSupport = ParseSetting("OpenMPSupport", compilerSettings, "false");
 
         var conanPackages =
             imports
@@ -303,22 +306,41 @@ class ProjectInfo
             QtModules = qtModules.Select(module => QtModuleInfoRepository.GetQtModuleInfo(module, qtVersion!.Value)).ToArray(),
             ConanPackages = conanPackages
         };
-    }
 
-    private static ConfigDependentSetting ParseSetting(string property, Dictionary<string, Dictionary<string, string>> settings, ILogger logger)
-    {
-        return ConfigDependentSetting.Parse(settings.GetValueOrDefault(property), property, logger);
-    }
-    private static ConfigDependentMultiSetting ParseMultiSetting(string property, char separator, Dictionary<string, Dictionary<string, string>> settings, ILogger logger)
-    {
-        var parser = (string value) =>
-            value
-            .Split(separator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Except([$"%({property})"])
-            .Distinct()
-            .ToArray();
+        ConfigDependentSetting ParseSetting(
+            string property,
+            Dictionary<string, Dictionary<string, string>> settings,
+            string defaultValue)
+        {
+            return ConfigDependentSetting.Parse(
+                settings.GetValueOrDefault(property),
+                property,
+                defaultValue,
+                processedProjectConfigurations,
+                logger);
+        }
 
-        return ConfigDependentMultiSetting.Parse(settings.GetValueOrDefault(property), property, parser, logger);
+        ConfigDependentMultiSetting ParseMultiSetting(
+            string property,
+            char separator,
+            Dictionary<string, Dictionary<string, string>> settings,
+            string[] defaultValue)
+        {
+            var parser = (string value) =>
+                value
+                .Split(separator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Except([$"%({property})"])
+                .Distinct()
+                .ToArray();
+
+            return ConfigDependentMultiSetting.Parse(
+                settings.GetValueOrDefault(property),
+                property,
+                parser,
+                defaultValue,
+                processedProjectConfigurations,
+                logger);
+        }
     }
 
     static string[] DetectLanguages(IEnumerable<string> sourceFiles, ILogger logger)

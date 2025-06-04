@@ -32,19 +32,29 @@ record ConfigDependentSetting
         Values = []
     };
 
-    public static ConfigDependentSetting Parse(Dictionary<string, string>? settings, string settingName, ILogger logger)
+    public static ConfigDependentSetting Parse(
+        Dictionary<string, string>? settings,
+        string settingName,
+        string defaultValue,
+        IEnumerable<string> projectConfigurations,
+        ILogger logger)
     {
         if (settings == null || settings.Count == 0)
             return Empty;
 
-        var allSettingValues = settings.Values.Distinct().ToArray();
+        var effectiveSettings = new Dictionary<string, string>(settings);
+        foreach (var config in projectConfigurations)
+            if (!effectiveSettings.ContainsKey(config))
+                effectiveSettings[config] = defaultValue;
+        
+        var allSettingValues = effectiveSettings.Values.Distinct().ToArray();
 
-        var commonSettingValue = allSettingValues.FirstOrDefault(s => settings.All(kvp => kvp.Value == s));
+        var commonSettingValue = allSettingValues.FirstOrDefault(s => effectiveSettings.All(kvp => kvp.Value == s));
 
         string? FilterByConfig(Config config)
         {
             return allSettingValues
-                .Where(s => settings.All(kvp => config.MSBuildProjectConfigPattern.IsMatch(kvp.Key) == (kvp.Value == s)))
+                .Where(s => effectiveSettings.All(kvp => config.MSBuildProjectConfigPattern.IsMatch(kvp.Key) == (kvp.Value == s)))
                 .FirstOrDefault(s => s != commonSettingValue);
         }
 
@@ -83,21 +93,32 @@ record ConfigDependentMultiSetting
         Values = []
     };
 
-    public static ConfigDependentMultiSetting Parse(Dictionary<string, string>? settings, string settingName, Func<string, string[]> parser, ILogger logger)
+    public static ConfigDependentMultiSetting Parse(
+        Dictionary<string, string>? settings,
+        string settingName,
+        Func<string, string[]> parser,
+        string[] defaultValue,
+        IEnumerable<string> projectConfigurations,
+        ILogger logger)
     {
         if (settings == null || settings.Count == 0)
             return Empty;
 
         var parsedSettings = settings.ToDictionary(kvp => kvp.Key, kvp => parser(kvp.Value));
 
-        var allSettingValues = parsedSettings.Values.SelectMany(s => s).Distinct().ToArray();
+        var effectiveSettings = new Dictionary<string, string[]>(parsedSettings);
+        foreach (var config in projectConfigurations)
+            if (!effectiveSettings.ContainsKey(config))
+                effectiveSettings[config] = defaultValue;
+        
+        var allSettingValues = effectiveSettings.Values.SelectMany(s => s).Distinct().ToArray();
 
-        var commonSettingValues = allSettingValues.Where(s => parsedSettings.All(kvp => kvp.Value.Contains(s))).ToArray();
+        var commonSettingValues = allSettingValues.Where(s => effectiveSettings.All(kvp => kvp.Value.Contains(s))).ToArray();
 
         string[] FilterByConfig(Config config)
         {
             return allSettingValues
-                .Where(s => parsedSettings.All(kvp => config.MSBuildProjectConfigPattern.IsMatch(kvp.Key) == kvp.Value.Contains(s)))
+                .Where(s => effectiveSettings.All(kvp => config.MSBuildProjectConfigPattern.IsMatch(kvp.Key) == kvp.Value.Contains(s)))
                 .Except(commonSettingValues)
                 .ToArray();
         }
