@@ -24,7 +24,7 @@ jobs:
     - name: Test
       run: dotnet test --no-build --configuration Release --verbosity normal
     - name: Publish
-      run: dotnet publish --no-build --configuration Release --runtime win-x64
+      run: dotnet publish vcxproj2cmake/vcxproj2cmake.csproj --no-build --configuration Release --runtime win-x64
     - name: Upload published output
       uses: actions/upload-artifact@v4
       with:
