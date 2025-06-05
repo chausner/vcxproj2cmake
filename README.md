@@ -11,6 +11,7 @@
 
 * Accepts either a list of `.vcxproj` project files or a `.sln` solution file as input.
 * Supports console, Win32, Dynamic-Link Library (DLL), and Static Library project types.
+  Includes detection of header-only libraries.
 * Leverages CMake generator expressions for property values that are specific to certain build configurations (Debug, Release, Win32, x64).
 * The following MSBuild project properties are converted/taken into account:
 

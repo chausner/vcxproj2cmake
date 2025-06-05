@@ -23,6 +23,7 @@ class ProjectInfo
     public required ProjectReference[] ProjectReferences { get; init; }
     public required string? LinkerSubsystem { get; init; }
     public required bool LinkLibraryDependenciesEnabled { get; init; }
+    public required bool IsHeaderOnlyLibrary { get; init; }
     public required bool UsesOpenMP { get; init; }
     public required int? QtVersion { get; init; }
     public required bool RequiresQtMoc { get; init; }
@@ -37,6 +38,7 @@ class ProjectInfo
 
         var msbuildNamespace = "http://schemas.microsoft.com/developer/msbuild/2003";
         var clCompileXName = XName.Get("ClCompile", msbuildNamespace);
+        var clIncludeXName = XName.Get("ClInclude", msbuildNamespace);
         var configurationTypeXName = XName.Get("ConfigurationType", msbuildNamespace);
         var importGroupXName = XName.Get("ImportGroup", msbuildNamespace);
         var importXName = XName.Get("Import", msbuildNamespace);
@@ -77,12 +79,23 @@ class ProjectInfo
         var sourceFiles =
             projectElement
                 .Elements(itemGroupXName)
-                .SelectMany(group => 
+                .SelectMany(group =>
                     group.Elements(clCompileXName)
                     .Concat(group.Elements(qtUicXName))
                     .Concat(group.Elements(qtRccXName)))
                 .Select(element => element.Attribute("Include")!.Value.Trim())
                 .ToList();
+
+        var headerFiles =
+            projectElement
+                .Elements(itemGroupXName)
+                .SelectMany(group => group.Elements(clIncludeXName))
+                .Select(element => element.Attribute("Include")!.Value.Trim())
+                .ToList();
+
+        // We don't rely on configurationType to determine if the project is a header-only library
+        // since there is no specific configuration type for header-only libraries in MSBuild.
+        var isHeaderOnlyLibrary = sourceFiles.Count == 0 && headerFiles.Count > 0;
 
         var qtModules =
             projectElement
@@ -298,6 +311,7 @@ class ProjectInfo
             ProjectReferences = projectReferences.Select(pr => new ProjectReference { Path = pr }).ToArray(),
             LinkerSubsystem = linkerSubsystem,
             LinkLibraryDependenciesEnabled = linkLibraryDependenciesEnabled,
+            IsHeaderOnlyLibrary = isHeaderOnlyLibrary,
             UsesOpenMP = openMPSupport.Values.Values.Contains("true", StringComparer.OrdinalIgnoreCase),
             QtVersion = qtVersion,
             RequiresQtMoc = requiresQtMoc,
