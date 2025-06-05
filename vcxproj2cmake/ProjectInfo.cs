@@ -24,6 +24,7 @@ class ProjectInfo
     public required string? LinkerSubsystem { get; init; }
     public required bool LinkLibraryDependenciesEnabled { get; init; }
     public required bool IsHeaderOnlyLibrary { get; init; }
+    public required string? PrecompiledHeaderFile { get; init; }
     public required bool UsesOpenMP { get; init; }
     public required int? QtVersion { get; init; }
     public required bool RequiresQtMoc { get; init; }
@@ -265,6 +266,16 @@ class ProjectInfo
         var allProjectIncludesArePublic = ParseSetting("AllProjectIncludesArePublic", otherSettings, "false");
         var openMPSupport = ParseSetting("OpenMPSupport", compilerSettings, "false");
 
+        var precompiledHeaderMode =
+            compilerSettings.GetValueOrDefault("PrecompiledHeader")?.Values
+            .Distinct()
+            .SingleOrDefaultWithException(null, () => throw new CatastrophicFailureException("PrecompiledHeader property is inconsistent between configurations"));
+
+        var precompiledHeaderFile =
+            compilerSettings.GetValueOrDefault("PrecompiledHeaderFile")?.Values
+            .Distinct()
+            .SingleOrDefaultWithException(null, () => throw new CatastrophicFailureException("PrecompiledHeaderFile property is inconsistent between configurations"));
+
         var conanPackages =
             imports
                 .Select(import =>
@@ -312,6 +323,7 @@ class ProjectInfo
             LinkerSubsystem = linkerSubsystem,
             LinkLibraryDependenciesEnabled = linkLibraryDependenciesEnabled,
             IsHeaderOnlyLibrary = isHeaderOnlyLibrary,
+            PrecompiledHeaderFile = precompiledHeaderMode == "Use" ? precompiledHeaderFile : null,
             UsesOpenMP = openMPSupport.Values.Values.Contains("true", StringComparer.OrdinalIgnoreCase),
             QtVersion = qtVersion,
             RequiresQtMoc = requiresQtMoc,
