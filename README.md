@@ -27,6 +27,7 @@
   `LanguageStandard_C`
   `LinkLibraryDependencies`
   `OpenMPSupport`
+  `PrecompiledHeaderFile`
   `PreprocessorDefinitions`
   `PublicIncludeDirectories`
   `SubSystem`
