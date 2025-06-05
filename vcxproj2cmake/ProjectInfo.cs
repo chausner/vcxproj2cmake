@@ -236,17 +236,11 @@ class ProjectInfo
             }
         }
 
-        var cppLanguageStandard = 
-            compilerSettings.GetValueOrDefault("LanguageStandard")?.Values
-            .Distinct()
-            .SingleOrDefaultWithException(null, () => throw new CatastrophicFailureException("LanguageStandard property is inconsistent between configurations"));
+        var cppLanguageStandard = GetCommonSetting("LanguageStandard", compilerSettings);
         if (cppLanguageStandard == null)
             logger.LogWarning("C++ language standard could not be determined.");
 
-        var cLanguageStandard = 
-            compilerSettings.GetValueOrDefault("LanguageStandard_C")?.Values
-            .Distinct()
-            .SingleOrDefaultWithException(null, () => throw new CatastrophicFailureException("LanguageStandard_C property is inconsistent between configurations"));
+        var cLanguageStandard = GetCommonSetting("LanguageStandard_C", compilerSettings);
         if (cLanguageStandard == null)
             logger.LogWarning("C language standard could not be determined.");
 
@@ -266,15 +260,8 @@ class ProjectInfo
         var allProjectIncludesArePublic = ParseSetting("AllProjectIncludesArePublic", otherSettings, "false");
         var openMPSupport = ParseSetting("OpenMPSupport", compilerSettings, "false");
 
-        var precompiledHeaderMode =
-            compilerSettings.GetValueOrDefault("PrecompiledHeader")?.Values
-            .Distinct()
-            .SingleOrDefaultWithException(null, () => throw new CatastrophicFailureException("PrecompiledHeader property is inconsistent between configurations"));
-
-        var precompiledHeaderFile =
-            compilerSettings.GetValueOrDefault("PrecompiledHeaderFile")?.Values
-            .Distinct()
-            .SingleOrDefaultWithException(null, () => throw new CatastrophicFailureException("PrecompiledHeaderFile property is inconsistent between configurations"));
+        var precompiledHeaderMode = GetCommonSetting("PrecompiledHeader", compilerSettings);
+        var precompiledHeaderFile = GetCommonSetting("PrecompiledHeaderFile", compilerSettings);
 
         var conanPackages =
             imports
@@ -287,12 +274,7 @@ class ProjectInfo
                 .Select(packageName => conanPackageInfoRepository.GetConanPackageInfo(packageName!))
                 .ToArray();
 
-        var linkerSubsystem =
-            linkerSettings.GetValueOrDefault("SubSystem")?.Values
-                .Distinct()
-                .SingleOrDefaultWithException(null,
-                    () => throw new CatastrophicFailureException(
-                        "SubSystem property is inconsistent between configurations"));
+        string? linkerSubsystem = GetCommonSetting("SubSystem", linkerSettings);
 
         publicIncludePaths = ApplyAllProjectIncludesArePublic(allProjectIncludesArePublic, publicIncludePaths);
         defines = ApplyCharacterSetSetting(characterSet, defines);
@@ -332,6 +314,13 @@ class ProjectInfo
             QtModules = qtModules.Select(module => QtModuleInfoRepository.GetQtModuleInfo(module, qtVersion!.Value)).ToArray(),
             ConanPackages = conanPackages
         };
+
+        string? GetCommonSetting(string property, Dictionary<string, Dictionary<string, string>> settings)
+        {
+            return settings.GetValueOrDefault(property)?.Values
+                .Distinct()
+                .SingleOrDefaultWithException(null, () => throw new CatastrophicFailureException($"{property} property is inconsistent between configurations"));
+        }
 
         ConfigDependentSetting ParseSetting(
             string property,
