@@ -11,8 +11,8 @@ class ProjectInfo
     public string? UniqueName { get; set; }
     public required string[] Languages { get; init; }
     public required string ConfigurationType { get; init; }
-    public required string? CppLanguageStandard { get; init; }
-    public required string? CLanguageStandard { get; init; }
+    public required string CppLanguageStandard { get; init; }
+    public required string CLanguageStandard { get; init; }
     public required string[] SourceFiles { get; init; }
     public required ConfigDependentMultiSetting IncludePaths { get; init; }
     public required ConfigDependentMultiSetting PublicIncludePaths { get; init; }
@@ -236,13 +236,8 @@ class ProjectInfo
             }
         }
 
-        var cppLanguageStandard = GetCommonSetting("LanguageStandard", compilerSettings);
-        if (cppLanguageStandard == null)
-            logger.LogWarning("C++ language standard could not be determined.");
-
-        var cLanguageStandard = GetCommonSetting("LanguageStandard_C", compilerSettings);
-        if (cLanguageStandard == null)
-            logger.LogWarning("C language standard could not be determined.");
+        var cppLanguageStandard = GetCommonSetting("LanguageStandard", compilerSettings) ?? "Default";
+        var cLanguageStandard = GetCommonSetting("LanguageStandard_C", compilerSettings) ?? "Default";
 
         var includePaths = ParseMultiSetting("AdditionalIncludeDirectories", ';', compilerSettings, []);
         var publicIncludePaths = ParseMultiSetting("PublicIncludeDirectories", ';', otherSettings, []);
