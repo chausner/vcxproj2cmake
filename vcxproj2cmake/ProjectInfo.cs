@@ -26,6 +26,7 @@ class ProjectInfo
     public required bool LinkLibraryDependenciesEnabled { get; init; }
     public required bool IsHeaderOnlyLibrary { get; init; }
     public required ConfigDependentSetting PrecompiledHeaderFile { get; init; }
+    public required ConfigDependentSetting RuntimeLibrary { get; init; }
     public required bool UsesOpenMP { get; init; }
     public required int? QtVersion { get; init; }
     public required bool RequiresQtMoc { get; init; }
@@ -257,6 +258,7 @@ class ProjectInfo
         var openMPSupport = ParseSetting("OpenMPSupport", compilerSettings, "false");
         var precompiledHeader = ParseSetting("PrecompiledHeader", compilerSettings, "NotUsing");
         var precompiledHeaderFile = ParseSetting("PrecompiledHeaderFile", compilerSettings, string.Empty);
+        var runtimeLibrary = ParseSetting("RuntimeLibrary", compilerSettings, string.Empty);
 
         var conanPackages =
             imports
@@ -302,6 +304,7 @@ class ProjectInfo
             LinkLibraryDependenciesEnabled = linkLibraryDependenciesEnabled,
             IsHeaderOnlyLibrary = isHeaderOnlyLibrary,
             PrecompiledHeaderFile = precompiledHeaderFile.Map((file, mode) => mode == "Use" ? file : null, precompiledHeader, projectConfigurations, logger),
+            RuntimeLibrary = runtimeLibrary,
             UsesOpenMP = openMPSupport.Values.Values.Contains("true", StringComparer.OrdinalIgnoreCase),
             QtVersion = qtVersion,
             RequiresQtMoc = requiresQtMoc,

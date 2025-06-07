@@ -30,6 +30,7 @@
   `PrecompiledHeaderFile`
   `PreprocessorDefinitions`
   `PublicIncludeDirectories`
+  `RuntimeLibrary`
   `SubSystem`
   `TreatAngleIncludeAsExternal`
   `TreatSpecificWarningsAsErrors`
