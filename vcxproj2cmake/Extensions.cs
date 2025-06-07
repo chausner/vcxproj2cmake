@@ -1,112 +1,101 @@
+using Microsoft.Extensions.Logging;
+
 namespace vcxproj2cmake;
 
 static class ConfigDependentSettingExtensions
 {
-    public static ConfigDependentSetting Map(this ConfigDependentSetting self, Func<string?, string?> mapper)
+    public static ConfigDependentSetting Map(this ConfigDependentSetting self, Func<string?, string?> mapper, IEnumerable<string> projectConfigurations, ILogger logger)
     {
-        return new ConfigDependentSetting
+        Dictionary<string, string> mappedValues = [];
+
+        foreach (var projectConfig in projectConfigurations)
         {
-            Values = self.Values.SelectMany(kvp =>
-            {
-                var (config, value) = kvp;
-                var mappedValue = mapper(value);
-                if (mappedValue != null)
-                    return new[] { new KeyValuePair<Config, string>(config, mappedValue) };
-                else
-                    return [];
-            }).ToOrderedDictionary()
-        };
+            var value = self.GetValue(projectConfig);
+            var mappedValue = mapper(value);
+            if (mappedValue != null)            
+                mappedValues[projectConfig] = mappedValue;            
+        }
+
+        return ConfigDependentSetting.Parse(mappedValues, self.SettingName, self.DefaultValue, projectConfigurations, logger);
     }
 
-    public static ConfigDependentSetting Map(this ConfigDependentSetting self, Func<string?, string?, string?> mapper, ConfigDependentSetting setting)
+    public static ConfigDependentSetting Map(this ConfigDependentSetting self, Func<string?, string?, string?> mapper, ConfigDependentSetting setting, IEnumerable<string> projectConfigurations, ILogger logger)
     {
-        var configs = self.Values.Keys.Concat(setting.Values.Keys).Distinct().OrderBy(c => Array.IndexOf(Config.Configs, c));
+        Dictionary<string, string> mappedValues = [];
 
-        return new ConfigDependentSetting
+        foreach (var projectConfig in projectConfigurations)
         {
-            Values = configs.SelectMany(config =>
-            {
-                var value1 = self.Values.GetValueOrDefault(config);
-                var value2 = setting.Values.GetValueOrDefault(config);
-                var mappedValue = mapper(value1, value2);
-                if (mappedValue != null)
-                    return new[] { new KeyValuePair<Config, string>(config, mappedValue) };
-                else
-                    return [];
-            }).ToOrderedDictionary()
-        };
+            var value1 = self.GetValue(projectConfig);
+            var value2 = setting.GetValue(projectConfig);
+            var mappedValue = mapper(value1, value2);
+            if (mappedValue != null)
+                mappedValues[projectConfig] = mappedValue;
+        }
+
+        return ConfigDependentSetting.Parse(mappedValues, self.SettingName, self.DefaultValue, projectConfigurations, logger);
     }
 
-    public static ConfigDependentSetting Map(this ConfigDependentSetting self, Func<string?, string[], string?> mapper, ConfigDependentMultiSetting setting)
+    public static ConfigDependentSetting Map(this ConfigDependentSetting self, Func<string?, string[], string?> mapper, ConfigDependentMultiSetting setting, IEnumerable<string> projectConfigurations, ILogger logger)
     {
-        var configs = self.Values.Keys.Concat(setting.Values.Keys).Distinct().OrderBy(c => Array.IndexOf(Config.Configs, c));
+        Dictionary<string, string> mappedValues = [];
 
-        return new ConfigDependentSetting
+        foreach (var projectConfig in projectConfigurations)
         {
-            Values = configs.SelectMany(config =>
-            {
-                var value1 = self.Values.GetValueOrDefault(config);
-                var value2 = setting.Values.GetValueOrDefault(config, []);
-                var mappedValue = mapper(value1, value2);
-                if (mappedValue != null)
-                    return new[] { new KeyValuePair<Config, string>(config, mappedValue) };
-                else
-                    return [];
-            }).ToOrderedDictionary()
-        };
-    }
-    public static ConfigDependentMultiSetting Map(this ConfigDependentMultiSetting self, Func<string[], string[]> mapper)
-    {
-        return new ConfigDependentMultiSetting
-        {
-            Values = self.Values.SelectMany(kvp =>
-            {
-                var (config, value) = kvp;
-                var mappedValue = mapper(value);
-                if (mappedValue != null)
-                    return new[] { new KeyValuePair<Config, string[]>(config, mappedValue) };
-                else
-                    return [];
-            }).ToOrderedDictionary()
-        };
+            var value1 = self.GetValue(projectConfig);
+            var value2 = setting.GetValue(projectConfig);
+            var mappedValue = mapper(value1, value2);
+            if (mappedValue != null)
+                mappedValues[projectConfig] = mappedValue;
+        }
+
+        return ConfigDependentSetting.Parse(mappedValues, self.SettingName, self.DefaultValue, projectConfigurations, logger);
     }
 
-    public static ConfigDependentMultiSetting Map(this ConfigDependentMultiSetting self, Func<string[], string?, string[]> mapper, ConfigDependentSetting setting)
+    public static ConfigDependentMultiSetting Map(this ConfigDependentMultiSetting self, Func<string[], string[]> mapper, IEnumerable<string> projectConfigurations, ILogger logger)
     {
-        var configs = self.Values.Keys.Concat(setting.Values.Keys).Distinct().OrderBy(c => Array.IndexOf(Config.Configs, c));
+        Dictionary<string, string[]> mappedValues = [];
 
-        return new ConfigDependentMultiSetting
+        foreach (var projectConfig in projectConfigurations)
         {
-            Values = configs.SelectMany(config =>
-            {
-                var value1 = self.Values.GetValueOrDefault(config, []);
-                var value2 = setting.Values.GetValueOrDefault(config);
-                var mappedValue = mapper(value1, value2);
-                if (mappedValue != null)
-                    return new[] { new KeyValuePair<Config, string[]>(config, mappedValue) };
-                else
-                    return [];
-            }).ToOrderedDictionary()
-        };
+            var value = self.GetValue(projectConfig);
+            var mappedValue = mapper(value);
+            if (mappedValue != null)
+                mappedValues[projectConfig] = mappedValue;
+        }
+
+        return ConfigDependentMultiSetting.Parse(mappedValues, self.SettingName, self.DefaultValue, projectConfigurations, logger);
     }
 
-    public static ConfigDependentMultiSetting Map(this ConfigDependentMultiSetting self, Func<string[], string[], string[]> mapper, ConfigDependentMultiSetting setting)
+    public static ConfigDependentMultiSetting Map(this ConfigDependentMultiSetting self, Func<string[], string?, string[]> mapper, ConfigDependentSetting setting, IEnumerable<string> projectConfigurations, ILogger logger)
     {
-        var configs = self.Values.Keys.Concat(setting.Values.Keys).Distinct().OrderBy(c => Array.IndexOf(Config.Configs, c));
+        Dictionary<string, string[]> mappedValues = [];
 
-        return new ConfigDependentMultiSetting
+        foreach (var projectConfig in projectConfigurations)
         {
-            Values = configs.SelectMany(config =>
-            {
-                var value1 = self.Values.GetValueOrDefault(config, []);
-                var value2 = setting.Values.GetValueOrDefault(config, []);
-                var mappedValue = mapper(value1, value2);
-                if (mappedValue != null)
-                    return new[] { new KeyValuePair<Config, string[]>(config, mappedValue) };
-                else
-                    return [];
-            }).ToOrderedDictionary()
-        };
+            var value1 = self.GetValue(projectConfig);
+            var value2 = setting.GetValue(projectConfig);
+            var mappedValue = mapper(value1, value2);
+            if (mappedValue != null)
+                mappedValues[projectConfig] = mappedValue;
+        }
+
+        return ConfigDependentMultiSetting.Parse(mappedValues, self.SettingName, self.DefaultValue, projectConfigurations, logger);
+    }
+
+    public static ConfigDependentMultiSetting Map(this ConfigDependentMultiSetting self, Func<string[], string[], string[]> mapper, ConfigDependentMultiSetting setting, IEnumerable<string> projectConfigurations, ILogger logger)
+    {
+        Dictionary<string, string[]> mappedValues = [];
+
+        foreach (var projectConfig in projectConfigurations)
+        {
+            var value1 = self.GetValue(projectConfig);
+            var value2 = setting.GetValue(projectConfig);
+            var mappedValue = mapper(value1, value2);
+            if (mappedValue != null)
+                mappedValues[projectConfig] = mappedValue;
+        }
+
+        return ConfigDependentMultiSetting.Parse(mappedValues, self.SettingName, self.DefaultValue, projectConfigurations, logger);
     }
 }
 

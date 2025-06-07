@@ -191,13 +191,14 @@ static class Program
                     logger!.LogInformation($"Removing explicit library dependency {dependencyTarget} from project {projectInfo.ProjectName} since LinkLibraryDependencies is enabled.");
                 }
 
-            var filteredLibraries = projectInfo.Libraries.Map(libraries => libraries.Except(dependencyTargets, StringComparer.OrdinalIgnoreCase).ToArray());
+            var filteredLibraries = projectInfo.Libraries.Map(libraries => libraries.Except(dependencyTargets, StringComparer.OrdinalIgnoreCase).ToArray(), projectInfo.ProjectConfigurations, logger!);
 
             return new ProjectInfo
             {
                 AbsoluteProjectPath = projectInfo.AbsoluteProjectPath,
                 ProjectName = projectInfo.ProjectName,
                 UniqueName = projectInfo.UniqueName,
+                ProjectConfigurations = projectInfo.ProjectConfigurations,
                 Languages = projectInfo.Languages,
                 ConfigurationType = projectInfo.ConfigurationType,
                 CppLanguageStandard = projectInfo.CppLanguageStandard,

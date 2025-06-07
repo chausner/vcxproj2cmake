@@ -85,8 +85,15 @@ target_compile_features({{ project_name }} {{ if is_header_only_library }}INTERF
 
 {{~ end -}}
 
-{{~ if precompiled_header_file != null ~}}
-target_precompile_headers({{ project_name }} PRIVATE {{ precompiled_header_file | translate_msbuild_macros | normalize_path }})
+{{~ if !precompiled_header_file.is_empty ~}}
+target_precompile_headers({{ project_name }}
+    PRIVATE
+        {{~ for kvp in precompiled_header_file.values ~}}
+        {{~ if kvp.value != "" ~}}
+        {{ string.replace kvp.key.cmake_expression "{0}" (kvp.value | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir) }}
+        {{~ end ~}}
+        {{~ end ~}}
+)
 
 {{~ end -}}
 
