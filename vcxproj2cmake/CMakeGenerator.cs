@@ -67,7 +67,9 @@ class CMakeGenerator
 
         if (settings.DryRun)
         {
-            logger.LogInformation($"Generated output for {destinationPath}:\r\n\r\n{result}");
+            var newline = Environment.NewLine;
+            var indentedResult = Regex.Replace(result, "^", "    ", RegexOptions.Multiline);
+            logger.LogInformation($"Generated output for {destinationPath}:{newline}{newline}{indentedResult}");
         }
         else
         {            
