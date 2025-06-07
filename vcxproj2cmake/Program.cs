@@ -12,20 +12,21 @@ static class Program
 
     static int Main(string[] args)
     {
-        var projectsOption = new Option<List<string>?>(
+        var projectsOption = new Option<List<FileInfo>>(
             name: "--projects",
             description: "Paths to one or multiple .vcxproj files")
         {
             AllowMultipleArgumentsPerToken = true,
             ArgumentHelpName = "path(s)"
-        };
+        }.ExistingOnly();
 
-        var solutionOption = new Option<string?>(
+        var solutionOption = new Option<FileInfo>(
             name: "--solution",
             description: "Path to a solution .sln file")
         { 
-            ArgumentHelpName = "path" 
-        };
+            ArgumentHelpName = "path"
+        }
+        .ExistingOnly();
 
         var qtVersionOption = new Option<int?>(
             name: "--qt-version",
@@ -72,7 +73,7 @@ static class Program
         rootCommand.AddValidator(result =>
         {
             var hasProjects = result.GetValueForOption(projectsOption)?.Count > 0;
-            var hasSolution = !string.IsNullOrEmpty(result.GetValueForOption(solutionOption));
+            var hasSolution = result.GetValueForOption(solutionOption) != null;
             if (hasProjects == hasSolution)
             {
                 result.ErrorMessage = "Specify either --projects or --solution, but not both.";
@@ -100,8 +101,8 @@ static class Program
     }
 
     static void Run(
-        List<string>? projects, 
-        string? solution, 
+        List<FileInfo>? projects, 
+        FileInfo? solution, 
         int? qtVersion, 
         bool enableStandaloneProjectBuilds, 
         string indentStyle, 
@@ -118,21 +119,21 @@ static class Program
         
         if (projects != null && projects.Any())
         {
-            foreach (var projectPath in projects!)
+            foreach (var project in projects)
             {
-                projectInfos.Add(ProjectInfo.ParseProjectFile(projectPath, qtVersion, conanPackageInfoRepository, logger));
+                projectInfos.Add(ProjectInfo.ParseProjectFile(project.FullName, qtVersion, conanPackageInfoRepository, logger));
             }
         }
         else if (solution != null)
         {
-            solutionInfo = SolutionInfo.ParseSolutionFile(solution!, logger);
+            solutionInfo = SolutionInfo.ParseSolutionFile(solution!.FullName, logger);
 
             if (solutionInfo.Projects.Length == 0)
                 throw new CatastrophicFailureException($"No .vcxproj files found in solution: {solution}");
 
             foreach (var projectReference in solutionInfo.Projects)
             {
-                string absolutePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(solution)!, projectReference.Path));
+                string absolutePath = Path.GetFullPath(Path.Combine(solution.DirectoryName!, projectReference.Path));
                 projectReference.ProjectInfo = ProjectInfo.ParseProjectFile(absolutePath, qtVersion, conanPackageInfoRepository, logger);
                 projectInfos.Add(projectReference.ProjectInfo);
             }
