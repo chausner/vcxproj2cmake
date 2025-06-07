@@ -9,6 +9,7 @@ class ProjectInfo
     public required string AbsoluteProjectPath { get; init; }
     public required string ProjectName { get; init; }
     public string? UniqueName { get; set; }
+    public required string[] ProjectConfigurations { get; init; }
     public required string[] Languages { get; init; }
     public required string ConfigurationType { get; init; }
     public required string? CppLanguageStandard { get; init; }
@@ -24,7 +25,7 @@ class ProjectInfo
     public required string? LinkerSubsystem { get; init; }
     public required bool LinkLibraryDependenciesEnabled { get; init; }
     public required bool IsHeaderOnlyLibrary { get; init; }
-    public required string? PrecompiledHeaderFile { get; init; }
+    public required ConfigDependentSetting PrecompiledHeaderFile { get; init; }
     public required bool UsesOpenMP { get; init; }
     public required int? QtVersion { get; init; }
     public required bool RequiresQtMoc { get; init; }
@@ -259,9 +260,8 @@ class ProjectInfo
         var treatAngleIncludeAsExternal = ParseSetting("TreatAngleIncludeAsExternal", compilerSettings, "false");
         var allProjectIncludesArePublic = ParseSetting("AllProjectIncludesArePublic", otherSettings, "false");
         var openMPSupport = ParseSetting("OpenMPSupport", compilerSettings, "false");
-
-        var precompiledHeaderMode = GetCommonSetting("PrecompiledHeader", compilerSettings);
-        var precompiledHeaderFile = GetCommonSetting("PrecompiledHeaderFile", compilerSettings);
+        var precompiledHeader = ParseSetting("PrecompiledHeader", compilerSettings, "NotUsing");
+        var precompiledHeaderFile = ParseSetting("PrecompiledHeaderFile", compilerSettings, string.Empty);
 
         var conanPackages =
             imports
@@ -276,20 +276,21 @@ class ProjectInfo
 
         string? linkerSubsystem = GetCommonSetting("SubSystem", linkerSettings);
 
-        publicIncludePaths = ApplyAllProjectIncludesArePublic(allProjectIncludesArePublic, publicIncludePaths);
-        defines = ApplyCharacterSetSetting(characterSet, defines);
-        options = ApplyDisableSpecificWarnings(disableSpecificWarnings, options);
-        options = ApplyTreatSpecificWarningsAsErrors(treatSpecificWarningsAsErrors, options);
-        options = ApplyTreatWarningAsError(treatWarningAsError, options);
-        options = ApplyWarningLevel(warningLevel, options);
-        options = ApplyExternalWarningLevel(externalWarningLevel, options);
-        options = ApplyTreatAngleIncludeAsExternal(treatAngleIncludeAsExternal, options);
-        libraries = ApplyOpenMPSupport(openMPSupport, libraries);
+        publicIncludePaths = ApplyAllProjectIncludesArePublic(allProjectIncludesArePublic, publicIncludePaths, projectConfigurations, logger);
+        defines = ApplyCharacterSetSetting(characterSet, defines, projectConfigurations, logger);
+        options = ApplyDisableSpecificWarnings(disableSpecificWarnings, options, projectConfigurations, logger);
+        options = ApplyTreatSpecificWarningsAsErrors(treatSpecificWarningsAsErrors, options, projectConfigurations, logger);
+        options = ApplyTreatWarningAsError(treatWarningAsError, options, projectConfigurations, logger);
+        options = ApplyWarningLevel(warningLevel, options, projectConfigurations, logger);
+        options = ApplyExternalWarningLevel(externalWarningLevel, options, projectConfigurations, logger);
+        options = ApplyTreatAngleIncludeAsExternal(treatAngleIncludeAsExternal, options, projectConfigurations, logger);
+        libraries = ApplyOpenMPSupport(openMPSupport, libraries, projectConfigurations, logger);
 
         return new ProjectInfo
         {
             AbsoluteProjectPath = Path.GetFullPath(projectPath),
             ProjectName = Path.GetFileNameWithoutExtension(projectPath),
+            ProjectConfigurations = processedProjectConfigurations.ToArray(),
             Languages = DetectLanguages(sourceFiles, logger),
             ConfigurationType = configurationType,
             CppLanguageStandard = cppLanguageStandard,
@@ -305,7 +306,7 @@ class ProjectInfo
             LinkerSubsystem = linkerSubsystem,
             LinkLibraryDependenciesEnabled = linkLibraryDependenciesEnabled,
             IsHeaderOnlyLibrary = isHeaderOnlyLibrary,
-            PrecompiledHeaderFile = precompiledHeaderMode == "Use" ? precompiledHeaderFile : null,
+            PrecompiledHeaderFile = precompiledHeaderFile.Map((file, mode) => mode == "Use" ? file : null, precompiledHeader, projectConfigurations, logger),
             UsesOpenMP = openMPSupport.Values.Values.Contains("true", StringComparer.OrdinalIgnoreCase),
             QtVersion = qtVersion,
             RequiresQtMoc = requiresQtMoc,
@@ -349,9 +350,8 @@ class ProjectInfo
                 .ToArray();
 
             return ConfigDependentMultiSetting.Parse(
-                settings.GetValueOrDefault(property),
+                settings.GetValueOrDefault(property)?.ToDictionary(kvp => kvp.Key, kvp => parser(kvp.Value)),
                 property,
-                parser,
                 defaultValue,
                 processedProjectConfigurations,
                 logger);
@@ -373,7 +373,7 @@ class ProjectInfo
         return result.ToArray();
     }
 
-    static ConfigDependentMultiSetting ApplyCharacterSetSetting(ConfigDependentSetting characterSet, ConfigDependentMultiSetting defines)
+    static ConfigDependentMultiSetting ApplyCharacterSetSetting(ConfigDependentSetting characterSet, ConfigDependentMultiSetting defines, IEnumerable<string> projectConfigurations, ILogger logger)
     {
         return defines.Map((defines, charSet) => charSet switch
         {
@@ -381,34 +381,34 @@ class ProjectInfo
             "MultiByte" => [.. defines, "_MBCS"],
             "NotSet" or "" or null => defines,
             _ => throw new CatastrophicFailureException($"Invalid value for CharacterSet: {charSet}")
-        }, characterSet);
+        }, characterSet, projectConfigurations, logger);
     }
 
-    static ConfigDependentMultiSetting ApplyDisableSpecificWarnings(ConfigDependentMultiSetting disableSpecificWarnings, ConfigDependentMultiSetting options)
+    static ConfigDependentMultiSetting ApplyDisableSpecificWarnings(ConfigDependentMultiSetting disableSpecificWarnings, ConfigDependentMultiSetting options, IEnumerable<string> projectConfigurations, ILogger logger)
     {
         return options.Map(
             (options, warnings) => [.. options, .. warnings.Select(w => Convert.ToInt32(w)).Select(w => $"/wd{w}")],
-            disableSpecificWarnings);
+            disableSpecificWarnings, projectConfigurations, logger);
     }
 
-    static ConfigDependentMultiSetting ApplyTreatSpecificWarningsAsErrors(ConfigDependentMultiSetting treatSpecificWarningsAsErrors, ConfigDependentMultiSetting options)
+    static ConfigDependentMultiSetting ApplyTreatSpecificWarningsAsErrors(ConfigDependentMultiSetting treatSpecificWarningsAsErrors, ConfigDependentMultiSetting options, IEnumerable<string> projectConfigurations, ILogger logger)
     {
         return options.Map(
             (options, warnings) => [.. options, .. warnings.Select(w => Convert.ToInt32(w)).Select(w => $"/we{w}")],
-            treatSpecificWarningsAsErrors);
+            treatSpecificWarningsAsErrors, projectConfigurations, logger);
     }
 
-    static ConfigDependentMultiSetting ApplyTreatWarningAsError(ConfigDependentSetting treatWarningAsError, ConfigDependentMultiSetting options)
+    static ConfigDependentMultiSetting ApplyTreatWarningAsError(ConfigDependentSetting treatWarningAsError, ConfigDependentMultiSetting options, IEnumerable<string> projectConfigurations, ILogger logger)
     {
         return options.Map((options, treatAsError) => (treatAsError?.ToLowerInvariant()) switch
         {
             "true" => [.. options, "/WX"],
             "false" or "" or null => options,
             _ => throw new CatastrophicFailureException($"Invalid value for TreatWarningAsError: {treatAsError}"),
-        }, treatWarningAsError);
+        }, treatWarningAsError, projectConfigurations, logger);
     }
 
-    static ConfigDependentMultiSetting ApplyWarningLevel(ConfigDependentSetting warningLevel, ConfigDependentMultiSetting options)
+    static ConfigDependentMultiSetting ApplyWarningLevel(ConfigDependentSetting warningLevel, ConfigDependentMultiSetting options, IEnumerable<string> projectConfigurations, ILogger logger)
     {
         return options.Map((options, level) => level switch
         {
@@ -419,10 +419,10 @@ class ProjectInfo
             "Level4" => [.. options, "/W4"],
             "" or null => options,
             _ => throw new CatastrophicFailureException($"Invalid value for WarningLevel: {level}")
-        }, warningLevel);
+        }, warningLevel, projectConfigurations, logger);
     }
 
-    static ConfigDependentMultiSetting ApplyExternalWarningLevel(ConfigDependentSetting externalWarningLevel, ConfigDependentMultiSetting options)
+    static ConfigDependentMultiSetting ApplyExternalWarningLevel(ConfigDependentSetting externalWarningLevel, ConfigDependentMultiSetting options, IEnumerable<string> projectConfigurations, ILogger logger)
     {
         return options.Map((options, level) => level switch
         {
@@ -433,37 +433,37 @@ class ProjectInfo
             "Level4" => [.. options, "/external:W4"],
             "" or null => options,
             _ => throw new CatastrophicFailureException($"Invalid value for ExternalWarningLevel: {level}")
-        }, externalWarningLevel);
+        }, externalWarningLevel, projectConfigurations, logger);
     }
 
-    static ConfigDependentMultiSetting ApplyTreatAngleIncludeAsExternal(ConfigDependentSetting treatAngleIncludeAsExternal, ConfigDependentMultiSetting options)
+    static ConfigDependentMultiSetting ApplyTreatAngleIncludeAsExternal(ConfigDependentSetting treatAngleIncludeAsExternal, ConfigDependentMultiSetting options, IEnumerable<string> projectConfigurations, ILogger logger)
     {
         return options.Map((options, treatAsExternal) => (treatAsExternal?.ToLowerInvariant()) switch
         {
             "true" => [.. options, "/external:anglebrackets"],
             "false" or "" or null => options,
             _ => throw new CatastrophicFailureException($"Invalid value for TreatAngleIncludeAsExternal: {treatAsExternal}"),
-        }, treatAngleIncludeAsExternal);
+        }, treatAngleIncludeAsExternal, projectConfigurations, logger);
     }
 
-    static ConfigDependentMultiSetting ApplyAllProjectIncludesArePublic(ConfigDependentSetting allProjectIncludesArePublic, ConfigDependentMultiSetting publicIncludeDirectories)
+    static ConfigDependentMultiSetting ApplyAllProjectIncludesArePublic(ConfigDependentSetting allProjectIncludesArePublic, ConfigDependentMultiSetting publicIncludeDirectories, IEnumerable<string> projectConfigurations, ILogger logger)
     {
         return publicIncludeDirectories.Map((directories, allArePublic) => (allArePublic?.ToLowerInvariant()) switch
         {
             "true" => [.. directories, "$(ProjectDir)"],
             "false" or "" or null => directories,
             _ => throw new CatastrophicFailureException($"Invalid value for AllProjectIncludesArePublic: {allArePublic}"),
-        }, allProjectIncludesArePublic);
+        }, allProjectIncludesArePublic, projectConfigurations, logger);
     }
 
-    static ConfigDependentMultiSetting ApplyOpenMPSupport(ConfigDependentSetting openMPSupport, ConfigDependentMultiSetting libraries)
+    static ConfigDependentMultiSetting ApplyOpenMPSupport(ConfigDependentSetting openMPSupport, ConfigDependentMultiSetting libraries, IEnumerable<string> projectConfigurations, ILogger logger)
     {
         return libraries.Map((libs, openMP) => (openMP?.ToLowerInvariant()) switch
         {
             "true" => [.. libs, "OpenMP::OpenMP_CXX"],
             "false" or "" or null => libs,
             _ => throw new CatastrophicFailureException($"Invalid value for OpenMPSupport: {openMP}"),
-        }, openMPSupport);
+        }, openMPSupport, projectConfigurations, logger);
     }
 
     public ISet<ProjectInfo> GetAllReferencedProjects(IEnumerable<ProjectInfo> allProjects)
