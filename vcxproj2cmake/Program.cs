@@ -36,6 +36,20 @@ static class Program
             name: "--enable-standalone-project-builds",
             description: "Generate necessary code to allow projects to be built standalone (not through the root CMakeLists.txt)");
 
+        var indentStyleOption = new Option<string>(
+            name: "--indent-style",
+            description: "The indentation style to use (spaces or tabs).",
+            getDefaultValue: () => "spaces")
+            .FromAmong("spaces", "tabs");
+
+        var indentSizeOption = new Option<int>(
+            name: "--indent-size",
+            description: "The number of spaces to use for indentation.",
+            getDefaultValue: () => 4)
+        {
+            ArgumentHelpName = "count"
+        };
+
         var dryRunOption = new Option<bool>(
             name: "--dry-run",
             description: "Print generated output to the console, do not store generated files");
@@ -51,6 +65,8 @@ static class Program
         rootCommand.AddOption(solutionOption);
         rootCommand.AddOption(qtVersionOption);
         rootCommand.AddOption(enableStandaloneProjectBuildsOption);
+        rootCommand.AddOption(indentStyleOption);
+        rootCommand.AddOption(indentSizeOption);
         rootCommand.AddOption(dryRunOption);
         rootCommand.AddOption(logLevelOption);
         rootCommand.AddValidator(result =>
@@ -67,7 +83,9 @@ static class Program
             projectsOption, 
             solutionOption, 
             qtVersionOption, 
-            enableStandaloneProjectBuildsOption, 
+            enableStandaloneProjectBuildsOption,
+            indentStyleOption,
+            indentSizeOption,
             dryRunOption, 
             logLevelOption);
 
@@ -81,7 +99,15 @@ static class Program
         return parser.Invoke(args);
     }
 
-    static void Run(List<string>? projects, string? solution, int? qtVersion, bool enableStandaloneProjectBuilds, bool dryRun, LogLevel logLevel)
+    static void Run(
+        List<string>? projects, 
+        string? solution, 
+        int? qtVersion, 
+        bool enableStandaloneProjectBuilds, 
+        string indentStyle, 
+        int indentSize, 
+        bool dryRun, 
+        LogLevel logLevel)
     {
         logger = CreateLogger(logLevel);
 
@@ -116,7 +142,7 @@ static class Program
         ResolveProjectReferences(projectInfos);
         projectInfos = RemoveObsoleteLibrariesFromProjectReferences(projectInfos);
 
-        var settings = new CMakeGeneratorSettings(enableStandaloneProjectBuilds, dryRun);
+        var settings = new CMakeGeneratorSettings(enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun);
         var cmakeGenerator = new CMakeGenerator(logger);
         cmakeGenerator.Generate(solutionInfo, projectInfos, settings);
     }
