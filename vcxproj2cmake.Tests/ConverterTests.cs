@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Xunit;
 
@@ -6,130 +6,179 @@ namespace vcxproj2cmake.Tests;
 
 public class ConverterTests
 {
-    [Fact]
-    public void Given_EmptyProject_When_Converted_Then_MatchesExpectedOutput()
+    public class BasicTests
     {
-        // Arrange
-        var fileSystem = new MockFileSystem();
+        [Fact]
+        public void Given_EmptyProject_When_Converted_Then_MatchesExpectedOutput()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-        fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+            fileSystem.AddFile(@"EmptyProject.vcxproj", new(TestData.EmptyProject));
 
-        fileSystem.AddFile(@"EmptyProject.vcxproj", new("""
-            <?xml version="1.0" encoding="utf-8"?>            
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-              <ItemGroup Label="ProjectConfigurations">
-                <ProjectConfiguration Include="Debug|Win32">
-                  <Configuration>Debug</Configuration>
-                  <Platform>Win32</Platform>
-                </ProjectConfiguration>
-                <ProjectConfiguration Include="Release|Win32">
-                  <Configuration>Release</Configuration>
-                  <Platform>Win32</Platform>
-                </ProjectConfiguration>
-              </ItemGroup>
-              <PropertyGroup Label="Globals">
-                <VCProjectVersion>17.0</VCProjectVersion>
-                <Keyword>Win32Proj</Keyword>
-                <ProjectGuid>{620c346a-996a-4c2b-8485-4a872433008b}</ProjectGuid>
-                <RootNamespace>EmptyProject</RootNamespace>
-                <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-              </PropertyGroup>
-              <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-              <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                <ConfigurationType>Application</ConfigurationType>
-                <UseDebugLibraries>true</UseDebugLibraries>
-                <PlatformToolset>v143</PlatformToolset>
-                <CharacterSet>Unicode</CharacterSet>
-              </PropertyGroup>
-              <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                <ConfigurationType>Application</ConfigurationType>
-                <UseDebugLibraries>false</UseDebugLibraries>
-                <PlatformToolset>v143</PlatformToolset>
-                <WholeProgramOptimization>true</WholeProgramOptimization>
-                <CharacterSet>Unicode</CharacterSet>
-              </PropertyGroup>
-              <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
-              <ImportGroup Label="ExtensionSettings">
-              </ImportGroup>
-              <ImportGroup Label="Shared">
-              </ImportGroup>
-              <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-              </ImportGroup>
-              <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-              </ImportGroup>
-              <PropertyGroup Label="UserMacros" />
-              <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                <ClCompile>
-                  <WarningLevel>Level3</WarningLevel>
-                  <SDLCheck>true</SDLCheck>
-                  <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-                  <ConformanceMode>true</ConformanceMode>
-                </ClCompile>
-                <Link>
-                  <SubSystem>Console</SubSystem>
-                  <GenerateDebugInformation>true</GenerateDebugInformation>
-                </Link>
-              </ItemDefinitionGroup>
-              <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                <ClCompile>
-                  <WarningLevel>Level3</WarningLevel>
-                  <FunctionLevelLinking>true</FunctionLevelLinking>
-                  <IntrinsicFunctions>true</IntrinsicFunctions>
-                  <SDLCheck>true</SDLCheck>
-                  <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-                  <ConformanceMode>true</ConformanceMode>
-                </ClCompile>
-                <Link>
-                  <SubSystem>Console</SubSystem>
-                  <GenerateDebugInformation>true</GenerateDebugInformation>
-                </Link>
-              </ItemDefinitionGroup>
-              <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-              <ImportGroup Label="ExtensionTargets">
-              </ImportGroup>
-            </Project>
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projects: [new(@"EmptyProject.vcxproj")],
+                solution: null,
+                qtVersion: null,
+                enableStandaloneProjectBuilds: false,
+                indentStyle: "spaces",
+                indentSize: 4,
+                dryRun: false);
+
+            // Assert
+            AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """            
+                cmake_minimum_required(VERSION 3.13)
+                project(EmptyProject)
+
+
+                add_executable(EmptyProject
+                )
+
+                target_compile_definitions(EmptyProject
+                    PUBLIC
+                        WIN32
+                        _CONSOLE
+                        UNICODE
+                        _UNICODE
+                        $<$<CONFIG:Debug>:_DEBUG>
+                        $<$<CONFIG:Release>:NDEBUG>
+                )
+
+                target_compile_options(EmptyProject
+                    PUBLIC
+                        /W3
+                )            
+                """);
+        }
+
+        [Fact]
+        public void Given_EmptySolution_When_Converted_Then_Throws()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"EmptySolution.sln", new("""
+                Microsoft Visual Studio Solution File, Format Version 12.00
+                # Visual Studio Version 17
+                # MinimumVisualStudioVersion = 10.0.40219.1
             """));
 
-        using var loggerFactory = LoggerFactory.Create(builder => { });
-        var logger = loggerFactory.CreateLogger(typeof(ConverterTests));
+            var converter = new Converter(fileSystem, NullLogger.Instance);
 
-        var converter = new Converter(fileSystem, logger);
-        
-        // Act
-        converter.Convert(
-            projects: [new(@"EmptyProject.vcxproj")],
-            solution: null,
-            qtVersion: null,
-            enableStandaloneProjectBuilds: false,
-            indentStyle: "spaces",
-            indentSize: 4,
-            dryRun: false);
+            // Act & Assert
+            var ex = Assert.Throws<CatastrophicFailureException>(() =>
+                converter.Convert(
+                    projects: null,
+                    solution: new(@"EmptySolution.sln"),
+                    qtVersion: null,
+                    enableStandaloneProjectBuilds: false,
+                    indentStyle: "spaces",
+                    indentSize: 4,
+                    dryRun: false));
+            Assert.Contains("No .vcxproj files found in solution", ex.Message);
+        }
+    }
 
-        // Assert
-        Assert.Equal("""            
-            cmake_minimum_required(VERSION 3.13)
-            project(EmptyProject)
+    public class IndentStyleAndIndentSizeTests
+    {
+
+        [Fact]
+        public void Given_EmptyProject_When_ConvertedWithIndentStyleTabs_Then_MatchesExpectedOutput()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"EmptyProject.vcxproj", new(TestData.EmptyProject));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projects: [new(@"EmptyProject.vcxproj")],
+                solution: null,
+                qtVersion: null,
+                enableStandaloneProjectBuilds: false,
+                indentStyle: "tabs",
+                indentSize: 4,
+                dryRun: false);
+
+            // Assert
+            AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, $"""            
+                cmake_minimum_required(VERSION 3.13)
+                project(EmptyProject)
 
 
-            add_executable(EmptyProject
-            )
+                add_executable(EmptyProject
+                )
 
-            target_compile_definitions(EmptyProject
-                PUBLIC
+                target_compile_definitions(EmptyProject
+                {"\t"}PUBLIC
+                {"\t"}{"\t"}WIN32
+                {"\t"}{"\t"}_CONSOLE
+                {"\t"}{"\t"}UNICODE
+                {"\t"}{"\t"}_UNICODE
+                {"\t"}{"\t"}$<$<CONFIG:Debug>:_DEBUG>
+                {"\t"}{"\t"}$<$<CONFIG:Release>:NDEBUG>
+                )
+
+                target_compile_options(EmptyProject
+                {"\t"}PUBLIC
+                {"\t"}{"\t"}/W3
+                )            
+                """);
+        }
+
+        [Fact]
+        public void Given_EmptyProject_When_ConvertedWithIndentSize2_Then_MatchesExpectedOutput()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"EmptyProject.vcxproj", new(TestData.EmptyProject));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projects: [new(@"EmptyProject.vcxproj")],
+                solution: null,
+                qtVersion: null,
+                enableStandaloneProjectBuilds: false,
+                indentStyle: "spaces",
+                indentSize: 2,
+                dryRun: false);
+
+            // Assert
+            AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """            
+                cmake_minimum_required(VERSION 3.13)
+                project(EmptyProject)
+
+
+                add_executable(EmptyProject
+                )
+
+                target_compile_definitions(EmptyProject
+                  PUBLIC
                     WIN32
                     _CONSOLE
                     UNICODE
                     _UNICODE
                     $<$<CONFIG:Debug>:_DEBUG>
                     $<$<CONFIG:Release>:NDEBUG>
-            )
+                )
 
-            target_compile_options(EmptyProject
-                PUBLIC
+                target_compile_options(EmptyProject
+                  PUBLIC
                     /W3
-            )            
-            """.Trim(), fileSystem.GetFile(@"CMakeLists.txt").TextContents.Trim());
+                )            
+                """);
+        }
     }
 }
