@@ -1,7 +1,5 @@
-using System.IO;
 using Microsoft.Extensions.Logging;
 using Xunit;
-using vcxproj2cmake;
 
 namespace vcxproj2cmake.Tests;
 
@@ -18,7 +16,7 @@ public class ConverterTests
         var writer = new InMemoryFileWriter();
         var converter = new Converter(logger);
 
-        converter.Convert(new List<string> { projectPath }, null, null, false, writer);
+        converter.Convert([new(projectPath)], null, null, false, "spaces", 4, writer);
 
         var cmakePath = Path.Combine(Path.GetDirectoryName(projectPath)!, "CMakeLists.txt");
         var expected = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "../../..", "TestData", "Simple", "expected_CMakeLists.txt"));
@@ -36,7 +34,7 @@ public class ConverterTests
         var writer = new InMemoryFileWriter();
         var converter = new Converter(logger);
 
-        converter.Convert(new List<string> { projectPath }, null, null, false, writer);
+        converter.Convert([new(projectPath)], null, null, false, "spaces", 4, writer);
 
         var cmakePath = Path.Combine(Path.GetDirectoryName(projectPath)!, "CMakeLists.txt");
         Assert.False(File.Exists(cmakePath));

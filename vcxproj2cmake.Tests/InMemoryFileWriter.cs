@@ -1,6 +1,3 @@
-using vcxproj2cmake;
-using System.Collections.Generic;
-
 namespace vcxproj2cmake.Tests;
 
 internal class InMemoryFileWriter : ICMakeFileWriter

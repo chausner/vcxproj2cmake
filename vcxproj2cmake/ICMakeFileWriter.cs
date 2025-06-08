@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
-using System.IO;
+using System.Text.RegularExpressions;
+
 namespace vcxproj2cmake;
 
 public interface ICMakeFileWriter
@@ -24,6 +25,8 @@ class ConsoleFileWriter : ICMakeFileWriter
     }
     public void WriteFile(string path, string content)
     {
-        logger.LogInformation($"Generated output for {path}:\n\n{content}");
+        var newline = Environment.NewLine;
+        var indentedContent = Regex.Replace(content, "^", "    ", RegexOptions.Multiline);
+        logger.LogInformation($"Generated output for {path}:{newline}{newline}{indentedContent}");
     }
 }

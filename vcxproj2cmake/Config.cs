@@ -11,11 +11,16 @@ record Config(Regex MSBuildProjectConfigPattern, string CMakeExpression)
     [
         new Config(new(@"^Debug\|"), "$<$<CONFIG:Debug>:{0}>"),
         new Config(new(@"^Release\|"), "$<$<CONFIG:Release>:{0}>"),
-        new Config(new(@"\|(Win32|x86)$"), "$<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x86>:{0}>"),
-        new Config(new(@"\|x64$"), "$<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,x64>:{0}>"),
-        new Config(new(@"\|ARM32$"), "$<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,ARM32>:{0}>"),
-        new Config(new(@"\|ARM64$"), "$<$<STREQUAL:$<TARGET_PROPERTY:ARCHITECTURE_ID>,ARM64>:{0}>")
+        new Config(new(@"\|(Win32|x86)$"), "$<$<STREQUAL:$<CMAKE_CXX_COMPILER_ARCHITECTURE_ID>,X86>:{0}>"),
+        new Config(new(@"\|x64$"), "$<$<STREQUAL:$<CMAKE_CXX_COMPILER_ARCHITECTURE_ID>,x64>:{0}>"),
+        new Config(new(@"\|ARM32$"), "$<$<STREQUAL:$<CMAKE_CXX_COMPILER_ARCHITECTURE_ID>,ARM>:{0}>"),
+        new Config(new(@"\|ARM64$"), "$<$<STREQUAL:$<CMAKE_CXX_COMPILER_ARCHITECTURE_ID>,ARM64>:{0}>")
     ];
+
+    public bool MatchesProjectConfigName(string projectConfig)
+    {
+        return MSBuildProjectConfigPattern.IsMatch(projectConfig);
+    }
 
     public static bool IsMSBuildProjectConfigNameSupported(string projectConfig)
     {
@@ -27,24 +32,37 @@ record ConfigDependentSetting
 {
     public required OrderedDictionary<Config, string> Values { get; init; }
 
-    public static readonly ConfigDependentSetting Empty = new()
-    {
-        Values = []
-    };
+    public required string SettingName { get; init; }
+    public required string DefaultValue { get; init; }
 
-    public static ConfigDependentSetting Parse(Dictionary<string, string>? settings, string settingName, ILogger logger)
+    public static ConfigDependentSetting Parse(
+        Dictionary<string, string>? settings,
+        string settingName,
+        string defaultValue,
+        IEnumerable<string> projectConfigurations,
+        ILogger logger)
     {
         if (settings == null || settings.Count == 0)
-            return Empty;
+            return new ConfigDependentSetting
+            {
+                Values = [],
+                SettingName = settingName,
+                DefaultValue = defaultValue
+            };
 
-        var allSettingValues = settings.Values.Distinct().ToArray();
+        var effectiveSettings = new Dictionary<string, string>(settings);
+        foreach (var config in projectConfigurations)
+            if (!effectiveSettings.ContainsKey(config))
+                effectiveSettings[config] = defaultValue;
+        
+        var allSettingValues = effectiveSettings.Values.Distinct().ToArray();
 
-        var commonSettingValue = allSettingValues.FirstOrDefault(s => settings.All(kvp => kvp.Value == s));
+        var commonSettingValue = allSettingValues.FirstOrDefault(s => effectiveSettings.All(kvp => kvp.Value == s));
 
         string? FilterByConfig(Config config)
         {
             return allSettingValues
-                .Where(s => settings.All(kvp => config.MSBuildProjectConfigPattern.IsMatch(kvp.Key) == (kvp.Value == s)))
+                .Where(s => effectiveSettings.All(kvp => config.MatchesProjectConfigName(kvp.Key) == (kvp.Value == s)))
                 .FirstOrDefault(s => s != commonSettingValue);
         }
 
@@ -60,7 +78,7 @@ record ConfigDependentSetting
                 values[config] = filteredValues;
         }
 
-        var result = new ConfigDependentSetting { Values = values };
+        var result = new ConfigDependentSetting { Values = values, SettingName = settingName, DefaultValue = defaultValue };
 
         var skippedSettings = settings.Values
             .Except(result.Values.Values)
@@ -71,33 +89,51 @@ record ConfigDependentSetting
         return result;
     }
 
+    public string? GetValue(string projectConfig)
+    {
+        var config = Config.Configs.SingleOrDefault(config => config.MatchesProjectConfigName(projectConfig) && Values.ContainsKey(config));
+        if (config != null)
+            return Values[config];        
+        return Values.GetValueOrDefault(Config.CommonConfig);
+    }
+
     public bool IsEmpty => Values.Count == 0;
 }
 
 record ConfigDependentMultiSetting
 {
     public required OrderedDictionary<Config, string[]> Values { get; init; }
+    public required string SettingName { get; init; }
+    public required string[] DefaultValue { get; init; }
 
-    public static readonly ConfigDependentMultiSetting Empty = new()
-    {
-        Values = []
-    };
-
-    public static ConfigDependentMultiSetting Parse(Dictionary<string, string>? settings, string settingName, Func<string, string[]> parser, ILogger logger)
+    public static ConfigDependentMultiSetting Parse(
+        Dictionary<string, string[]>? settings,
+        string settingName,
+        string[] defaultValue,
+        IEnumerable<string> projectConfigurations,
+        ILogger logger)
     {
         if (settings == null || settings.Count == 0)
-            return Empty;
+            return new ConfigDependentMultiSetting
+            {
+                Values = [],
+                SettingName = settingName,
+                DefaultValue = defaultValue
+            };
 
-        var parsedSettings = settings.ToDictionary(kvp => kvp.Key, kvp => parser(kvp.Value));
+        var effectiveSettings = new Dictionary<string, string[]>(settings);
+        foreach (var config in projectConfigurations)
+            if (!effectiveSettings.ContainsKey(config))
+                effectiveSettings[config] = defaultValue;
 
-        var allSettingValues = parsedSettings.Values.SelectMany(s => s).Distinct().ToArray();
+        var allSettingValues = effectiveSettings.Values.SelectMany(s => s).Distinct().ToArray();
 
-        var commonSettingValues = allSettingValues.Where(s => parsedSettings.All(kvp => kvp.Value.Contains(s))).ToArray();
+        var commonSettingValues = allSettingValues.Where(s => effectiveSettings.All(kvp => kvp.Value.Contains(s))).ToArray();
 
         string[] FilterByConfig(Config config)
         {
             return allSettingValues
-                .Where(s => parsedSettings.All(kvp => config.MSBuildProjectConfigPattern.IsMatch(kvp.Key) == kvp.Value.Contains(s)))
+                .Where(s => effectiveSettings.All(kvp => config.MatchesProjectConfigName(kvp.Key) == kvp.Value.Contains(s)))
                 .Except(commonSettingValues)
                 .ToArray();
         }
@@ -114,9 +150,9 @@ record ConfigDependentMultiSetting
                 values[config] = filteredValues;
         }
 
-        var result = new ConfigDependentMultiSetting { Values = values };
+        var result = new ConfigDependentMultiSetting { Values = values, SettingName = settingName, DefaultValue = defaultValue };
 
-        var skippedSettings = parsedSettings.Values
+        var skippedSettings = settings.Values
             .SelectMany(s => s)
             .Except(result.Values.Values.SelectMany(s => s))
             .ToArray();
@@ -124,6 +160,15 @@ record ConfigDependentMultiSetting
             logger.LogWarning($"The following values for setting {settingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings)}");
 
         return result;
+    }
+
+    public string[] GetValue(string projectConfig)
+    {
+        return new[] { Config.CommonConfig }
+            .Concat(Config.Configs)
+            .Where(config => config.MatchesProjectConfigName(projectConfig) && Values.ContainsKey(config))
+            .SelectMany(config => Values[config])
+            .ToArray();
     }
 
     public bool IsEmpty => Values.Count == 0;

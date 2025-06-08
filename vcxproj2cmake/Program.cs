@@ -12,20 +12,21 @@ static class Program
 
     static int Main(string[] args)
     {
-        var projectsOption = new Option<List<string>?>(
+        var projectsOption = new Option<List<FileInfo>>(
             name: "--projects",
             description: "Paths to one or multiple .vcxproj files")
         {
             AllowMultipleArgumentsPerToken = true,
             ArgumentHelpName = "path(s)"
-        };
+        }.ExistingOnly();
 
-        var solutionOption = new Option<string?>(
+        var solutionOption = new Option<FileInfo>(
             name: "--solution",
             description: "Path to a solution .sln file")
         { 
-            ArgumentHelpName = "path" 
-        };
+            ArgumentHelpName = "path"
+        }
+        .ExistingOnly();
 
         var qtVersionOption = new Option<int?>(
             name: "--qt-version",
@@ -35,6 +36,20 @@ static class Program
         var enableStandaloneProjectBuildsOption = new Option<bool>(
             name: "--enable-standalone-project-builds",
             description: "Generate necessary code to allow projects to be built standalone (not through the root CMakeLists.txt)");
+
+        var indentStyleOption = new Option<string>(
+            name: "--indent-style",
+            description: "The indentation style to use (spaces or tabs).",
+            getDefaultValue: () => "spaces")
+            .FromAmong("spaces", "tabs");
+
+        var indentSizeOption = new Option<int>(
+            name: "--indent-size",
+            description: "The number of spaces to use for indentation.",
+            getDefaultValue: () => 4)
+        {
+            ArgumentHelpName = "count"
+        };
 
         var dryRunOption = new Option<bool>(
             name: "--dry-run",
@@ -51,12 +66,14 @@ static class Program
         rootCommand.AddOption(solutionOption);
         rootCommand.AddOption(qtVersionOption);
         rootCommand.AddOption(enableStandaloneProjectBuildsOption);
+        rootCommand.AddOption(indentStyleOption);
+        rootCommand.AddOption(indentSizeOption);
         rootCommand.AddOption(dryRunOption);
         rootCommand.AddOption(logLevelOption);
         rootCommand.AddValidator(result =>
         {
             var hasProjects = result.GetValueForOption(projectsOption)?.Count > 0;
-            var hasSolution = !string.IsNullOrEmpty(result.GetValueForOption(solutionOption));
+            var hasSolution = result.GetValueForOption(solutionOption) != null;
             if (hasProjects == hasSolution)
             {
                 result.ErrorMessage = "Specify either --projects or --solution, but not both.";
@@ -67,7 +84,9 @@ static class Program
             projectsOption, 
             solutionOption, 
             qtVersionOption, 
-            enableStandaloneProjectBuildsOption, 
+            enableStandaloneProjectBuildsOption,
+            indentStyleOption,
+            indentSizeOption,
             dryRunOption, 
             logLevelOption);
 
@@ -81,14 +100,22 @@ static class Program
         return parser.Invoke(args);
     }
 
-    static void Run(List<string>? projects, string? solution, int? qtVersion, bool enableStandaloneProjectBuilds, bool dryRun, LogLevel logLevel)
+    static void Run(
+        List<FileInfo>? projects, 
+        FileInfo? solution, 
+        int? qtVersion, 
+        bool enableStandaloneProjectBuilds, 
+        string indentStyle, 
+        int indentSize, 
+        bool dryRun, 
+        LogLevel logLevel)
     {
         logger = CreateLogger(logLevel);
 
         ICMakeFileWriter writer = dryRun ? new ConsoleFileWriter(logger) : new DiskFileWriter();
 
         var converter = new Converter(logger);
-        converter.Convert(projects, solution, qtVersion, enableStandaloneProjectBuilds, writer);
+        converter.Convert(projects, solution, qtVersion, enableStandaloneProjectBuilds, indentStyle, indentSize, writer);
     }
 
     static ILogger CreateLogger(LogLevel logLevel)

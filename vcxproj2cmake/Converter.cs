@@ -11,7 +11,7 @@ public class Converter
         this.logger = logger;
     }
 
-    public void Convert(List<string>? projects, string? solution, int? qtVersion, bool enableStandaloneProjectBuilds, ICMakeFileWriter writer)
+    public void Convert(List<FileInfo>? projects, FileInfo? solution, int? qtVersion, bool enableStandaloneProjectBuilds, string indentStyle, int indentSize, ICMakeFileWriter writer)
     {
         var conanPackageInfoRepository = new ConanPackageInfoRepository();
 
@@ -20,21 +20,21 @@ public class Converter
 
         if (projects != null && projects.Any())
         {
-            foreach (var projectPath in projects!)
+            foreach (var project in projects!)
             {
-                projectInfos.Add(ProjectInfo.ParseProjectFile(projectPath, qtVersion, conanPackageInfoRepository, logger));
+                projectInfos.Add(ProjectInfo.ParseProjectFile(project.FullName, qtVersion, conanPackageInfoRepository, logger));
             }
         }
         else if (solution != null)
         {
-            solutionInfo = SolutionInfo.ParseSolutionFile(solution!, logger);
+            solutionInfo = SolutionInfo.ParseSolutionFile(solution!.FullName, logger);
 
             if (solutionInfo.Projects.Length == 0)
                 throw new CatastrophicFailureException($"No .vcxproj files found in solution: {solution}");
 
             foreach (var projectReference in solutionInfo.Projects)
             {
-                string absolutePath = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(solution)!, projectReference.Path));
+                string absolutePath = Path.GetFullPath(Path.Combine(solution.DirectoryName!, projectReference.Path));
                 projectReference.ProjectInfo = ProjectInfo.ParseProjectFile(absolutePath, qtVersion, conanPackageInfoRepository, logger);
                 projectInfos.Add(projectReference.ProjectInfo);
             }
@@ -44,7 +44,7 @@ public class Converter
         ResolveProjectReferences(projectInfos);
         projectInfos = RemoveObsoleteLibrariesFromProjectReferences(projectInfos);
 
-        var settings = new CMakeGeneratorSettings(enableStandaloneProjectBuilds, writer);
+        var settings = new CMakeGeneratorSettings(enableStandaloneProjectBuilds, indentStyle, indentSize, writer);
         var cmakeGenerator = new CMakeGenerator(logger);
         cmakeGenerator.Generate(solutionInfo, projectInfos, settings);
     }
@@ -94,6 +94,7 @@ public class Converter
             if (!projectInfo.LinkLibraryDependenciesEnabled)
                 return projectInfo;
 
+            // Assumes that the output library names have not been customized and are the same as the project names with a .lib extension
             var dependencyTargets = projectInfo.GetAllReferencedProjects(projectInfos)
                 .Where(project => project.ConfigurationType == "StaticLibrary" || project.ConfigurationType == "DynamicLibrary")
                 .Select(project => project.ProjectName + ".lib")
@@ -102,16 +103,17 @@ public class Converter
             foreach (var dependencyTarget in dependencyTargets)
                 if (projectInfo.Libraries.Values.Values.SelectMany(s => s).Contains(dependencyTarget, StringComparer.OrdinalIgnoreCase))
                 {
-                    logger.LogInformation($"Removing explicit library dependency {dependencyTarget} from project {projectInfo.ProjectName} since LinkLibraryDependencies is enabled.");
+                    logger!.LogInformation($"Removing explicit library dependency {dependencyTarget} from project {projectInfo.ProjectName} since LinkLibraryDependencies is enabled.");
                 }
 
-            var filteredLibraries = projectInfo.Libraries.Map(libraries => libraries.Except(dependencyTargets, StringComparer.OrdinalIgnoreCase).ToArray());
+            var filteredLibraries = projectInfo.Libraries.Map(libraries => libraries.Except(dependencyTargets, StringComparer.OrdinalIgnoreCase).ToArray(), projectInfo.ProjectConfigurations, logger!);
 
             return new ProjectInfo
             {
                 AbsoluteProjectPath = projectInfo.AbsoluteProjectPath,
                 ProjectName = projectInfo.ProjectName,
                 UniqueName = projectInfo.UniqueName,
+                ProjectConfigurations = projectInfo.ProjectConfigurations,
                 Languages = projectInfo.Languages,
                 ConfigurationType = projectInfo.ConfigurationType,
                 CppLanguageStandard = projectInfo.CppLanguageStandard,
@@ -126,6 +128,8 @@ public class Converter
                 ProjectReferences = projectInfo.ProjectReferences,
                 LinkerSubsystem = projectInfo.LinkerSubsystem,
                 LinkLibraryDependenciesEnabled = projectInfo.LinkLibraryDependenciesEnabled,
+                IsHeaderOnlyLibrary = projectInfo.IsHeaderOnlyLibrary,
+                PrecompiledHeaderFile = projectInfo.PrecompiledHeaderFile,
                 UsesOpenMP = projectInfo.UsesOpenMP,
                 QtVersion = projectInfo.QtVersion,
                 RequiresQtMoc = projectInfo.RequiresQtMoc,
