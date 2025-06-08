@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
@@ -34,7 +35,7 @@ class ProjectInfo
     public required QtModule[] QtModules { get; init; }
     public required ConanPackage[] ConanPackages { get; init; }
 
-    public static ProjectInfo ParseProjectFile(string projectPath, int? qtVersion, ConanPackageInfoRepository conanPackageInfoRepository, ILogger logger)
+    public static ProjectInfo ParseProjectFile(string projectPath, int? qtVersion, ConanPackageInfoRepository conanPackageInfoRepository, IFileSystem fileSystem, ILogger logger)
     {
         logger.LogInformation($"Parsing {projectPath}");
 
@@ -58,7 +59,10 @@ class ProjectInfo
         var qtRccXName = XName.Get("QtRcc", msbuildNamespace);
         var qtUicXName = XName.Get("QtUic", msbuildNamespace);
 
-        var doc = XDocument.Load(projectPath);
+        XDocument doc;
+        using (var fileStream = fileSystem.FileStream.New(projectPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            doc = XDocument.Load(fileStream);
+
         var projectElement = doc.Element(projectXName)!;
 
         var projectConfigurations =

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Scriban;
 using Scriban.Runtime;
+using System.IO.Abstractions;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -9,10 +10,12 @@ namespace vcxproj2cmake;
 
 class CMakeGenerator
 {
-    ILogger logger;
+    readonly IFileSystem fileSystem;
+    readonly ILogger logger;
 
-    public CMakeGenerator(ILogger logger)
+    public CMakeGenerator(IFileSystem fileSystem, ILogger logger)
     {
+        this.fileSystem = fileSystem;
         this.logger = logger;
     }
 
@@ -74,7 +77,7 @@ class CMakeGenerator
                     "tabs" => new string('\t', indentLevel),
                     _ => throw new ArgumentException($"Invalid indent style: {settings.IndentStyle}")
                 };
-            }, RegexOptions.Multiline);        
+            }, RegexOptions.Multiline);
 
         if (settings.DryRun)
         {
@@ -83,8 +86,8 @@ class CMakeGenerator
             logger.LogInformation($"Generated output for {destinationPath}:{newline}{newline}{extraIndentedResult}");
         }
         else
-        {            
-            File.WriteAllText(destinationPath, result);
+        {
+            fileSystem.File.WriteAllText(destinationPath, result);
         }
     }
 
