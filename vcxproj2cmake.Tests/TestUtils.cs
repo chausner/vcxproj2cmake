@@ -1,4 +1,6 @@
-﻿using System.IO.Abstractions.TestingHelpers;
+﻿using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
+using System.IO.Abstractions.TestingHelpers;
 using Xunit;
 
 namespace vcxproj2cmake.Tests;
@@ -8,5 +10,17 @@ internal static class AssertEx
     public static void FileHasContent(string path, MockFileSystem fileSystem, string content)
     {
         Assert.Equal(content.Trim(), fileSystem.GetFile(path).TextContents.Trim());
+    }
+}
+
+internal class InMemoryLogger : ILogger
+{
+    public ConcurrentQueue<string> Messages { get; } = new();
+    public IDisposable BeginScope<TState>(TState state) => null!;
+    public bool IsEnabled(LogLevel logLevel) => true;
+
+    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+    {
+        Messages.Enqueue(formatter(state, exception));
     }
 }
