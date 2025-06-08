@@ -31,7 +31,6 @@ record Config(Regex MSBuildProjectConfigPattern, string CMakeExpression)
 record ConfigDependentSetting
 {
     public required OrderedDictionary<Config, string> Values { get; init; }
-
     public required string SettingName { get; init; }
     public required string DefaultValue { get; init; }
 

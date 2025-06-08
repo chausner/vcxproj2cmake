@@ -130,7 +130,6 @@ static class Program
         return loggerFactory.CreateLogger("vcxproj2cmake");
     }
 
-
     static void HandleException(Exception ex)
     {
         if (ex is CatastrophicFailureException)
