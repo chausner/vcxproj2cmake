@@ -12,7 +12,9 @@ public class ConverterTests
         // Arrange
         var fileSystem = new MockFileSystem();
 
-        fileSystem.AddFile(@"C:\EmptyProject.vcxproj", new("""
+        fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+        fileSystem.AddFile(@"EmptyProject.vcxproj", new("""
             <?xml version="1.0" encoding="utf-8"?>            
             <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
               <ItemGroup Label="ProjectConfigurations">
@@ -97,7 +99,7 @@ public class ConverterTests
         
         // Act
         converter.Convert(
-            projects: [new(@"C:\EmptyProject.vcxproj")],
+            projects: [new(@"EmptyProject.vcxproj")],
             solution: null,
             qtVersion: null,
             enableStandaloneProjectBuilds: false,
@@ -128,6 +130,6 @@ public class ConverterTests
                 PUBLIC
                     /W3
             )            
-            """.Trim(), fileSystem.GetFile(@"C:\CMakeLists.txt").TextContents.Trim());
+            """.Trim(), fileSystem.GetFile(@"CMakeLists.txt").TextContents.Trim());
     }
 }
