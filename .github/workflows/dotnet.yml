@@ -9,7 +9,7 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -24,9 +24,9 @@ jobs:
     - name: Test
       run: dotnet test --no-build --configuration Release --verbosity normal
     - name: Publish
-      run: dotnet publish vcxproj2cmake/vcxproj2cmake.csproj --no-build --configuration Release --runtime win-x64
+      run: dotnet publish vcxproj2cmake\vcxproj2cmake.csproj --no-build --configuration Release --runtime win-x64
     - name: Upload published output
       uses: actions/upload-artifact@v4
       with:
         name: vcxproj2cmake-win-x64
-        path: ./vcxproj2cmake/bin/Release/net9.0/win-x64/publish
+        path: .\vcxproj2cmake\bin\Release\net9.0\win-x64\publish
