@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using System.IO.Abstractions.TestingHelpers;
 using Xunit;
 
 namespace vcxproj2cmake.Tests;
@@ -6,37 +7,127 @@ namespace vcxproj2cmake.Tests;
 public class ConverterTests
 {
     [Fact]
-    public void Converts_simple_project()
+    public void Given_EmptyProject_When_Converted_Then_MatchesExpectedOutput()
     {
-        var projectPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../..", "TestData", "Simple", "test.vcxproj"));
+        // Arrange
+        var fileSystem = new MockFileSystem();
+
+        fileSystem.AddFile(@"C:\EmptyProject.vcxproj", new("""
+            <?xml version="1.0" encoding="utf-8"?>            
+            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+              <ItemGroup Label="ProjectConfigurations">
+                <ProjectConfiguration Include="Debug|Win32">
+                  <Configuration>Debug</Configuration>
+                  <Platform>Win32</Platform>
+                </ProjectConfiguration>
+                <ProjectConfiguration Include="Release|Win32">
+                  <Configuration>Release</Configuration>
+                  <Platform>Win32</Platform>
+                </ProjectConfiguration>
+              </ItemGroup>
+              <PropertyGroup Label="Globals">
+                <VCProjectVersion>17.0</VCProjectVersion>
+                <Keyword>Win32Proj</Keyword>
+                <ProjectGuid>{620c346a-996a-4c2b-8485-4a872433008b}</ProjectGuid>
+                <RootNamespace>EmptyProject</RootNamespace>
+                <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+              </PropertyGroup>
+              <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+              <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                <ConfigurationType>Application</ConfigurationType>
+                <UseDebugLibraries>true</UseDebugLibraries>
+                <PlatformToolset>v143</PlatformToolset>
+                <CharacterSet>Unicode</CharacterSet>
+              </PropertyGroup>
+              <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                <ConfigurationType>Application</ConfigurationType>
+                <UseDebugLibraries>false</UseDebugLibraries>
+                <PlatformToolset>v143</PlatformToolset>
+                <WholeProgramOptimization>true</WholeProgramOptimization>
+                <CharacterSet>Unicode</CharacterSet>
+              </PropertyGroup>
+              <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+              <ImportGroup Label="ExtensionSettings">
+              </ImportGroup>
+              <ImportGroup Label="Shared">
+              </ImportGroup>
+              <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+                <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+              </ImportGroup>
+              <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+                <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+              </ImportGroup>
+              <PropertyGroup Label="UserMacros" />
+              <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+                <ClCompile>
+                  <WarningLevel>Level3</WarningLevel>
+                  <SDLCheck>true</SDLCheck>
+                  <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+                  <ConformanceMode>true</ConformanceMode>
+                </ClCompile>
+                <Link>
+                  <SubSystem>Console</SubSystem>
+                  <GenerateDebugInformation>true</GenerateDebugInformation>
+                </Link>
+              </ItemDefinitionGroup>
+              <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+                <ClCompile>
+                  <WarningLevel>Level3</WarningLevel>
+                  <FunctionLevelLinking>true</FunctionLevelLinking>
+                  <IntrinsicFunctions>true</IntrinsicFunctions>
+                  <SDLCheck>true</SDLCheck>
+                  <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+                  <ConformanceMode>true</ConformanceMode>
+                </ClCompile>
+                <Link>
+                  <SubSystem>Console</SubSystem>
+                  <GenerateDebugInformation>true</GenerateDebugInformation>
+                </Link>
+              </ItemDefinitionGroup>
+              <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+              <ImportGroup Label="ExtensionTargets">
+              </ImportGroup>
+            </Project>
+            """));
 
         using var loggerFactory = LoggerFactory.Create(builder => { });
-        var logger = loggerFactory.CreateLogger("test");
+        var logger = loggerFactory.CreateLogger(typeof(ConverterTests));
 
-        var writer = new InMemoryFileWriter();
-        var converter = new Converter(logger);
+        var converter = new Converter(fileSystem, logger);
+        
+        // Act
+        converter.Convert(
+            projects: [new(@"C:\EmptyProject.vcxproj")],
+            solution: null,
+            qtVersion: null,
+            enableStandaloneProjectBuilds: false,
+            indentStyle: "spaces",
+            indentSize: 4,
+            dryRun: false);
 
-        converter.Convert([new(projectPath)], null, null, false, "spaces", 4, writer);
+        // Assert
+        Assert.Equal("""            
+            cmake_minimum_required(VERSION 3.13)
+            project(EmptyProject)
 
-        var cmakePath = Path.Combine(Path.GetDirectoryName(projectPath)!, "CMakeLists.txt");
-        var expected = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "../../..", "TestData", "Simple", "expected_CMakeLists.txt"));
-        Assert.Equal(expected.Replace("\r\n", "\n").TrimEnd(), writer.Files[cmakePath].Replace("\r\n", "\n").TrimEnd());
-    }
 
-    [Fact]
-    public void Conversion_does_not_create_files_when_using_inmemory_writer()
-    {
-        var projectPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../..", "TestData", "Simple", "test.vcxproj"));
+            add_executable(EmptyProject
+            )
 
-        using var loggerFactory = LoggerFactory.Create(builder => { });
-        var logger = loggerFactory.CreateLogger("test");
+            target_compile_definitions(EmptyProject
+                PUBLIC
+                    WIN32
+                    _CONSOLE
+                    UNICODE
+                    _UNICODE
+                    $<$<CONFIG:Debug>:_DEBUG>
+                    $<$<CONFIG:Release>:NDEBUG>
+            )
 
-        var writer = new InMemoryFileWriter();
-        var converter = new Converter(logger);
-
-        converter.Convert([new(projectPath)], null, null, false, "spaces", 4, writer);
-
-        var cmakePath = Path.Combine(Path.GetDirectoryName(projectPath)!, "CMakeLists.txt");
-        Assert.False(File.Exists(cmakePath));
+            target_compile_options(EmptyProject
+                PUBLIC
+                    /W3
+            )            
+            """.Trim(), fileSystem.GetFile(@"C:\CMakeLists.txt").TextContents.Trim());
     }
 }

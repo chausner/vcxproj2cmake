@@ -1,17 +1,20 @@
 using Microsoft.Extensions.Logging;
+using System.IO.Abstractions;
 
 namespace vcxproj2cmake;
 
 public class Converter
 {
+    readonly IFileSystem fileSystem;
     readonly ILogger logger;
 
-    public Converter(ILogger logger)
+    public Converter(IFileSystem fileSystem, ILogger logger)
     {
+        this.fileSystem = fileSystem;
         this.logger = logger;
     }
 
-    public void Convert(List<FileInfo>? projects, FileInfo? solution, int? qtVersion, bool enableStandaloneProjectBuilds, string indentStyle, int indentSize, ICMakeFileWriter writer)
+    public void Convert(List<FileInfo>? projects, FileInfo? solution, int? qtVersion, bool enableStandaloneProjectBuilds, string indentStyle, int indentSize, bool dryRun)
     {
         var conanPackageInfoRepository = new ConanPackageInfoRepository();
 
@@ -22,12 +25,12 @@ public class Converter
         {
             foreach (var project in projects!)
             {
-                projectInfos.Add(ProjectInfo.ParseProjectFile(project.FullName, qtVersion, conanPackageInfoRepository, logger));
+                projectInfos.Add(ProjectInfo.ParseProjectFile(project.FullName, qtVersion, conanPackageInfoRepository, fileSystem, logger));
             }
         }
         else if (solution != null)
         {
-            solutionInfo = SolutionInfo.ParseSolutionFile(solution!.FullName, logger);
+            solutionInfo = SolutionInfo.ParseSolutionFile(solution!.FullName, fileSystem, logger);
 
             if (solutionInfo.Projects.Length == 0)
                 throw new CatastrophicFailureException($"No .vcxproj files found in solution: {solution}");
@@ -35,7 +38,7 @@ public class Converter
             foreach (var projectReference in solutionInfo.Projects)
             {
                 string absolutePath = Path.GetFullPath(Path.Combine(solution.DirectoryName!, projectReference.Path));
-                projectReference.ProjectInfo = ProjectInfo.ParseProjectFile(absolutePath, qtVersion, conanPackageInfoRepository, logger);
+                projectReference.ProjectInfo = ProjectInfo.ParseProjectFile(absolutePath, qtVersion, conanPackageInfoRepository, fileSystem, logger);
                 projectInfos.Add(projectReference.ProjectInfo);
             }
         }
@@ -44,8 +47,8 @@ public class Converter
         ResolveProjectReferences(projectInfos);
         projectInfos = RemoveObsoleteLibrariesFromProjectReferences(projectInfos);
 
-        var settings = new CMakeGeneratorSettings(enableStandaloneProjectBuilds, indentStyle, indentSize, writer);
-        var cmakeGenerator = new CMakeGenerator(logger);
+        var settings = new CMakeGeneratorSettings(enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun);
+        var cmakeGenerator = new CMakeGenerator(fileSystem, logger);
         cmakeGenerator.Generate(solutionInfo, projectInfos, settings);
     }
 

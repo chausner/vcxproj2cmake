@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Scriban;
 using Scriban.Runtime;
+using System.IO.Abstractions;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -9,10 +10,12 @@ namespace vcxproj2cmake;
 
 class CMakeGenerator
 {
-    ILogger logger;
+    readonly IFileSystem fileSystem;
+    readonly ILogger logger;
 
-    public CMakeGenerator(ILogger logger)
+    public CMakeGenerator(IFileSystem fileSystem, ILogger logger)
     {
+        this.fileSystem = fileSystem;
         this.logger = logger;
     }
 
@@ -76,7 +79,16 @@ class CMakeGenerator
                 };
             }, RegexOptions.Multiline);
 
-        settings.FileWriter.WriteFile(destinationPath, result);
+        if (settings.DryRun)
+        {
+            var newline = Environment.NewLine;
+            var extraIndentedResult = Regex.Replace(result, "^", "    ", RegexOptions.Multiline);
+            logger.LogInformation($"Generated output for {destinationPath}:{newline}{newline}{extraIndentedResult}");
+        }
+        else
+        {
+            fileSystem.File.WriteAllText(destinationPath, result);
+        }
     }
 
     void GenerateCMakeForProject(ProjectInfo projectInfo, IEnumerable<ProjectInfo> allProjectInfos, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
@@ -223,4 +235,4 @@ class CMakeGenerator
     }
 }
 
-record CMakeGeneratorSettings(bool EnableStandaloneProjectBuilds, string IndentStyle, int IndentSize, ICMakeFileWriter FileWriter);
+record CMakeGeneratorSettings(bool EnableStandaloneProjectBuilds, string IndentStyle, int IndentSize, bool DryRun);

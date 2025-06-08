@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Console;
 using System.CommandLine;
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
+using System.IO.Abstractions;
 
 namespace vcxproj2cmake;
 
@@ -112,10 +113,8 @@ static class Program
     {
         logger = CreateLogger(logLevel);
 
-        ICMakeFileWriter writer = dryRun ? new ConsoleFileWriter(logger) : new DiskFileWriter();
-
-        var converter = new Converter(logger);
-        converter.Convert(projects, solution, qtVersion, enableStandaloneProjectBuilds, indentStyle, indentSize, writer);
+        var converter = new Converter(new FileSystem(), logger);
+        converter.Convert(projects, solution, qtVersion, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun);
     }
 
     static ILogger CreateLogger(LogLevel logLevel)
