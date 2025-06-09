@@ -44,8 +44,8 @@ class SolutionInfo
         {
             var solutionDir = Path.GetFullPath(Path.GetDirectoryName(AbsoluteSolutionPath)!);
 
+            // this works for absolute and relative project.Path, Path.Combine handles both cases correctly
             return Projects.All(project =>
-                !Path.IsPathFullyQualified(project.Path) && 
                 Path.GetFullPath(Path.Combine(solutionDir, project.Path)).StartsWith(solutionDir, StringComparison.OrdinalIgnoreCase));
         }
     }

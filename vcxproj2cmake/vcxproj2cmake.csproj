@@ -43,4 +43,8 @@
     <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" Version="22.0.14" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="vcxproj2cmake.Tests" />
+  </ItemGroup>
+
 </Project>
