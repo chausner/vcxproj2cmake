@@ -21,8 +21,8 @@ public class ConverterTests
 
             // Act
             converter.Convert(
-                projects: [new(@"EmptyProject.vcxproj")],
-                solution: null,
+                projectFiles: [new(@"EmptyProject.vcxproj")],
+                solutionFile: null,
                 qtVersion: null,
                 enableStandaloneProjectBuilds: false,
                 indentStyle: "spaces",
@@ -73,8 +73,8 @@ public class ConverterTests
             // Act & Assert
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
-                    projects: null,
-                    solution: new(@"EmptySolution.sln"),
+                    projectFiles: null,
+                    solutionFile: new(@"EmptySolution.sln"),
                     qtVersion: null,
                     enableStandaloneProjectBuilds: false,
                     indentStyle: "spaces",
@@ -107,8 +107,8 @@ public class ConverterTests
 
             // Act
             converter.Convert(
-                projects: null,
-                solution: new(@"TwoEmptyProjects.sln"),
+                projectFiles: null,
+                solutionFile: new(@"TwoEmptyProjects.sln"),
                 qtVersion: null,
                 enableStandaloneProjectBuilds: false,
                 indentStyle: "spaces",
@@ -190,8 +190,8 @@ public class ConverterTests
 
             // Act
             converter.Convert(
-                projects: [new(@"EmptyProject.vcxproj")],
-                solution: null,
+                projectFiles: [new(@"EmptyProject.vcxproj")],
+                solutionFile: null,
                 qtVersion: null,
                 enableStandaloneProjectBuilds: false,
                 indentStyle: "tabs",
@@ -237,8 +237,8 @@ public class ConverterTests
 
             // Act
             converter.Convert(
-                projects: [new(@"EmptyProject.vcxproj")],
-                solution: null,
+                projectFiles: [new(@"EmptyProject.vcxproj")],
+                solutionFile: null,
                 qtVersion: null,
                 enableStandaloneProjectBuilds: false,
                 indentStyle: "spaces",
@@ -299,8 +299,8 @@ public class ConverterTests
 
             // Act
             converter.Convert(
-                projects: null,
-                solution: new(@"TwoEmptyProjects.sln"),
+                projectFiles: null,
+                solutionFile: new(@"TwoEmptyProjects.sln"),
                 qtVersion: null,
                 enableStandaloneProjectBuilds: false,
                 indentStyle: "spaces",

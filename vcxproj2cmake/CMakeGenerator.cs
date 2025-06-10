@@ -19,43 +19,43 @@ class CMakeGenerator
         this.logger = logger;
     }
 
-    public void Generate(SolutionInfo? solutionInfo, IEnumerable<ProjectInfo> projectInfos, CMakeGeneratorSettings settings)
+    public void Generate(CMakeSolution? solution, IEnumerable<CMakeProject> projects, CMakeGeneratorSettings settings)
     {
         var projectCMakeListsTemplate = LoadTemplate("vcxproj2cmake.Resources.Templates.Project-CMakeLists.txt.scriban");
         var solutionCMakeListsTemplate = LoadTemplate("vcxproj2cmake.Resources.Templates.Solution-CMakeLists.txt.scriban");
 
-        ValidateFolders(solutionInfo, projectInfos);
+        ValidateFolders(solution, projects);
 
-        foreach (var projectInfo in projectInfos)
-            GenerateCMakeForProject(projectInfo, projectInfos, projectCMakeListsTemplate, settings);
+        foreach (var project in projects)
+            GenerateCMakeForProject(project, projects, projectCMakeListsTemplate, settings);
 
-        if (solutionInfo != null)
-            GenerateCMakeForSolution(solutionInfo, projectInfos, solutionCMakeListsTemplate, settings);
+        if (solution != null)
+            GenerateCMakeForSolution(solution, projects, solutionCMakeListsTemplate, settings);
     }
 
-    static void ValidateFolders(SolutionInfo? solutionInfo, IEnumerable<ProjectInfo> projectInfos)
+    static void ValidateFolders(CMakeSolution? solution, IEnumerable<CMakeProject> projects)
     {
         HashSet<string> folders = [];
 
-        foreach (var projectInfo in projectInfos)
+        foreach (var project in projects)
         {
-            var folder = Path.GetDirectoryName(projectInfo.AbsoluteProjectPath)!;
+            var folder = Path.GetDirectoryName(project.AbsoluteProjectPath)!;
             if (!folders.Add(folder))
                 throw new CatastrophicFailureException($"Directory {folder} contains two or more projects. This is not supported.");
         }
 
-        if (solutionInfo != null && !folders.Add(Path.GetDirectoryName(solutionInfo.AbsoluteSolutionPath)!))
+        if (solution != null && !folders.Add(Path.GetDirectoryName(solution.AbsoluteSolutionPath)!))
             throw new CatastrophicFailureException($"The solution file and at least one project file are located in the same directory. This is not supported.");
     }
 
-    void GenerateCMake(object model, IEnumerable<ProjectInfo> allProjectInfos, string destinationPath, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
+    void GenerateCMake(object model, IEnumerable<CMakeProject> allProjects, string destinationPath, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
     {
         logger.LogInformation($"Generating {destinationPath}");
 
         var scriptObject = new ScriptObject();
         scriptObject.Import(model);
         scriptObject.Import(settings);
-        scriptObject.SetValue("all_projects", allProjectInfos, true);
+        scriptObject.SetValue("all_projects", allProjects, true);
         scriptObject.Import("fail", new Action<string>(error => throw new CatastrophicFailureException(error)));
         scriptObject.Import("translate_msbuild_macros", TranslateMSBuildMacros);
         scriptObject.Import("normalize_path", NormalizePath);
@@ -91,18 +91,18 @@ class CMakeGenerator
         }
     }
 
-    void GenerateCMakeForProject(ProjectInfo projectInfo, IEnumerable<ProjectInfo> allProjectInfos, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
+    void GenerateCMakeForProject(CMakeProject project, IEnumerable<CMakeProject> allProjects, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
     {
-        string cmakeListsPath = Path.Combine(Path.GetDirectoryName(projectInfo.AbsoluteProjectPath)!, "CMakeLists.txt");
+        string cmakeListsPath = Path.Combine(Path.GetDirectoryName(project.AbsoluteProjectPath)!, "CMakeLists.txt");
 
-        GenerateCMake(projectInfo, allProjectInfos, cmakeListsPath, cmakeListsTemplate, settings);
+        GenerateCMake(project, allProjects, cmakeListsPath, cmakeListsTemplate, settings);
     }
 
-    void GenerateCMakeForSolution(SolutionInfo solutionInfo, IEnumerable<ProjectInfo> allProjectInfos, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
+    void GenerateCMakeForSolution(CMakeSolution solution, IEnumerable<CMakeProject> allProjects, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
     {
-        string cmakeListsPath = Path.Combine(Path.GetDirectoryName(solutionInfo.AbsoluteSolutionPath)!, "CMakeLists.txt");
+        string cmakeListsPath = Path.Combine(Path.GetDirectoryName(solution.AbsoluteSolutionPath)!, "CMakeLists.txt");
 
-        GenerateCMake(solutionInfo, allProjectInfos, cmakeListsPath, cmakeListsTemplate, settings);
+        GenerateCMake(solution, allProjects, cmakeListsPath, cmakeListsTemplate, settings);
     }
 
     static Template LoadTemplate(string resourceName)
@@ -182,15 +182,15 @@ class CMakeGenerator
         return translatedValue;
     }
 
-    ProjectInfo[] OrderProjectsByDependencies(IEnumerable<ProjectInfo> projects)
+    CMakeProject[] OrderProjectsByDependencies(IEnumerable<CMakeProject> projects)
     {
-        List<ProjectInfo> orderedProjects = [];
-        List<ProjectInfo> unorderedProjects = new(projects);
+        List<CMakeProject> orderedProjects = [];
+        List<CMakeProject> unorderedProjects = new(projects);
 
         while (unorderedProjects.Count > 0)
         {
             var projectsWithAllDependenciesSatisfied = unorderedProjects
-                .Where(project => project.ProjectReferences.All(p => orderedProjects.Any(p2 => p2.AbsoluteProjectPath == p.ProjectInfo!.AbsoluteProjectPath)))
+                .Where(project => project.ProjectReferences.All(p => orderedProjects.Any(p2 => p2.AbsoluteProjectPath == p.Project!.AbsoluteProjectPath)))
                 .ToArray();
 
             if (projectsWithAllDependenciesSatisfied.Length > 0)
@@ -210,7 +210,7 @@ class CMakeGenerator
                 {
                     sb.AppendLine($"Project {project.ProjectName}");
                     foreach (var missingReference in project.ProjectReferences.Where(pr =>
-                                 orderedProjects.All(p => p.AbsoluteProjectPath != pr.ProjectInfo!.AbsoluteProjectPath)))
+                                 orderedProjects.All(p => p.AbsoluteProjectPath != pr.Project!.AbsoluteProjectPath)))
                     {
                         sb.AppendLine($"  missing dependency {missingReference.Path}");
                     }
@@ -225,12 +225,12 @@ class CMakeGenerator
         return orderedProjects.ToArray();
     }
 
-    ProjectReference[] OrderProjectReferencesByDependencies(IEnumerable<ProjectReference> projectReferences, IEnumerable<ProjectInfo>? allProjects = null)
+    CMakeProjectReference[] OrderProjectReferencesByDependencies(IEnumerable<CMakeProjectReference> projectReferences, IEnumerable<CMakeProject>? allProjects = null)
     {
-        var orderedProjects = OrderProjectsByDependencies(allProjects ?? projectReferences.Select(pr => pr.ProjectInfo!));
+        var orderedProjects = OrderProjectsByDependencies(allProjects ?? projectReferences.Select(pr => pr.Project!));
 
         return projectReferences
-            .OrderBy(pr => Array.FindIndex(orderedProjects, p => p.AbsoluteProjectPath == pr.ProjectInfo!.AbsoluteProjectPath))
+            .OrderBy(pr => Array.FindIndex(orderedProjects, p => p.AbsoluteProjectPath == pr.Project!.AbsoluteProjectPath))
             .ToArray();
     }
 }

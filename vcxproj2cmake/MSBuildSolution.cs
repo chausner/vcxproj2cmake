@@ -4,13 +4,13 @@ using System.Text.RegularExpressions;
 
 namespace vcxproj2cmake;
 
-class SolutionInfo
+class MSBuildSolution
 {
     public required string AbsoluteSolutionPath { get; init; }
     public required string SolutionName { get; init; }
-    public required ProjectReference[] Projects { get; init; }
+    public required string[] Projects { get; init; }
 
-    public static SolutionInfo ParseSolutionFile(string solutionPath, IFileSystem fileSystem, ILogger logger)
+    public static MSBuildSolution ParseSolutionFile(string solutionPath, IFileSystem fileSystem, ILogger logger)
     {
         logger.LogInformation($"Parsing {solutionPath}");
 
@@ -30,23 +30,11 @@ class SolutionInfo
                 logger.LogWarning($"Ignoring non-vcxproj project: {projectFilePath}");
         }
 
-        return new SolutionInfo
+        return new MSBuildSolution
         {
             AbsoluteSolutionPath = Path.GetFullPath(solutionPath),
             SolutionName = Path.GetFileNameWithoutExtension(solutionPath),
-            Projects = projectPaths.Select(p => new ProjectReference { Path = p }).ToArray()
+            Projects = projectPaths.ToArray()
         };
-    }
-
-    public bool SolutionIsTopLevel
-    {
-        get
-        {
-            var solutionDir = Path.GetFullPath(Path.GetDirectoryName(AbsoluteSolutionPath)!);
-
-            // this works for absolute and relative project.Path, Path.Combine handles both cases correctly
-            return Projects.All(project =>
-                Path.GetFullPath(Path.Combine(solutionDir, project.Path)).StartsWith(solutionDir, StringComparison.OrdinalIgnoreCase));
-        }
     }
 }

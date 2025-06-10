@@ -14,133 +14,104 @@ public class Converter
         this.logger = logger;
     }
 
-    public void Convert(List<FileInfo>? projects, FileInfo? solution, int? qtVersion, bool enableStandaloneProjectBuilds, string indentStyle, int indentSize, bool dryRun)
+    public void Convert(List<FileInfo>? projectFiles, FileInfo? solutionFile, int? qtVersion, bool enableStandaloneProjectBuilds, string indentStyle, int indentSize, bool dryRun)
     {
+        MSBuildSolution? solution = null;
+        List<MSBuildProject> projects = [];
+
+        if (projectFiles != null && projectFiles.Any())
+        {
+            foreach (var project in projectFiles!)
+            {
+                projects.Add(MSBuildProject.ParseProjectFile(project.FullName, fileSystem, logger));
+            }
+        }
+        else if (solutionFile != null)
+        {
+            solution = MSBuildSolution.ParseSolutionFile(solutionFile!.FullName, fileSystem, logger);
+
+            if (solution.Projects.Length == 0)
+                throw new CatastrophicFailureException($"No .vcxproj files found in solution: {solutionFile}");
+
+            foreach (var projectReference in solution.Projects)
+            {
+                string absolutePath = Path.GetFullPath(Path.Combine(solutionFile.DirectoryName!, projectReference));
+                projects.Add(MSBuildProject.ParseProjectFile(absolutePath, fileSystem, logger));
+            }
+        }
+
         var conanPackageInfoRepository = new ConanPackageInfoRepository();
 
-        SolutionInfo? solutionInfo = null;
-        List<ProjectInfo> projectInfos = [];
+        var cmakeProjects = projects.Select(project => new CMakeProject(project, qtVersion, conanPackageInfoRepository, fileSystem, logger)).ToList();
+        var cmakeSolution = solution != null ? new CMakeSolution(solution, cmakeProjects) : null;
 
-        if (projects != null && projects.Any())
-        {
-            foreach (var project in projects!)
-            {
-                projectInfos.Add(ProjectInfo.ParseProjectFile(project.FullName, qtVersion, conanPackageInfoRepository, fileSystem, logger));
-            }
-        }
-        else if (solution != null)
-        {
-            solutionInfo = SolutionInfo.ParseSolutionFile(solution!.FullName, fileSystem, logger);
-
-            if (solutionInfo.Projects.Length == 0)
-                throw new CatastrophicFailureException($"No .vcxproj files found in solution: {solution}");
-
-            foreach (var projectReference in solutionInfo.Projects)
-            {
-                string absolutePath = Path.GetFullPath(Path.Combine(solution.DirectoryName!, projectReference.Path));
-                projectReference.ProjectInfo = ProjectInfo.ParseProjectFile(absolutePath, qtVersion, conanPackageInfoRepository, fileSystem, logger);
-                projectInfos.Add(projectReference.ProjectInfo);
-            }
-        }
-
-        AssignUniqueProjectNames(projectInfos);
-        ResolveProjectReferences(projectInfos);
-        projectInfos = RemoveObsoleteLibrariesFromProjectReferences(projectInfos);
+        AssignUniqueProjectNames(cmakeProjects);
+        ResolveProjectReferences(cmakeProjects);
+        RemoveObsoleteLibrariesFromProjectReferences(cmakeProjects);
 
         var settings = new CMakeGeneratorSettings(enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun);
         var cmakeGenerator = new CMakeGenerator(fileSystem, logger);
-        cmakeGenerator.Generate(solutionInfo, projectInfos, settings);
+        cmakeGenerator.Generate(cmakeSolution, cmakeProjects, settings);
     }
 
-    static void AssignUniqueProjectNames(IEnumerable<ProjectInfo> projectInfos)
+    static void AssignUniqueProjectNames(IEnumerable<CMakeProject> projects)
     {
         HashSet<string> assignedNames = [];
 
-        foreach (var projectInfo in projectInfos)
+        foreach (var project in projects)
         {
-            if (assignedNames.Add(projectInfo.ProjectName))
+            if (assignedNames.Add(project.ProjectName))
             {
-                projectInfo.UniqueName = projectInfo.ProjectName;
+                project.UniqueName = project.ProjectName;
             }
             else
             {
                 int i = 2;
-                while (!assignedNames.Add($"{projectInfo.ProjectName}{i}"))
+                while (!assignedNames.Add($"{project.ProjectName}{i}"))
                     i++;
-                projectInfo.UniqueName = $"{projectInfo.ProjectName}{i}";
+                project.UniqueName = $"{project.ProjectName}{i}";
             }
         }
     }
 
-    static void ResolveProjectReferences(IEnumerable<ProjectInfo> projectInfos)
+    static void ResolveProjectReferences(IEnumerable<CMakeProject> projects)
     {
-        foreach (var projectInfo in projectInfos)
+        foreach (var project in projects)
         {
-            foreach (var projectReference in projectInfo.ProjectReferences)
+            foreach (var projectReference in project.ProjectReferences)
             {
-                var absoluteReference = Path.GetFullPath(projectReference.Path, Path.GetDirectoryName(projectInfo.AbsoluteProjectPath)!);
+                var absoluteReference = Path.GetFullPath(projectReference.Path, Path.GetDirectoryName(project.AbsoluteProjectPath)!);
 
-                var referencedProjectInfo = projectInfos.FirstOrDefault(p => p.AbsoluteProjectPath == absoluteReference);
+                var referencedProject = projects.FirstOrDefault(p => p.AbsoluteProjectPath == absoluteReference);
 
-                if (referencedProjectInfo == null)
-                    throw new CatastrophicFailureException($"Project {projectInfo.AbsoluteProjectPath} references project {absoluteReference} which is not part of the solution or the list of projects.");
+                if (referencedProject == null)
+                    throw new CatastrophicFailureException($"Project {project.AbsoluteProjectPath} references project {absoluteReference} which is not part of the solution or the list of projects.");
 
-                projectReference.ProjectInfo = referencedProjectInfo;
+                projectReference.Project = referencedProject;
             }
         }
     }
 
-    List<ProjectInfo> RemoveObsoleteLibrariesFromProjectReferences(IEnumerable<ProjectInfo> projectInfos)
+    void RemoveObsoleteLibrariesFromProjectReferences(IEnumerable<CMakeProject> projects)
     {
-        return projectInfos.Select(projectInfo =>
+        foreach (var project in projects)
         {
-            if (!projectInfo.LinkLibraryDependenciesEnabled)
-                return projectInfo;
+            if (!project.LinkLibraryDependenciesEnabled)
+                continue;
 
             // Assumes that the output library names have not been customized and are the same as the project names with a .lib extension
-            var dependencyTargets = projectInfo.GetAllReferencedProjects(projectInfos)
+            var dependencyTargets = project.GetAllReferencedProjects(projects)
                 .Where(project => project.ConfigurationType == "StaticLibrary" || project.ConfigurationType == "DynamicLibrary")
                 .Select(project => project.ProjectName + ".lib")
                 .ToArray();
 
             foreach (var dependencyTarget in dependencyTargets)
-                if (projectInfo.Libraries.Values.Values.SelectMany(s => s).Contains(dependencyTarget, StringComparer.OrdinalIgnoreCase))
+                if (project.Libraries.Values.Values.SelectMany(s => s).Contains(dependencyTarget, StringComparer.OrdinalIgnoreCase))
                 {
-                    logger!.LogInformation($"Removing explicit library dependency {dependencyTarget} from project {projectInfo.ProjectName} since LinkLibraryDependencies is enabled.");
+                    logger!.LogInformation($"Removing explicit library dependency {dependencyTarget} from project {project.ProjectName} since LinkLibraryDependencies is enabled.");
                 }
 
-            var filteredLibraries = projectInfo.Libraries.Map(libraries => libraries.Except(dependencyTargets, StringComparer.OrdinalIgnoreCase).ToArray(), projectInfo.ProjectConfigurations, logger!);
-
-            return new ProjectInfo
-            {
-                AbsoluteProjectPath = projectInfo.AbsoluteProjectPath,
-                ProjectName = projectInfo.ProjectName,
-                UniqueName = projectInfo.UniqueName,
-                ProjectConfigurations = projectInfo.ProjectConfigurations,
-                Languages = projectInfo.Languages,
-                ConfigurationType = projectInfo.ConfigurationType,
-                CppLanguageStandard = projectInfo.CppLanguageStandard,
-                CLanguageStandard = projectInfo.CLanguageStandard,
-                SourceFiles = projectInfo.SourceFiles,
-                IncludePaths = projectInfo.IncludePaths,
-                PublicIncludePaths = projectInfo.PublicIncludePaths,
-                LinkerPaths = projectInfo.LinkerPaths,
-                Libraries = filteredLibraries,
-                Defines = projectInfo.Defines,
-                Options = projectInfo.Options,
-                ProjectReferences = projectInfo.ProjectReferences,
-                LinkerSubsystem = projectInfo.LinkerSubsystem,
-                LinkLibraryDependenciesEnabled = projectInfo.LinkLibraryDependenciesEnabled,
-                IsHeaderOnlyLibrary = projectInfo.IsHeaderOnlyLibrary,
-                PrecompiledHeaderFile = projectInfo.PrecompiledHeaderFile,
-                UsesOpenMP = projectInfo.UsesOpenMP,
-                QtVersion = projectInfo.QtVersion,
-                RequiresQtMoc = projectInfo.RequiresQtMoc,
-                RequiresQtUic = projectInfo.RequiresQtUic,
-                RequiresQtRcc = projectInfo.RequiresQtRcc,
-                QtModules = projectInfo.QtModules,
-                ConanPackages = projectInfo.ConanPackages
-            };
-        }).ToList();
+            project.Libraries = project.Libraries.Map(libraries => libraries.Except(dependencyTargets, StringComparer.OrdinalIgnoreCase).ToArray(), project.ProjectConfigurations, logger!);
+        }
     }
 }
