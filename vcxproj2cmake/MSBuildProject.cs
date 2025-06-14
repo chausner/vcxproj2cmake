@@ -187,41 +187,34 @@ class MSBuildProject
                                         $@"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'{Regex.Escape(projectConfig)}'"))
                     .ToList();
 
-            foreach (var group in itemDefinitionGroups)
+            var projectConfigCompilerSettings =
+                itemDefinitionGroups
+                .SelectMany(group => group.Elements(clCompileXName))
+                .SelectMany(element => element.Elements())
+                .ToDictionaryKeepingLast(element => element.Name.LocalName, element => element.Value.Trim());
+
+            var projectConfigLinkerSettings =
+                itemDefinitionGroups
+                .SelectMany(group => group.Elements())
+                .Where(element => element.Name == linkXName || element.Name == libXName)
+                .SelectMany(element => element.Elements())
+                .ToDictionaryKeepingLast(element => element.Name.LocalName, element => element.Value.Trim());
+
+            var projectConfigOtherSettings =
+                propertyGroups
+                .SelectMany(element => element.Elements())
+                .ToDictionaryKeepingLast(element => element.Name.LocalName, element => element.Value.Trim());
+
+            foreach (var setting in projectConfigCompilerSettings)
             {
-                // not using ToDictionary() here since settings may occur multiple times,
-                // in this case older definitions should get overwritten by newer definitions
-                var projectConfigCompilerSettings = new Dictionary<string, string>();
-                foreach (var element in group.Elements(clCompileXName).SelectMany(element => element.Elements()))
-                {
-                    projectConfigCompilerSettings[element.Name.LocalName] = element.Value.Trim();
-                }
-
-                var projectConfigLinkerSettings = new Dictionary<string, string>();
-                foreach (var element in group.Elements()
-                             .Where(element => element.Name == linkXName || element.Name == libXName)
-                             .SelectMany(element => element.Elements()))
-                {
-                    projectConfigLinkerSettings[element.Name.LocalName] = element.Value.Trim();
-                }
-
-                foreach (var setting in projectConfigCompilerSettings)
-                {
-                    compilerSettings.TryAdd(setting.Key, []);
-                    compilerSettings[setting.Key][projectConfig] = setting.Value;
-                }
-
-                foreach (var setting in projectConfigLinkerSettings)
-                {
-                    linkerSettings.TryAdd(setting.Key, []);
-                    linkerSettings[setting.Key][projectConfig] = setting.Value;
-                }
+                compilerSettings.TryAdd(setting.Key, []);
+                compilerSettings[setting.Key][projectConfig] = setting.Value;
             }
 
-            var projectConfigOtherSettings = new Dictionary<string, string>();
-            foreach (var element in propertyGroups.SelectMany(element => element.Elements()))
+            foreach (var setting in projectConfigLinkerSettings)
             {
-                projectConfigOtherSettings[element.Name.LocalName] = element.Value.Trim();
+                linkerSettings.TryAdd(setting.Key, []);
+                linkerSettings[setting.Key][projectConfig] = setting.Value;
             }
 
             foreach (var setting in projectConfigOtherSettings)

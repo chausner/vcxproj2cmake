@@ -166,6 +166,20 @@ static class EnumerableExtensions
 
         return dictionary;
     }
+
+    public static Dictionary<TKey, TValue> ToDictionaryKeepingLast<TSource, TKey, TValue>(
+        this IEnumerable<TSource> source,
+        Func<TSource, TKey> keySelector,
+        Func<TSource, TValue> valueSelector)
+        where TKey : notnull
+    {
+        Dictionary<TKey, TValue> dictionary = [];
+
+        foreach (var item in source)
+            dictionary[keySelector(item)] = valueSelector(item);
+
+        return dictionary;
+    }
 }
 
 static class TextWriterExtensions
