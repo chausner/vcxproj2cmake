@@ -4,7 +4,11 @@ namespace vcxproj2cmake;
 
 static class ConfigDependentSettingExtensions
 {
-    public static CMakeConfigDependentSetting Map(this CMakeConfigDependentSetting self, Func<string?, string?> mapper, IEnumerable<string> projectConfigurations, ILogger logger)
+    public static CMakeConfigDependentSetting Map(
+        this CMakeConfigDependentSetting self,
+        Func<string?, string?> mapper, 
+        IEnumerable<string> projectConfigurations,
+        ILogger logger)
     {
         Dictionary<string, string> mappedValues = [];
 
@@ -21,7 +25,12 @@ static class ConfigDependentSettingExtensions
         return new(msbuildSetting, projectConfigurations, logger);
     }
 
-    public static CMakeConfigDependentSetting Map(this CMakeConfigDependentSetting self, Func<string?, string?, string?> mapper, CMakeConfigDependentSetting setting, IEnumerable<string> projectConfigurations, ILogger logger)
+    public static CMakeConfigDependentSetting Map(
+        this CMakeConfigDependentSetting self, 
+        Func<string?, string?, string?> mapper,
+        CMakeConfigDependentSetting setting, 
+        IEnumerable<string> projectConfigurations,
+        ILogger logger)
     {
         Dictionary<string, string> mappedValues = [];
 
@@ -39,12 +48,22 @@ static class ConfigDependentSettingExtensions
         return new(msbuildSetting, projectConfigurations, logger);
     }
 
-    public static CMakeConfigDependentSetting Map(this CMakeConfigDependentSetting self, Func<string?, string?, string?> mapper, MSBuildConfigDependentSetting<string> setting, IEnumerable<string> projectConfigurations, ILogger logger)
+    public static CMakeConfigDependentSetting Map(
+        this CMakeConfigDependentSetting self, 
+        Func<string?, string?, string?> mapper,
+        MSBuildConfigDependentSetting<string> setting, 
+        IEnumerable<string> projectConfigurations,
+        ILogger logger)
     {
         return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
     }
 
-    public static CMakeConfigDependentSetting Map(this CMakeConfigDependentSetting self, Func<string?, string[], string?> mapper, CMakeConfigDependentMultiSetting setting, IEnumerable<string> projectConfigurations, ILogger logger)
+    public static CMakeConfigDependentSetting Map(
+        this CMakeConfigDependentSetting self, 
+        Func<string?, string[], string?> mapper, 
+        CMakeConfigDependentMultiSetting setting, 
+        IEnumerable<string> projectConfigurations, 
+        ILogger logger)
     {
         Dictionary<string, string> mappedValues = [];
 
@@ -62,12 +81,21 @@ static class ConfigDependentSettingExtensions
         return new(msbuildSetting, projectConfigurations, logger);
     }
 
-    public static CMakeConfigDependentSetting Map(this CMakeConfigDependentSetting self, Func<string?, string[], string?> mapper, MSBuildConfigDependentSetting<string[]> setting, IEnumerable<string> projectConfigurations, ILogger logger)
+    public static CMakeConfigDependentSetting Map(
+        this CMakeConfigDependentSetting self, 
+        Func<string?, string[], string?> mapper, 
+        MSBuildConfigDependentSetting<string[]> setting, 
+        IEnumerable<string> projectConfigurations, 
+        ILogger logger)
     { 
         return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
     }
 
-    public static CMakeConfigDependentMultiSetting Map(this CMakeConfigDependentMultiSetting self, Func<string[], string[]> mapper, IEnumerable<string> projectConfigurations, ILogger logger)
+    public static CMakeConfigDependentMultiSetting Map(
+        this CMakeConfigDependentMultiSetting self, 
+        Func<string[], string[]> mapper, 
+        IEnumerable<string> projectConfigurations, 
+        ILogger logger)
     {
         Dictionary<string, string[]> mappedValues = [];
 
@@ -84,7 +112,12 @@ static class ConfigDependentSettingExtensions
         return new(msbuildSetting, projectConfigurations, logger);
     }
 
-    public static CMakeConfigDependentMultiSetting Map(this CMakeConfigDependentMultiSetting self, Func<string[], string?, string[]> mapper, CMakeConfigDependentSetting setting, IEnumerable<string> projectConfigurations, ILogger logger)
+    public static CMakeConfigDependentMultiSetting Map(
+        this CMakeConfigDependentMultiSetting self, 
+        Func<string[], string?, string[]> mapper, 
+        CMakeConfigDependentSetting setting, 
+        IEnumerable<string> projectConfigurations, 
+        ILogger logger)
     {
         Dictionary<string, string[]> mappedValues = [];
 
@@ -102,12 +135,22 @@ static class ConfigDependentSettingExtensions
         return new(msbuildSetting, projectConfigurations, logger);
     }
 
-    public static CMakeConfigDependentMultiSetting Map(this CMakeConfigDependentMultiSetting self, Func<string[], string?, string[]> mapper, MSBuildConfigDependentSetting<string> setting, IEnumerable<string> projectConfigurations, ILogger logger)
+    public static CMakeConfigDependentMultiSetting Map(
+        this CMakeConfigDependentMultiSetting self, 
+        Func<string[], string?, string[]> mapper, 
+        MSBuildConfigDependentSetting<string> setting, 
+        IEnumerable<string> projectConfigurations, 
+        ILogger logger)
     {
         return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
     }
 
-    public static CMakeConfigDependentMultiSetting Map(this CMakeConfigDependentMultiSetting self, Func<string[], string[], string[]> mapper, CMakeConfigDependentMultiSetting setting, IEnumerable<string> projectConfigurations, ILogger logger)
+    public static CMakeConfigDependentMultiSetting Map(
+        this CMakeConfigDependentMultiSetting self,
+        Func<string[], string[], string[]> mapper, 
+        CMakeConfigDependentMultiSetting setting, 
+        IEnumerable<string> projectConfigurations, 
+        ILogger logger)
     {
         Dictionary<string, string[]> mappedValues = [];
 
@@ -125,7 +168,12 @@ static class ConfigDependentSettingExtensions
         return new(msbuildSetting, projectConfigurations, logger);
     }
 
-    public static CMakeConfigDependentMultiSetting Map(this CMakeConfigDependentMultiSetting self, Func<string[], string[], string[]> mapper, MSBuildConfigDependentSetting<string[]> setting, IEnumerable<string> projectConfigurations, ILogger logger)
+    public static CMakeConfigDependentMultiSetting Map(
+        this CMakeConfigDependentMultiSetting self, 
+        Func<string[], string[], string[]> mapper, 
+        MSBuildConfigDependentSetting<string[]> setting, 
+        IEnumerable<string> projectConfigurations, 
+        ILogger logger)
     {
         return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
     }
@@ -157,7 +205,9 @@ static class EnumerableExtensions
         }
     }
 
-    public static OrderedDictionary<TKey, TValue> ToOrderedDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source) where TKey : notnull
+    public static OrderedDictionary<TKey, TValue> ToOrderedDictionary<TKey, TValue>(
+        this IEnumerable<KeyValuePair<TKey, TValue>> source)
+        where TKey : notnull
     {
         OrderedDictionary<TKey, TValue> dictionary = [];
 
