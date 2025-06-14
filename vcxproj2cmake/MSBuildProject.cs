@@ -169,16 +169,7 @@ class MSBuildProject
         Dictionary<string, Dictionary<string, string>> linkerSettings = [];
         Dictionary<string, Dictionary<string, string>> otherSettings = [];
 
-        List<string> supportedProjectConfigurations = [];
         foreach (var projectConfig in projectConfigurations)
-        {
-            if (Config.IsMSBuildProjectConfigNameSupported(projectConfig))
-                supportedProjectConfigurations.Add(projectConfig);
-            else
-                logger.LogWarning($"Skipping unsupported project configuration: {projectConfig}");            
-        }
-
-        foreach (var projectConfig in supportedProjectConfigurations)
         {
             var itemDefinitionGroups =
                 projectElement
@@ -277,7 +268,7 @@ class MSBuildProject
         {
             AbsoluteProjectPath = Path.GetFullPath(projectPath),
             ProjectName = Path.GetFileNameWithoutExtension(projectPath),
-            ProjectConfigurations = supportedProjectConfigurations.ToArray(),
+            ProjectConfigurations = projectConfigurations.ToArray(),
             ConfigurationType = configurationType,
             LanguageStandard = languageStandard,
             LanguageStandardC = languageStandardC,

@@ -37,26 +37,28 @@ class CMakeProject
 
     public CMakeProject(MSBuildProject project, int? qtVersion, ConanPackageInfoRepository conanPackageInfoRepository, IFileSystem fileSystem, ILogger logger)
     {
+        var supportedProjectConfigurations = FilterSupportedProjectConfigurations(project.ProjectConfigurations, logger);
+
         MSBuildProject = project;
         AbsoluteProjectPath = project.AbsoluteProjectPath;
         ProjectName = project.ProjectName;
-        ProjectConfigurations = project.ProjectConfigurations;
+        ProjectConfigurations = supportedProjectConfigurations;
         Languages = DetectLanguages(project.SourceFiles, logger);
         ConfigurationType = project.ConfigurationType;
         CppLanguageStandard = project.LanguageStandard;
         CLanguageStandard = project.LanguageStandardC;
         SourceFiles = project.SourceFiles;
-        IncludePaths = new(project.AdditionalIncludeDirectories, project.ProjectConfigurations, logger);
-        PublicIncludePaths = new(project.PublicIncludeDirectories, project.ProjectConfigurations, logger);
-        LinkerPaths = new(project.AdditionalLibraryDirectories, project.ProjectConfigurations, logger);
-        Libraries = new(project.AdditionalDependencies, project.ProjectConfigurations, logger);
-        Defines = new(project.PreprocessorDefinitions, project.ProjectConfigurations, logger);
-        Options = new(project.AdditionalOptions, project.ProjectConfigurations, logger);
+        IncludePaths = new(project.AdditionalIncludeDirectories, supportedProjectConfigurations, logger);
+        PublicIncludePaths = new(project.PublicIncludeDirectories, supportedProjectConfigurations, logger);
+        LinkerPaths = new(project.AdditionalLibraryDirectories, supportedProjectConfigurations, logger);
+        Libraries = new(project.AdditionalDependencies, supportedProjectConfigurations, logger);
+        Defines = new(project.PreprocessorDefinitions, supportedProjectConfigurations, logger);
+        Options = new(project.AdditionalOptions, supportedProjectConfigurations, logger);
         ProjectReferences = project.ProjectReferences.Select(path => new CMakeProjectReference { Path = path }).ToArray();
         LinkerSubsystem = project.LinkerSubsystem;
         LinkLibraryDependenciesEnabled = project.LinkLibraryDependenciesEnabled;
-        PrecompiledHeaderFile = new CMakeConfigDependentSetting(project.PrecompiledHeaderFile, project.ProjectConfigurations, logger)
-            .Map((file, mode) => mode == "Use" ? file : null, project.PrecompiledHeader, project.ProjectConfigurations, logger);
+        PrecompiledHeaderFile = new CMakeConfigDependentSetting(project.PrecompiledHeaderFile, supportedProjectConfigurations, logger)
+            .Map((file, mode) => mode == "Use" ? file : null, project.PrecompiledHeader, supportedProjectConfigurations, logger);
         UsesOpenMP = project.OpenMPSupport.Values.Values.Contains("true", StringComparer.OrdinalIgnoreCase);
         QtVersion = qtVersion;
         RequiresQtMoc = project.RequiresQtMoc;
@@ -83,6 +85,21 @@ class CMakeProject
         ApplyOpenMPSupport(project, logger);
     }
 
+    static string[] FilterSupportedProjectConfigurations(IEnumerable<string> projectConfigurations, ILogger logger)
+    {
+        List<string> supportedProjectConfigurations = [];
+
+        foreach (var projectConfig in projectConfigurations)
+        {
+            if (Config.IsMSBuildProjectConfigNameSupported(projectConfig))
+                supportedProjectConfigurations.Add(projectConfig);
+            else
+                logger.LogWarning($"Skipping unsupported project configuration: {projectConfig}");
+        }
+
+        return supportedProjectConfigurations.ToArray();
+    }
+
     static string[] DetectLanguages(IEnumerable<string> sourceFiles, ILogger logger)
     {
         List<string> result = [];
@@ -106,21 +123,21 @@ class CMakeProject
             "MultiByte" => [.. defines, "_MBCS"],
             "NotSet" or "" or null => defines,
             _ => throw new CatastrophicFailureException($"Invalid value for CharacterSet: {charSet}")
-        }, project.CharacterSet, project.ProjectConfigurations, logger);
+        }, project.CharacterSet, ProjectConfigurations, logger);
     }
 
     void ApplyDisableSpecificWarnings(MSBuildProject project, ILogger logger)
     {
         Options = Options.Map(
             (options, warnings) => [.. options, .. warnings.Select(w => Convert.ToInt32(w)).Select(w => $"/wd{w}")],
-            project.DisableSpecificWarnings, project.ProjectConfigurations, logger);
+            project.DisableSpecificWarnings, ProjectConfigurations, logger);
     }
 
     void ApplyTreatSpecificWarningsAsErrors(MSBuildProject project, ILogger logger)
     {
         Options = Options.Map(
             (options, warnings) => [.. options, .. warnings.Select(w => Convert.ToInt32(w)).Select(w => $"/we{w}")],
-            project.TreatSpecificWarningsAsErrors, project.ProjectConfigurations, logger);
+            project.TreatSpecificWarningsAsErrors, ProjectConfigurations, logger);
     }
 
     void ApplyTreatWarningAsError(MSBuildProject project, ILogger logger)
@@ -130,7 +147,7 @@ class CMakeProject
             "true" => [.. options, "/WX"],
             "false" or "" or null => options,
             _ => throw new CatastrophicFailureException($"Invalid value for TreatWarningAsError: {treatAsError}"),
-        }, project.TreatWarningAsError, project.ProjectConfigurations, logger);
+        }, project.TreatWarningAsError, ProjectConfigurations, logger);
     }
 
     void ApplyWarningLevel(MSBuildProject project, ILogger logger)
@@ -144,7 +161,7 @@ class CMakeProject
             "Level4" => [.. options, "/W4"],
             "" or null => options,
             _ => throw new CatastrophicFailureException($"Invalid value for WarningLevel: {level}")
-        }, project.WarningLevel, project.ProjectConfigurations, logger);
+        }, project.WarningLevel, ProjectConfigurations, logger);
     }
 
     void ApplyExternalWarningLevel(MSBuildProject project, ILogger logger)
@@ -158,7 +175,7 @@ class CMakeProject
             "Level4" => [.. options, "/external:W4"],
             "" or null => options,
             _ => throw new CatastrophicFailureException($"Invalid value for ExternalWarningLevel: {level}")
-        }, project.ExternalWarningLevel, project.ProjectConfigurations, logger);
+        }, project.ExternalWarningLevel, ProjectConfigurations, logger);
     }
 
     void ApplyTreatAngleIncludeAsExternal(MSBuildProject project, ILogger logger)
@@ -168,7 +185,7 @@ class CMakeProject
             "true" => [.. options, "/external:anglebrackets"],
             "false" or "" or null => options,
             _ => throw new CatastrophicFailureException($"Invalid value for TreatAngleIncludeAsExternal: {treatAsExternal}"),
-        }, project.TreatAngleIncludeAsExternal, project.ProjectConfigurations, logger);
+        }, project.TreatAngleIncludeAsExternal, ProjectConfigurations, logger);
     }
 
     void ApplyAllProjectIncludesArePublic(MSBuildProject project, ILogger logger)
@@ -178,7 +195,7 @@ class CMakeProject
             "true" => [.. directories, "$(ProjectDir)"],
             "false" or "" or null => directories,
             _ => throw new CatastrophicFailureException($"Invalid value for AllProjectIncludesArePublic: {allArePublic}"),
-        }, project.AllProjectIncludesArePublic, project.ProjectConfigurations, logger);
+        }, project.AllProjectIncludesArePublic, ProjectConfigurations, logger);
     }
 
     void ApplyOpenMPSupport(MSBuildProject project, ILogger logger)
@@ -188,7 +205,7 @@ class CMakeProject
             "true" => [.. libs, "OpenMP::OpenMP_CXX"],
             "false" or "" or null => libs,
             _ => throw new CatastrophicFailureException($"Invalid value for OpenMPSupport: {openMP}"),
-        }, project.OpenMPSupport, project.ProjectConfigurations, logger);
+        }, project.OpenMPSupport, ProjectConfigurations, logger);
     }
 
     public ISet<CMakeProject> GetAllReferencedProjects(IEnumerable<CMakeProject> allProjects)
