@@ -15,25 +15,26 @@ class MSBuildProject
     public required string LanguageStandardC { get; init; }
     public required string[] SourceFiles { get; init; }
     public required string[] HeaderFiles { get; init; }
-    public required ConfigDependentMultiSetting AdditionalIncludeDirectories { get; init; }
-    public required ConfigDependentMultiSetting PublicIncludeDirectories { get; init; }
-    public required ConfigDependentMultiSetting AdditionalLibraryDirectories { get; init; }
-    public required ConfigDependentMultiSetting AdditionalDependencies { get; init; }
-    public required ConfigDependentMultiSetting PreprocessorDefinitions { get; init; }
-    public required ConfigDependentMultiSetting AdditionalOptions { get; init; }
-    public required ConfigDependentSetting CharacterSet { get; init; }
-    public required ConfigDependentMultiSetting DisableSpecificWarnings { get; init; }
-    public required ConfigDependentMultiSetting TreatSpecificWarningsAsErrors { get; init; }
-    public required ConfigDependentSetting TreatWarningAsError { get; init; }
-    public required ConfigDependentSetting WarningLevel { get; init; }
-    public required ConfigDependentSetting ExternalWarningLevel { get; init; }
-    public required ConfigDependentSetting TreatAngleIncludeAsExternal { get; init; }
+    public required MSBuildConfigDependentSetting<string[]> AdditionalIncludeDirectories { get; init; }
+    public required MSBuildConfigDependentSetting<string[]> PublicIncludeDirectories { get; init; }
+    public required MSBuildConfigDependentSetting<string[]> AdditionalLibraryDirectories { get; init; }
+    public required MSBuildConfigDependentSetting<string[]> AdditionalDependencies { get; init; }
+    public required MSBuildConfigDependentSetting<string[]> PreprocessorDefinitions { get; init; }
+    public required MSBuildConfigDependentSetting<string[]> AdditionalOptions { get; init; }
+    public required MSBuildConfigDependentSetting<string> CharacterSet { get; init; }
+    public required MSBuildConfigDependentSetting<string[]> DisableSpecificWarnings { get; init; }
+    public required MSBuildConfigDependentSetting<string[]> TreatSpecificWarningsAsErrors { get; init; }
+    public required MSBuildConfigDependentSetting<string> TreatWarningAsError { get; init; }
+    public required MSBuildConfigDependentSetting<string> WarningLevel { get; init; }
+    public required MSBuildConfigDependentSetting<string> ExternalWarningLevel { get; init; }
+    public required MSBuildConfigDependentSetting<string> TreatAngleIncludeAsExternal { get; init; }
     public required string[] ProjectReferences { get; init; }
     public required string? LinkerSubsystem { get; init; }
     public required bool LinkLibraryDependenciesEnabled { get; init; }
-    public required ConfigDependentSetting PrecompiledHeaderFile { get; init; }
-    public required ConfigDependentSetting AllProjectIncludesArePublic { get; init; }
-    public required ConfigDependentSetting OpenMPSupport { get; init; }
+    public required MSBuildConfigDependentSetting<string> PrecompiledHeader { get; init; }
+    public required MSBuildConfigDependentSetting<string> PrecompiledHeaderFile { get; init; }
+    public required MSBuildConfigDependentSetting<string> AllProjectIncludesArePublic { get; init; }
+    public required MSBuildConfigDependentSetting<string> OpenMPSupport { get; init; }
     public required bool RequiresQtMoc { get; init; }
     public required bool RequiresQtUic { get; init; }
     public required bool RequiresQtRcc { get; init; }
@@ -298,7 +299,8 @@ class MSBuildProject
             ProjectReferences = projectReferences.ToArray(),
             LinkerSubsystem = linkerSubsystem,
             LinkLibraryDependenciesEnabled = linkLibraryDependenciesEnabled,
-            PrecompiledHeaderFile = precompiledHeaderFile.Map((file, mode) => mode == "Use" ? file : null, precompiledHeader, projectConfigurations, logger),
+            PrecompiledHeader = precompiledHeader,
+            PrecompiledHeaderFile = precompiledHeaderFile,
             AllProjectIncludesArePublic = allProjectIncludesArePublic,
             OpenMPSupport = openMPSupport,
             RequiresQtMoc = requiresQtMoc,
@@ -315,20 +317,15 @@ class MSBuildProject
                 .SingleOrDefaultWithException(null, () => throw new CatastrophicFailureException($"{property} property is inconsistent between configurations"));
         }
 
-        ConfigDependentSetting ParseSetting(
+        MSBuildConfigDependentSetting<string> ParseSetting(
             string property,
             Dictionary<string, Dictionary<string, string>> settings,
             string defaultValue)
         {
-            return ConfigDependentSetting.Parse(
-                settings.GetValueOrDefault(property),
-                property,
-                defaultValue,
-                supportedProjectConfigurations,
-                logger);
+            return new(property, defaultValue, settings.GetValueOrDefault(property, []), value => value);
         }
 
-        ConfigDependentMultiSetting ParseMultiSetting(
+        MSBuildConfigDependentSetting<string[]> ParseMultiSetting(
             string property,
             char separator,
             Dictionary<string, Dictionary<string, string>> settings,
@@ -341,12 +338,7 @@ class MSBuildProject
                 .Distinct()
                 .ToArray();
 
-            return ConfigDependentMultiSetting.Parse(
-                settings.GetValueOrDefault(property)?.ToDictionary(kvp => kvp.Key, kvp => parser(kvp.Value)),
-                property,
-                defaultValue,
-                supportedProjectConfigurations,
-                logger);
+            return new(property, defaultValue, settings.GetValueOrDefault(property, []), parser);
         }
     }
 }

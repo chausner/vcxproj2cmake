@@ -16,17 +16,17 @@ class CMakeProject
     public string CppLanguageStandard { get; set; }
     public string CLanguageStandard { get; set; }
     public string[] SourceFiles { get; set; }
-    public ConfigDependentMultiSetting IncludePaths { get; set; }
-    public ConfigDependentMultiSetting PublicIncludePaths { get; set; }
-    public ConfigDependentMultiSetting LinkerPaths { get; set; }
-    public ConfigDependentMultiSetting Libraries { get; set; }
-    public ConfigDependentMultiSetting Defines { get; set; }
-    public ConfigDependentMultiSetting Options { get; set; }
+    public CMakeConfigDependentMultiSetting IncludePaths { get; set; }
+    public CMakeConfigDependentMultiSetting PublicIncludePaths { get; set; }
+    public CMakeConfigDependentMultiSetting LinkerPaths { get; set; }
+    public CMakeConfigDependentMultiSetting Libraries { get; set; }
+    public CMakeConfigDependentMultiSetting Defines { get; set; }
+    public CMakeConfigDependentMultiSetting Options { get; set; }
     public CMakeProjectReference[] ProjectReferences { get; set; }
     public string? LinkerSubsystem { get; set; }
     public bool LinkLibraryDependenciesEnabled { get; set; }
     public bool IsHeaderOnlyLibrary { get; set; }
-    public ConfigDependentSetting PrecompiledHeaderFile { get; set; }
+    public CMakeConfigDependentSetting PrecompiledHeaderFile { get; set; }
     public bool UsesOpenMP { get; set; }
     public int? QtVersion { get; set; }
     public bool RequiresQtMoc { get; set; }
@@ -46,16 +46,17 @@ class CMakeProject
         CppLanguageStandard = project.LanguageStandard;
         CLanguageStandard = project.LanguageStandardC;
         SourceFiles = project.SourceFiles;
-        IncludePaths = project.AdditionalIncludeDirectories;
-        PublicIncludePaths = project.PublicIncludeDirectories;
-        LinkerPaths = project.AdditionalLibraryDirectories;
-        Libraries = project.AdditionalDependencies;
-        Defines = project.PreprocessorDefinitions;
-        Options = project.AdditionalOptions;
+        IncludePaths = new(project.AdditionalIncludeDirectories, project.ProjectConfigurations, logger);
+        PublicIncludePaths = new(project.PublicIncludeDirectories, project.ProjectConfigurations, logger);
+        LinkerPaths = new(project.AdditionalLibraryDirectories, project.ProjectConfigurations, logger);
+        Libraries = new(project.AdditionalDependencies, project.ProjectConfigurations, logger);
+        Defines = new(project.PreprocessorDefinitions, project.ProjectConfigurations, logger);
+        Options = new(project.AdditionalOptions, project.ProjectConfigurations, logger);
         ProjectReferences = project.ProjectReferences.Select(path => new CMakeProjectReference { Path = path }).ToArray();
         LinkerSubsystem = project.LinkerSubsystem;
         LinkLibraryDependenciesEnabled = project.LinkLibraryDependenciesEnabled;
-        PrecompiledHeaderFile = project.PrecompiledHeaderFile;
+        PrecompiledHeaderFile = new CMakeConfigDependentSetting(project.PrecompiledHeaderFile, project.ProjectConfigurations, logger)
+            .Map((file, mode) => mode == "Use" ? file : null, project.PrecompiledHeader, project.ProjectConfigurations, logger);
         UsesOpenMP = project.OpenMPSupport.Values.Values.Contains("true", StringComparer.OrdinalIgnoreCase);
         QtVersion = qtVersion;
         RequiresQtMoc = project.RequiresQtMoc;
