@@ -45,7 +45,7 @@ public class Converter
         var cmakeProjects = projects.Select(project => new CMakeProject(project, qtVersion, conanPackageInfoRepository, fileSystem, logger)).ToList();
         var cmakeSolution = solution != null ? new CMakeSolution(solution, cmakeProjects) : null;
 
-        AssignUniqueProjectNames(cmakeProjects);
+        EnsureProjectNamesAreUnique(cmakeProjects);
         ResolveProjectReferences(cmakeProjects);
         RemoveObsoleteLibrariesFromProjectReferences(cmakeProjects);
 
@@ -54,22 +54,18 @@ public class Converter
         cmakeGenerator.Generate(cmakeSolution, cmakeProjects, settings);
     }
 
-    static void AssignUniqueProjectNames(IEnumerable<CMakeProject> projects)
+    static void EnsureProjectNamesAreUnique(IEnumerable<CMakeProject> projects)
     {
         HashSet<string> assignedNames = [];
 
         foreach (var project in projects)
         {
-            if (assignedNames.Add(project.ProjectName))
-            {
-                project.UniqueName = project.ProjectName;
-            }
-            else
+            if (!assignedNames.Add(project.ProjectName))
             {
                 int i = 2;
                 while (!assignedNames.Add($"{project.ProjectName}{i}"))
                     i++;
-                project.UniqueName = $"{project.ProjectName}{i}";
+                project.ProjectName = $"{project.ProjectName}{i}";
             }
         }
     }

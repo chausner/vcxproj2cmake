@@ -19,6 +19,8 @@ internal class InMemoryLogger : ILogger
     public IDisposable BeginScope<TState>(TState state) => null!;
     public bool IsEnabled(LogLevel logLevel) => true;
 
+    public string AllMessageText => string.Join(Environment.NewLine, Messages);
+
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {
         Messages.Enqueue(formatter(state, exception));
