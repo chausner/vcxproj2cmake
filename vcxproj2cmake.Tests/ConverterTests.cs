@@ -323,4 +323,126 @@ public class ConverterTests
             Assert.False(fileSystem.FileExists(@"EmptyProject2\CMakeLists.txt"));
         }
     }
+
+    public class ResolveProjectReferencesTests
+    {
+        [Fact]
+        public void Given_ProjectReferencesUnknownProject_When_Converted_Then_Throws()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"App\App.vcxproj", new(TestData.CreateProject("App", "Application", "..\\Missing\\Missing.vcxproj")));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act & Assert
+            var ex = Assert.Throws<CatastrophicFailureException>(() =>
+                converter.Convert(
+                    projectFiles: [new(@"App\App.vcxproj")],
+                    solutionFile: null,
+                    qtVersion: null,
+                    enableStandaloneProjectBuilds: false,
+                    indentStyle: "spaces",
+                    indentSize: 4,
+                    dryRun: false));
+            Assert.Matches(@"Project .+ references project .+ which is not part of the solution or the list of projects\.", ex.Message);
+        }
+
+        [Fact]
+        public void Given_ProjectReferencesAnotherProjectWithRelativePath_When_Converted_Then_MatchesExpectedOutput()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Lib\Lib.vcxproj", new(TestData.CreateProject("Lib", "StaticLibrary")));
+            fileSystem.AddFile(@"App\App.vcxproj", new(TestData.CreateProject("App", "Application", "..\\Lib\\Lib.vcxproj")));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"App\App.vcxproj"), new(@"Lib\Lib.vcxproj")],
+                solutionFile: null,
+                qtVersion: null,
+                enableStandaloneProjectBuilds: false,
+                indentStyle: "spaces",
+                indentSize: 4,
+                dryRun: false);
+
+            // Assert
+            AssertEx.FileHasContent(@"Lib\CMakeLists.txt", fileSystem, """
+                cmake_minimum_required(VERSION 3.13)
+                project(Lib)
+
+
+                add_library(Lib STATIC
+                )
+                """);
+
+            AssertEx.FileHasContent(@"App\CMakeLists.txt", fileSystem, """
+                cmake_minimum_required(VERSION 3.13)
+                project(App)
+
+
+                add_executable(App
+                )
+
+                target_link_libraries(App
+                    PUBLIC
+                        Lib
+                )
+                """);
+        }
+
+        [Fact]
+        public void Given_ProjectReferencesAnotherProjectWithAbsolutePath_When_Converted_Then_MatchesExpectedOutput()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            var absoluteLibPath = Path.GetFullPath(@"Lib\Lib.vcxproj");
+            fileSystem.AddFile(@"Lib\Lib.vcxproj", new(TestData.CreateProject("Lib", "StaticLibrary")));
+            fileSystem.AddFile(@"App\App.vcxproj", new(TestData.CreateProject("App", "Application", absoluteLibPath)));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"App\App.vcxproj"), new(@"Lib\Lib.vcxproj")],
+                solutionFile: null,
+                qtVersion: null,
+                enableStandaloneProjectBuilds: false,
+                indentStyle: "spaces",
+                indentSize: 4,
+                dryRun: false);
+
+            // Assert
+            AssertEx.FileHasContent(@"Lib\CMakeLists.txt", fileSystem, """
+                cmake_minimum_required(VERSION 3.13)
+                project(Lib)
+
+
+                add_library(Lib STATIC
+                )
+                """);
+
+            AssertEx.FileHasContent(@"App\CMakeLists.txt", fileSystem, """
+                cmake_minimum_required(VERSION 3.13)
+                project(App)
+
+
+                add_executable(App
+                )
+
+                target_link_libraries(App
+                    PUBLIC
+                        Lib
+                )
+                """);
+        }
+    }
 }

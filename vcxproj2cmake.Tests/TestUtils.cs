@@ -9,7 +9,9 @@ internal static class AssertEx
 {
     public static void FileHasContent(string path, MockFileSystem fileSystem, string content)
     {
-        Assert.Equal(content.Trim(), fileSystem.GetFile(path).TextContents.Trim());
+        var trimmedExpectedContent = content.Trim();
+        var trimmedContent = fileSystem.GetFile(path).TextContents.Trim();
+        Assert.Equal(trimmedExpectedContent, trimmedContent);
     }
 }
 
