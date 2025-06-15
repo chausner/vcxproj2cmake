@@ -79,4 +79,28 @@ internal class TestData
             </ImportGroup>
         </Project>
         """;
+
+    public static string CreateProject(string projectName, string configurationType = "Application", string? projectReference = null) => $"""
+        <?xml version="1.0" encoding="utf-8"?>
+        <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+            <ItemGroup Label="ProjectConfigurations">
+                <ProjectConfiguration Include="Debug|Win32">
+                    <Configuration>Debug</Configuration>
+                    <Platform>Win32</Platform>
+                </ProjectConfiguration>
+                <ProjectConfiguration Include="Release|Win32">
+                    <Configuration>Release</Configuration>
+                    <Platform>Win32</Platform>
+                </ProjectConfiguration>
+            </ItemGroup>
+            <PropertyGroup>
+                <ConfigurationType>{configurationType}</ConfigurationType>
+            </PropertyGroup>
+            {(projectReference != null ? $"""
+            <ItemGroup>
+                <ProjectReference Include="{projectReference}" />
+            </ItemGroup>
+            """ : string.Empty)}
+        </Project>
+        """;
 }
