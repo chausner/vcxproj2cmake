@@ -8,6 +8,9 @@ class CMakeSolution
 
     public CMakeSolution(MSBuildSolution solution, IEnumerable<CMakeProject> projects)
     {
+        if (solution.Projects.Length != projects.Count())
+            throw new ArgumentException("The number of projects passed does not match the number of projects in the solution.");
+
         AbsoluteSolutionPath = solution.AbsoluteSolutionPath;
         SolutionName = solution.SolutionName;
         Projects = solution.Projects

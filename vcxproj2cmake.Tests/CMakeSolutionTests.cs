@@ -4,6 +4,26 @@ namespace vcxproj2cmake.Tests;
 
 public class CMakeSolutionTests
 {
+    [Fact]
+    public void WhenProjectCountsDoNotMatch_ThenCtorThrowsArgumentException()
+    {
+        // Arrange
+        var msBuildSolution = new MSBuildSolution
+        {
+            AbsoluteSolutionPath = Path.GetFullPath("Test.sln"),
+            SolutionName = "Test",
+            Projects =
+            [
+                "Project1/Project1.vcxproj", 
+                "Project2/Project2.vcxproj"
+            ]
+        };
+        var projects = new[] { (CMakeProject)null! };
+
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => new CMakeSolution(msBuildSolution, projects));
+    }
+
     public class SolutionIsTopLevelTests
     {
         [Fact]
