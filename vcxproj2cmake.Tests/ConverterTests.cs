@@ -533,38 +533,35 @@ public class ConverterTests
 
     public class RemoveObsoleteLibrariesFromProjectReferencesTests
     {
-        static string CreateAppProject(bool linkLibraryDependencies)
-        {
-            return $"""
-                <?xml version="1.0" encoding="utf-8"?>
-                <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                    <ItemGroup Label="ProjectConfigurations">
-                        <ProjectConfiguration Include="Debug|Win32">
-                            <Configuration>Debug</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                        <ProjectConfiguration Include="Release|Win32">
-                            <Configuration>Release</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                    </ItemGroup>
-                    <PropertyGroup>
-                        <ConfigurationType>Application</ConfigurationType>
-                    </PropertyGroup>
-                    <ItemGroup>
-                        <ProjectReference Include="..\\Lib\\Lib.vcxproj" />
-                    </ItemGroup>
-                    <ItemDefinitionGroup>
-                        <ProjectReference>
-                            <LinkLibraryDependencies>{(linkLibraryDependencies ? "true" : "false")}</LinkLibraryDependencies>
-                        </ProjectReference>
-                        <Link>
-                            <AdditionalDependencies>Lib.lib;%(AdditionalDependencies)</AdditionalDependencies>
-                        </Link>
-                    </ItemDefinitionGroup>
-                </Project>
-                """;
-        }
+        static string CreateAppProject(bool linkLibraryDependencies) => $"""
+            <?xml version="1.0" encoding="utf-8"?>
+            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                <ItemGroup Label="ProjectConfigurations">
+                    <ProjectConfiguration Include="Debug|Win32">
+                        <Configuration>Debug</Configuration>
+                        <Platform>Win32</Platform>
+                    </ProjectConfiguration>
+                    <ProjectConfiguration Include="Release|Win32">
+                        <Configuration>Release</Configuration>
+                        <Platform>Win32</Platform>
+                    </ProjectConfiguration>
+                </ItemGroup>
+                <PropertyGroup>
+                    <ConfigurationType>Application</ConfigurationType>
+                </PropertyGroup>
+                <ItemGroup>
+                    <ProjectReference Include="..\\Lib\\Lib.vcxproj" />
+                </ItemGroup>
+                <ItemDefinitionGroup>
+                    <ProjectReference>
+                        <LinkLibraryDependencies>{(linkLibraryDependencies ? "true" : "false")}</LinkLibraryDependencies>
+                    </ProjectReference>
+                    <Link>
+                        <AdditionalDependencies>Lib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+                    </Link>
+                </ItemDefinitionGroup>
+            </Project>
+            """;
 
         [Fact]
         public void Given_ProjectLinksLibraryExplicitlyAndLinkLibraryDependenciesDisabled_When_Converted_Then_LibraryIsPreserved()
