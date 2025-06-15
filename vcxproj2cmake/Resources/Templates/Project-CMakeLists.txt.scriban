@@ -8,7 +8,7 @@ project({{ project_name }}
 {{~ if enable_standalone_project_builds && project_references.size > 0 ~}}
 {{~ for project_ref in project_references | order_project_references_by_dependencies all_projects ~}}
 if(NOT TARGET {{ project_ref.project.project_name }})
-    add_subdirectory({{ project_ref.project.absolute_project_path | get_directory_name | get_relative_path (absolute_project_path | get_directory_name) | normalize_path }} "${CMAKE_BINARY_DIR}/{{ project_ref.project.unique_name }}")
+    add_subdirectory({{ project_ref.project.absolute_project_path | get_directory_name | get_relative_path (absolute_project_path | get_directory_name) | normalize_path }} "${CMAKE_BINARY_DIR}/{{ project_ref.project.project_name }}")
 endif()
 {{~ end ~}}
 

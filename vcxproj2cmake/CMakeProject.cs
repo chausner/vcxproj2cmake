@@ -9,7 +9,6 @@ class CMakeProject
     public MSBuildProject MSBuildProject { get; }
     public string AbsoluteProjectPath { get; set; }
     public string ProjectName { get; set; }
-    public string? UniqueName { get; set; }
     public string[] ProjectConfigurations { get; set; }
     public string[] Languages { get; set; }
     public string ConfigurationType { get; set; }
