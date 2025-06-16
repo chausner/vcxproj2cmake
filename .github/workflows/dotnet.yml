@@ -9,7 +9,10 @@ on:
 jobs:
   build:
 
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest]
 
     steps:
     - uses: actions/checkout@v4
@@ -24,8 +27,10 @@ jobs:
     - name: Test
       run: dotnet test --no-build --configuration Release --verbosity normal
     - name: Publish
+      if: runner.os == 'Windows'
       run: dotnet publish vcxproj2cmake\vcxproj2cmake.csproj --no-build --configuration Release --runtime win-x64
     - name: Upload published output
+      if: runner.os == 'Windows'
       uses: actions/upload-artifact@v4
       with:
         name: vcxproj2cmake-win-x64
