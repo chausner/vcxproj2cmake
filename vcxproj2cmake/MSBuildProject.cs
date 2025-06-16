@@ -66,6 +66,8 @@ class MSBuildProject
         var qtUicXName = XName.Get("QtUic", msbuildNamespace);
 
         XDocument doc;
+        projectPath = PathUtils.NormalizePathSeparators(projectPath);
+
         using (var fileStream = fileSystem.FileStream.New(projectPath, FileMode.Open, FileAccess.Read, FileShare.Read))
             doc = XDocument.Load(fileStream);
 
@@ -75,7 +77,7 @@ class MSBuildProject
             projectElement
                 .Elements(itemGroupXName)
                 .SelectMany(group => group.Elements(projectConfigurationXName))
-                .Select(element => element.Attribute("Include")!.Value.Trim())
+                .Select(element => PathUtils.NormalizePathSeparators(element.Attribute("Include")!.Value.Trim()))
                 .ToList();
 
         var configurationType =
@@ -95,14 +97,14 @@ class MSBuildProject
                     group.Elements(clCompileXName)
                     .Concat(group.Elements(qtUicXName))
                     .Concat(group.Elements(qtRccXName)))
-                .Select(element => element.Attribute("Include")!.Value.Trim())
+                .Select(element => PathUtils.NormalizePathSeparators(element.Attribute("Include")!.Value.Trim()))
                 .ToList();
 
         var headerFiles =
             projectElement
                 .Elements(itemGroupXName)
                 .SelectMany(group => group.Elements(clIncludeXName))
-                .Select(element => element.Attribute("Include")!.Value.Trim())
+                .Select(element => PathUtils.NormalizePathSeparators(element.Attribute("Include")!.Value.Trim()))
                 .ToList();
 
         var qtModules =
@@ -119,14 +121,14 @@ class MSBuildProject
             projectElement
                 .Elements(importXName)
                 .Concat(projectElement.Elements(importGroupXName).SelectMany(group => group.Elements(importXName)))
-                .Select(import => import.Attribute("Project")!.Value.Trim())
+                .Select(import => PathUtils.NormalizePathSeparators(import.Attribute("Project")!.Value.Trim()))
                 .ToList();
 
         var projectReferences =
             projectElement
                 .Elements(itemGroupXName)
                 .SelectMany(group => group.Elements(projectReferenceXName))
-                .Select(element => element.Attribute("Include")!.Value.Trim())
+                .Select(element => PathUtils.NormalizePathSeparators(element.Attribute("Include")!.Value.Trim()))
                 .Distinct()
                 .ToList();
 

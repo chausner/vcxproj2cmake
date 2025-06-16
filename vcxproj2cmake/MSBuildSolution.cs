@@ -23,7 +23,7 @@ class MSBuildSolution
             if (!match.Success)
                 continue;
 
-            var projectFilePath = match.Groups[1].Value;
+            var projectFilePath = PathUtils.NormalizePathSeparators(match.Groups[1].Value);
             if (projectFilePath.EndsWith(".vcxproj", StringComparison.OrdinalIgnoreCase))
                 projectPaths.Add(projectFilePath);
             else

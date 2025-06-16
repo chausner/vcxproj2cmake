@@ -90,8 +90,8 @@ public class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"EmptyProject1\EmptyProject1.vcxproj", new(TestData.EmptyProject));
-            fileSystem.AddFile(@"EmptyProject2\EmptyProject2.vcxproj", new(TestData.EmptyProject));
+            fileSystem.AddFile(Path.Combine("EmptyProject1", "EmptyProject1.vcxproj"), new(TestData.EmptyProject));
+            fileSystem.AddFile(Path.Combine("EmptyProject2", "EmptyProject2.vcxproj"), new(TestData.EmptyProject));
 
             fileSystem.AddFile(@"TwoEmptyProjects.sln", new("""                
                 Microsoft Visual Studio Solution File, Format Version 12.00
@@ -124,7 +124,7 @@ public class ConverterTests
                 add_subdirectory(EmptyProject2)
                 """);
 
-            AssertEx.FileHasContent(@"EmptyProject1\CMakeLists.txt", fileSystem, """            
+            AssertEx.FileHasContent(Path.Combine("EmptyProject1", "CMakeLists.txt"), fileSystem, """
                 cmake_minimum_required(VERSION 3.13)
                 project(EmptyProject1)
 
@@ -148,7 +148,7 @@ public class ConverterTests
                 )
                 """);
 
-            AssertEx.FileHasContent(@"EmptyProject2\CMakeLists.txt", fileSystem, """            
+            AssertEx.FileHasContent(Path.Combine("EmptyProject2", "CMakeLists.txt"), fileSystem, """
                 cmake_minimum_required(VERSION 3.13)
                 project(EmptyProject2)
 
@@ -326,8 +326,8 @@ public class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"EmptyProject1\EmptyProject1.vcxproj", new(TestData.EmptyProject));
-            fileSystem.AddFile(@"EmptyProject2\EmptyProject2.vcxproj", new(TestData.EmptyProject));
+            fileSystem.AddFile(Path.Combine("EmptyProject1", "EmptyProject1.vcxproj"), new(TestData.EmptyProject));
+            fileSystem.AddFile(Path.Combine("EmptyProject2", "EmptyProject2.vcxproj"), new(TestData.EmptyProject));
 
             fileSystem.AddFile(@"TwoEmptyProjects.sln", new("""                
                 Microsoft Visual Studio Solution File, Format Version 12.00
@@ -354,9 +354,9 @@ public class ConverterTests
 
             // Assert
             var logs = string.Join(Environment.NewLine, logger.Messages);
-            Assert.Contains($"Generated output for {Path.GetFullPath(@"EmptyProject1\CMakeLists.txt")}", logs);
+            Assert.Contains($"Generated output for {Path.GetFullPath(Path.Combine("EmptyProject1", "CMakeLists.txt"))}", logs);
             Assert.Contains("    add_executable(EmptyProject1", logs);
-            Assert.Contains($"Generated output for {Path.GetFullPath(@"EmptyProject2\CMakeLists.txt")}", logs);
+            Assert.Contains($"Generated output for {Path.GetFullPath(Path.Combine("EmptyProject2", "CMakeLists.txt"))}", logs);
             Assert.Contains("    add_executable(EmptyProject2", logs);
             Assert.Contains($"Generated output for {Path.GetFullPath("CMakeLists.txt")}", logs);
             Assert.Contains("    add_subdirectory(EmptyProject1)", logs);
@@ -364,8 +364,8 @@ public class ConverterTests
 
             // Ensure no files were written to disk
             Assert.False(fileSystem.FileExists("CMakeLists.txt"));
-            Assert.False(fileSystem.FileExists(@"EmptyProject1\CMakeLists.txt"));
-            Assert.False(fileSystem.FileExists(@"EmptyProject2\CMakeLists.txt"));
+            Assert.False(fileSystem.FileExists(Path.Combine("EmptyProject1", "CMakeLists.txt")));
+            Assert.False(fileSystem.FileExists(Path.Combine("EmptyProject2", "CMakeLists.txt")));
         }
     }
 
@@ -379,11 +379,11 @@ public class ConverterTests
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
             // Three projects with the same name in different folders
-            fileSystem.AddFile(@"Lib\Project.vcxproj", new(TestData.EmptyProject));
-            fileSystem.AddFile(@"App\Project.vcxproj", new(TestData.EmptyProject));
-            fileSystem.AddFile(@"Test\Project.vcxproj", new(TestData.EmptyProject));
+            fileSystem.AddFile(Path.Combine("Lib", "Project.vcxproj"), new(TestData.EmptyProject));
+            fileSystem.AddFile(Path.Combine("App", "Project.vcxproj"), new(TestData.EmptyProject));
+            fileSystem.AddFile(Path.Combine("Test", "Project.vcxproj"), new(TestData.EmptyProject));
 
-            fileSystem.AddFile(@"DuplicateNames.sln", new("""                
+            fileSystem.AddFile("DuplicateNames.sln", new("""
                 Microsoft Visual Studio Solution File, Format Version 12.00
                 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project", "Lib\Project.vcxproj", "{11111111-1111-1111-1111-111111111111}"
                 EndProject
@@ -399,7 +399,7 @@ public class ConverterTests
             // Act
             converter.Convert(
                 projectFiles: null,
-                solutionFile: new(@"DuplicateNames.sln"),
+                solutionFile: new("DuplicateNames.sln"),
                 qtVersion: null,
                 enableStandaloneProjectBuilds: false,
                 indentStyle: "spaces",
@@ -420,11 +420,11 @@ public class ConverterTests
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
             // Three projects with the same name in different folders
-            fileSystem.AddFile(@"Lib\Project.vcxproj", new(TestData.EmptyProject));
-            fileSystem.AddFile(@"App\Project.vcxproj", new(TestData.EmptyProject));
-            fileSystem.AddFile(@"Test\Project.vcxproj", new(TestData.EmptyProject));
+            fileSystem.AddFile(Path.Combine("Lib", "Project.vcxproj"), new(TestData.EmptyProject));
+            fileSystem.AddFile(Path.Combine("App", "Project.vcxproj"), new(TestData.EmptyProject));
+            fileSystem.AddFile(Path.Combine("Test", "Project.vcxproj"), new(TestData.EmptyProject));
 
-            fileSystem.AddFile(@"Solution\DuplicateNames.sln", new("""                
+            fileSystem.AddFile(Path.Combine("Solution", "DuplicateNames.sln"), new("""
                 Microsoft Visual Studio Solution File, Format Version 12.00
                 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Project"", "..\Lib\Project.vcxproj", "{11111111-1111-1111-1111-111111111111}"
                 EndProject
@@ -440,7 +440,7 @@ public class ConverterTests
             // Act
             converter.Convert(
                 projectFiles: null,
-                solutionFile: new(@"Solution\DuplicateNames.sln"),
+                solutionFile: new(Path.Combine("Solution", "DuplicateNames.sln")),
                 qtVersion: null,
                 enableStandaloneProjectBuilds: true,
                 indentStyle: "spaces",
@@ -463,14 +463,14 @@ public class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"App\App.vcxproj", new(TestData.CreateProject("App", "Application", "..\\Missing\\Missing.vcxproj")));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("App", "Application", "..\\Missing\\Missing.vcxproj")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             // Act & Assert
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
-                    projectFiles: [new(@"App\App.vcxproj")],
+                    projectFiles: [new(Path.Combine("App", "App.vcxproj"))],
                     solutionFile: null,
                     qtVersion: null,
                     enableStandaloneProjectBuilds: false,
@@ -487,14 +487,14 @@ public class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Lib\Lib.vcxproj", new(TestData.CreateProject("Lib", "StaticLibrary")));
-            fileSystem.AddFile(@"App\App.vcxproj", new(TestData.CreateProject("App", "Application", "..\\Lib\\Lib.vcxproj")));
+            fileSystem.AddFile(Path.Combine("Lib", "Lib.vcxproj"), new(TestData.CreateProject("Lib", "StaticLibrary"))); 
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("App", "Application", "..\\Lib\\Lib.vcxproj")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             // Act
             converter.Convert(
-                projectFiles: [new(@"App\App.vcxproj"), new(@"Lib\Lib.vcxproj")],
+                projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Lib", "Lib.vcxproj"))],
                 solutionFile: null,
                 qtVersion: null,
                 enableStandaloneProjectBuilds: false,
@@ -503,7 +503,7 @@ public class ConverterTests
                 dryRun: false);
 
             // Assert
-            AssertEx.FileHasContent(@"Lib\CMakeLists.txt", fileSystem, """
+            AssertEx.FileHasContent(Path.Combine("Lib", "CMakeLists.txt"), fileSystem, """
                 cmake_minimum_required(VERSION 3.13)
                 project(Lib)
 
@@ -512,7 +512,7 @@ public class ConverterTests
                 )
                 """);
 
-            AssertEx.FileHasContent(@"App\CMakeLists.txt", fileSystem, """
+            AssertEx.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
                 cmake_minimum_required(VERSION 3.13)
                 project(App)
 
@@ -534,15 +534,15 @@ public class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            var absoluteLibPath = Path.GetFullPath(@"Lib\Lib.vcxproj");
-            fileSystem.AddFile(@"Lib\Lib.vcxproj", new(TestData.CreateProject("Lib", "StaticLibrary")));
-            fileSystem.AddFile(@"App\App.vcxproj", new(TestData.CreateProject("App", "Application", absoluteLibPath)));
+            var absoluteLibPath = Path.GetFullPath(Path.Combine("Lib", "Lib.vcxproj"));
+            fileSystem.AddFile(Path.Combine("Lib", "Lib.vcxproj"), new(TestData.CreateProject("Lib", "StaticLibrary")));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("App", "Application", absoluteLibPath)));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             // Act
             converter.Convert(
-                projectFiles: [new(@"App\App.vcxproj"), new(@"Lib\Lib.vcxproj")],
+                projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Lib", "Lib.vcxproj"))],
                 solutionFile: null,
                 qtVersion: null,
                 enableStandaloneProjectBuilds: false,
@@ -551,7 +551,7 @@ public class ConverterTests
                 dryRun: false);
 
             // Assert
-            AssertEx.FileHasContent(@"Lib\CMakeLists.txt", fileSystem, """
+            AssertEx.FileHasContent(Path.Combine("Lib", "CMakeLists.txt"), fileSystem, """
                 cmake_minimum_required(VERSION 3.13)
                 project(Lib)
 
@@ -560,7 +560,7 @@ public class ConverterTests
                 )
                 """);
 
-            AssertEx.FileHasContent(@"App\CMakeLists.txt", fileSystem, """
+            AssertEx.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
                 cmake_minimum_required(VERSION 3.13)
                 project(App)
 

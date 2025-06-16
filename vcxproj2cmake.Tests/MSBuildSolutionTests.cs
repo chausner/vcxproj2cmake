@@ -47,8 +47,8 @@ public class MSBuildSolutionTests
             Assert.Equal(Path.GetFullPath("Test.sln"), solution.AbsoluteSolutionPath);
             Assert.Equal("Test", solution.SolutionName);
             Assert.Equal(2, solution.Projects.Length);
-            Assert.Equal("Project1\\Project1.vcxproj", solution.Projects[0]);
-            Assert.Equal("Project2\\Project2.vcxproj", solution.Projects[1]);
+            Assert.Equal(Path.Combine("Project1", "Project1.vcxproj"), solution.Projects[0]);
+            Assert.Equal(Path.Combine("Project2", "Project2.vcxproj"), solution.Projects[1]);
         }
 
         [Fact]
@@ -70,8 +70,8 @@ public class MSBuildSolutionTests
 
             // Assert
             Assert.Single(solution.Projects);
-            Assert.Equal("Project1\\Project1.vcxproj", solution.Projects[0]);
-            Assert.Contains("Ignoring non-vcxproj project: CSharpProject\\CSharpProject.csproj", logger.Messages);
+            Assert.Equal(Path.Combine("Project1", "Project1.vcxproj"), solution.Projects[0]);
+            Assert.Contains($"Ignoring non-vcxproj project: {Path.Combine("CSharpProject", "CSharpProject.csproj")}", logger.Messages);
         }
     }
 }
