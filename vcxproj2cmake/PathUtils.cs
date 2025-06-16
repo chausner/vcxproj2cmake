@@ -4,7 +4,7 @@ static class PathUtils
 {
     public static string NormalizePathSeparators(string path)
     {
-        return path.Replace('\\', System.IO.Path.DirectorySeparatorChar)
-                   .Replace('/', System.IO.Path.DirectorySeparatorChar);
+        return path.Replace('\\', Path.DirectorySeparatorChar)
+                   .Replace('/', Path.DirectorySeparatorChar);
     }
 }
