@@ -18,7 +18,7 @@ internal static class AssertEx
 internal class InMemoryLogger : ILogger
 {
     public ConcurrentQueue<string> Messages { get; } = new();
-    public IDisposable BeginScope<TState>(TState state) => null!;
+    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
     public bool IsEnabled(LogLevel logLevel) => true;
 
     public string AllMessageText => string.Join(Environment.NewLine, Messages);
