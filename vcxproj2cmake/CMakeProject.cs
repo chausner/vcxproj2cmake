@@ -63,15 +63,16 @@ class CMakeProject
         RequiresQtMoc = project.RequiresQtMoc;
         RequiresQtUic = project.RequiresQtUic;
         RequiresQtRcc = project.RequiresQtRcc;
+
+        if (project.QtModules.Any() && qtVersion == null)
+            throw new CatastrophicFailureException("Project uses Qt but no Qt version is set. Specify the version with --qt-version.");
+
         QtModules = project.QtModules.Select(module => QtModuleInfoRepository.GetQtModuleInfo(module, qtVersion!.Value)).ToArray();
         ConanPackages = project.ConanPackages.Select(packageName => conanPackageInfoRepository.GetConanPackageInfo(packageName!)).ToArray();
 
         // We don't rely on ConfigurationType to determine if the project is a header-only library
         // since there is no specific configuration type for header-only libraries in MSBuild.
         IsHeaderOnlyLibrary = project.SourceFiles.Length == 0 && project.HeaderFiles.Length > 0;
-
-        if (project.QtModules.Any() && qtVersion == null)
-            throw new CatastrophicFailureException("Project uses Qt but no Qt version is set. Specify the version with --qt-version.");
 
         ApplyAllProjectIncludesArePublic(project, logger);
         ApplyCharacterSetSetting(project, logger);
