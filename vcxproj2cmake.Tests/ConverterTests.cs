@@ -22,13 +22,7 @@ public class ConverterTests
 
             // Act
             converter.Convert(
-                projectFiles: [new(@"EmptyProject.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"EmptyProject.vcxproj")]);
 
             // Assert
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """            
@@ -74,13 +68,7 @@ public class ConverterTests
             // Act & Assert
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
-                    projectFiles: null,
-                    solutionFile: new(@"EmptySolution.sln"),
-                    qtVersion: null,
-                    enableStandaloneProjectBuilds: false,
-                    indentStyle: "spaces",
-                    indentSize: 4,
-                    dryRun: false));
+                    solutionFile: new(@"EmptySolution.sln")));
             Assert.Contains("No .vcxproj files found in solution", ex.Message);
         }
 
@@ -108,13 +96,7 @@ public class ConverterTests
 
             // Act
             converter.Convert(
-                projectFiles: null,
-                solutionFile: new(@"TwoEmptyProjects.sln"),
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                solutionFile: new(@"TwoEmptyProjects.sln"));
 
             // Assert
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
@@ -192,12 +174,7 @@ public class ConverterTests
             // Act
             converter.Convert(
                 projectFiles: [new(@"App/App.vcxproj"), new(@"Lib/Lib.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: true,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                enableStandaloneProjectBuilds: true);
 
             // Assert
             AssertEx.FileHasContent(@"App/CMakeLists.txt", fileSystem, """
@@ -237,12 +214,7 @@ public class ConverterTests
             // Act
             converter.Convert(
                 projectFiles: [new(@"EmptyProject.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "tabs",
-                indentSize: 4,
-                dryRun: false);
+                indentStyle: "tabs");
 
             // Assert
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, $"""            
@@ -284,12 +256,7 @@ public class ConverterTests
             // Act
             converter.Convert(
                 projectFiles: [new(@"EmptyProject.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 2,
-                dryRun: false);
+                indentSize: 2);
 
             // Assert
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """            
@@ -345,12 +312,7 @@ public class ConverterTests
 
             // Act
             converter.Convert(
-                projectFiles: null,
                 solutionFile: new(@"TwoEmptyProjects.sln"),
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
                 dryRun: true);
 
             // Assert
@@ -387,13 +349,7 @@ public class ConverterTests
             // Act & Assert
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
-                    projectFiles: [new(Path.Combine("App", "Project1.vcxproj")), new(Path.Combine("App", "Project2.vcxproj"))],
-                    solutionFile: null,
-                    qtVersion: null,
-                    enableStandaloneProjectBuilds: false,
-                    indentStyle: "spaces",
-                    indentSize: 4,
-                    dryRun: false));
+                    projectFiles: [new(Path.Combine("App", "Project1.vcxproj")), new(Path.Combine("App", "Project2.vcxproj"))]));
             Assert.Contains("contains two or more projects", ex.Message);
             Assert.Contains(Path.GetFullPath("App"), ex.Message);
         }
@@ -419,13 +375,7 @@ public class ConverterTests
             // Act & Assert
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
-                    projectFiles: null,
-                    solutionFile: new("Solution.sln"),
-                    qtVersion: null,
-                    enableStandaloneProjectBuilds: false,
-                    indentStyle: "spaces",
-                    indentSize: 4,
-                    dryRun: false));
+                    solutionFile: new("Solution.sln")));
             Assert.Contains("The solution file and at least one project file are located in the same directory", ex.Message);
         }
     }
@@ -459,12 +409,7 @@ public class ConverterTests
 
             // Act
             converter.Convert(
-                projectFiles: null,
                 solutionFile: new("DuplicateNames.sln"),
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
                 dryRun: true);
 
             // Assert
@@ -500,12 +445,8 @@ public class ConverterTests
 
             // Act
             converter.Convert(
-                projectFiles: null,
                 solutionFile: new(Path.Combine("Solution", "DuplicateNames.sln")),
-                qtVersion: null,
                 enableStandaloneProjectBuilds: true,
-                indentStyle: "spaces",
-                indentSize: 4,
                 dryRun: true);
 
             // Assert
@@ -553,13 +494,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("project(Project)", cmake);
@@ -576,13 +511,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("project(Project LANGUAGES C)", cmake);
@@ -599,13 +528,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("project(Project LANGUAGES CXX)", cmake);
@@ -622,13 +545,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("project(Project LANGUAGES C CXX)", cmake);
@@ -651,13 +568,7 @@ public class ConverterTests
             // Act & Assert
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
-                    projectFiles: [new(Path.Combine("App", "App.vcxproj"))],
-                    solutionFile: null,
-                    qtVersion: null,
-                    enableStandaloneProjectBuilds: false,
-                    indentStyle: "spaces",
-                    indentSize: 4,
-                    dryRun: false));
+                    projectFiles: [new(Path.Combine("App", "App.vcxproj"))]));
             Assert.Matches(@"Project .+ references project .+ which is not part of the solution or the list of projects\.", ex.Message);
         }
 
@@ -675,13 +586,7 @@ public class ConverterTests
 
             // Act
             converter.Convert(
-                projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Lib", "Lib.vcxproj"))],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Lib", "Lib.vcxproj"))]);
 
             // Assert
             AssertEx.FileHasContent(Path.Combine("Lib", "CMakeLists.txt"), fileSystem, """
@@ -723,13 +628,7 @@ public class ConverterTests
 
             // Act
             converter.Convert(
-                projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Lib", "Lib.vcxproj"))],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Lib", "Lib.vcxproj"))]);
 
             // Assert
             AssertEx.FileHasContent(Path.Combine("Lib", "CMakeLists.txt"), fileSystem, """
@@ -792,13 +691,7 @@ public class ConverterTests
 
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
-                    projectFiles: [new(@"QtProject.vcxproj")],
-                    solutionFile: null,
-                    qtVersion: null,
-                    enableStandaloneProjectBuilds: false,
-                    indentStyle: "spaces",
-                    indentSize: 4,
-                    dryRun: false));
+                    projectFiles: [new(@"QtProject.vcxproj")]));
 
             Assert.Equal("Project uses Qt but no Qt version is set. Specify the version with --qt-version.", ex.Message);
         }
@@ -816,12 +709,7 @@ public class ConverterTests
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
                     projectFiles: [new(@"QtProject.vcxproj")],
-                    solutionFile: null,
-                    qtVersion: 6,
-                    enableStandaloneProjectBuilds: false,
-                    indentStyle: "spaces",
-                    indentSize: 4,
-                    dryRun: false));
+                    qtVersion: 6));
 
             Assert.Contains("Unknown Qt module", ex.Message);
         }
@@ -838,12 +726,7 @@ public class ConverterTests
 
             converter.Convert(
                 projectFiles: [new(@"QtProject.vcxproj")],
-                solutionFile: null,
-                qtVersion: 6,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                qtVersion: 6);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
             cmake_minimum_required(VERSION 3.13)
@@ -917,13 +800,7 @@ public class ConverterTests
 
             // Act
             converter.Convert(
-                projectFiles: [new(@"App/App.vcxproj"), new(@"Lib/Lib.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"App/App.vcxproj"), new(@"Lib/Lib.vcxproj")]);
 
             // Assert
             AssertEx.FileHasContent(@"App/CMakeLists.txt", fileSystem, """
@@ -956,13 +833,7 @@ public class ConverterTests
 
             // Act
             converter.Convert(
-                projectFiles: [new(@"App/App.vcxproj"), new(@"Lib/Lib.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"App/App.vcxproj"), new(@"Lib/Lib.vcxproj")]);
 
             // Assert
             AssertEx.FileHasContent(@"App/CMakeLists.txt", fileSystem, """
@@ -1000,13 +871,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Dll", "Dll.vcxproj"))],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Dll", "Dll.vcxproj"))]);
 
             AssertEx.FileHasContent(Path.Combine("Dll", "CMakeLists.txt"), fileSystem, """
                 cmake_minimum_required(VERSION 3.13)
@@ -1064,13 +929,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("HeaderOnly", "HeaderOnly.vcxproj"))],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("HeaderOnly", "HeaderOnly.vcxproj"))]);
 
             AssertEx.FileHasContent(Path.Combine("HeaderOnly", "CMakeLists.txt"), fileSystem, """
                 cmake_minimum_required(VERSION 3.13)
@@ -1107,13 +966,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Exe", "Exe.vcxproj"))],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Exe", "Exe.vcxproj"))]);
 
             var cmake = fileSystem.GetFile(Path.Combine("App", "CMakeLists.txt")).TextContents;
             Assert.DoesNotContain("target_link_libraries(App", cmake);
@@ -1133,13 +986,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"App.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"App.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.13)
@@ -1163,13 +1010,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Lib.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Lib.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.13)
@@ -1192,13 +1033,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Dll.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Dll.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.13)
@@ -1241,13 +1076,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"HeaderOnly.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"HeaderOnly.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.13)
@@ -1270,13 +1099,7 @@ public class ConverterTests
 
             var ex = Assert.Throws<ScriptRuntimeException>(() =>
                 converter.Convert(
-                    projectFiles: [new(@"Bad.vcxproj")],
-                    solutionFile: null,
-                    qtVersion: null,
-                    enableStandaloneProjectBuilds: false,
-                    indentStyle: "spaces",
-                    indentSize: 4,
-                    dryRun: false));
+                    projectFiles: [new(@"Bad.vcxproj")]));
 
             Assert.Contains("Unsupported configuration type", ex.Message);
         }
@@ -1317,13 +1140,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains(
@@ -1375,13 +1192,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains(
@@ -1438,13 +1249,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("find_package(OpenMP)", cmake);
@@ -1467,13 +1272,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("find_package(OpenMP)", cmake);
@@ -1496,13 +1295,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.DoesNotContain("find_package(OpenMP)", cmake);
@@ -1521,13 +1314,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             Assert.Throws<CatastrophicFailureException>(() => converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false));
+                projectFiles: [new(@"Project.vcxproj")]));
         }
     }
 
@@ -1579,13 +1366,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
@@ -1608,13 +1389,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
@@ -1637,13 +1412,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
@@ -1667,13 +1436,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
@@ -1695,13 +1458,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             var ex = Assert.Throws<CatastrophicFailureException>(() => converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false));
+                projectFiles: [new(@"Project.vcxproj")]));
 
             Assert.Contains("Invalid value for AllProjectIncludesArePublic", ex.Message);
         }
@@ -1741,13 +1498,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("find_package(Boost REQUIRED CONFIG)", cmake);
@@ -1772,13 +1523,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("find_package(unknown REQUIRED CONFIG)", cmake);
@@ -1803,13 +1548,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("find_package(Boost REQUIRED CONFIG)", cmake);
@@ -1874,13 +1613,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains(
@@ -1904,13 +1637,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains(
@@ -1934,13 +1661,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains(
@@ -1965,13 +1686,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.DoesNotContain("target_precompile_headers(Project", cmake);
@@ -2020,13 +1735,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("add_executable(Project WIN32", cmake);
@@ -2043,13 +1752,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.DoesNotContain("WIN32", cmake);
@@ -2067,13 +1770,7 @@ public class ConverterTests
 
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
-                    projectFiles: [new(@"Project.vcxproj")],
-                    solutionFile: null,
-                    qtVersion: null,
-                    enableStandaloneProjectBuilds: false,
-                    indentStyle: "spaces",
-                    indentSize: 4,
-                    dryRun: false));
+                    projectFiles: [new(@"Project.vcxproj")]));
 
             Assert.Contains("SubSystem property is inconsistent between configurations", ex.Message);
         }
@@ -2130,13 +1827,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
 
@@ -2162,13 +1853,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
 
@@ -2189,13 +1874,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("target_compile_features(Project PUBLIC cxx_std_17 c_std_11)", cmake);
@@ -2212,13 +1891,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.DoesNotContain("target_compile_features", cmake);
@@ -2236,13 +1909,7 @@ public class ConverterTests
 
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
-                    projectFiles: [new(@"Project.vcxproj")],
-                    solutionFile: null,
-                    qtVersion: null,
-                    enableStandaloneProjectBuilds: false,
-                    indentStyle: "spaces",
-                    indentSize: 4,
-                    dryRun: false));
+                    projectFiles: [new(@"Project.vcxproj")]));
 
             Assert.Contains("LanguageStandard property is inconsistent between configurations", ex.Message);
         }
@@ -2259,13 +1926,7 @@ public class ConverterTests
 
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
-                    projectFiles: [new(@"Project.vcxproj")],
-                    solutionFile: null,
-                    qtVersion: null,
-                    enableStandaloneProjectBuilds: false,
-                    indentStyle: "spaces",
-                    indentSize: 4,
-                    dryRun: false));
+                    projectFiles: [new(@"Project.vcxproj")]));
 
             Assert.Contains("LanguageStandard_C property is inconsistent between configurations", ex.Message);
         }
@@ -2282,13 +1943,7 @@ public class ConverterTests
 
             var ex = Assert.Throws<ScriptRuntimeException>(() =>
                 converter.Convert(
-                    projectFiles: [new(@"Project.vcxproj")],
-                    solutionFile: null,
-                    qtVersion: null,
-                    enableStandaloneProjectBuilds: false,
-                    indentStyle: "spaces",
-                    indentSize: 4,
-                    dryRun: false));
+                    projectFiles: [new(@"Project.vcxproj")]));
 
             Assert.Contains("Unsupported C++ language standard", ex.Message);
         }
@@ -2305,13 +1960,7 @@ public class ConverterTests
 
             var ex = Assert.Throws<ScriptRuntimeException>(() =>
                 converter.Convert(
-                    projectFiles: [new(@"Project.vcxproj")],
-                    solutionFile: null,
-                    qtVersion: null,
-                    enableStandaloneProjectBuilds: false,
-                    indentStyle: "spaces",
-                    indentSize: 4,
-                    dryRun: false));
+                    projectFiles: [new(@"Project.vcxproj")]));
 
             Assert.Contains("Unsupported C language standard", ex.Message);
         }        
@@ -2454,13 +2103,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.13)
@@ -2492,13 +2135,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"ProjectMBCS.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"ProjectMBCS.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.13)
@@ -2529,13 +2166,7 @@ public class ConverterTests
 
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
-                    projectFiles: [new(@"Project.vcxproj")],
-                    solutionFile: null,
-                    qtVersion: null,
-                    enableStandaloneProjectBuilds: false,
-                    indentStyle: "spaces",
-                    indentSize: 4,
-                    dryRun: false));
+                    projectFiles: [new(@"Project.vcxproj")]));
 
             Assert.Contains("Invalid value for CharacterSet", ex.Message);
         }
@@ -2551,13 +2182,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"ProjectArch.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"ProjectArch.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.13)
@@ -2618,13 +2243,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
@@ -2646,13 +2265,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
@@ -2675,13 +2288,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
@@ -2736,13 +2343,7 @@ public class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
@@ -2764,13 +2365,7 @@ public class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
@@ -2792,13 +2387,7 @@ public class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
@@ -2820,13 +2409,7 @@ public class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
@@ -2847,13 +2430,7 @@ public class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
@@ -2875,13 +2452,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             Assert.Throws<CatastrophicFailureException>(() => converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false));
+                projectFiles: [new(@"Project.vcxproj")]));
         }
 
         [Fact]
@@ -2894,13 +2465,7 @@ public class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
@@ -2922,13 +2487,7 @@ public class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
             Assert.Throws<CatastrophicFailureException>(() => converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false));
+                projectFiles: [new(@"Project.vcxproj")]));
         }
 
         [Fact]
@@ -2941,13 +2500,7 @@ public class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")],
-                solutionFile: null,
-                qtVersion: null,
-                enableStandaloneProjectBuilds: false,
-                indentStyle: "spaces",
-                indentSize: 4,
-                dryRun: false);
+                projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""

@@ -14,8 +14,20 @@ public class Converter
         this.logger = logger;
     }
 
-    public void Convert(List<FileInfo>? projectFiles, FileInfo? solutionFile, int? qtVersion, bool enableStandaloneProjectBuilds, string indentStyle, int indentSize, bool dryRun)
+    public void Convert(
+        List<FileInfo>? projectFiles = null, 
+        FileInfo? solutionFile = null,
+        int? qtVersion = null,
+        bool enableStandaloneProjectBuilds = false, 
+        string indentStyle = "spaces", 
+        int indentSize = 4, 
+        bool dryRun = false)
     {
+        if ((projectFiles == null || projectFiles.Count == 0) && solutionFile == null)
+            throw new ArgumentException($"Either {nameof(projectFiles)} or {nameof(solutionFile)} must be provided.");
+        else if (projectFiles != null && projectFiles.Count > 0 && solutionFile != null)
+            throw new ArgumentException($"Only one of {nameof(projectFiles)} or {nameof(solutionFile)} can be provided, not both.");
+
         MSBuildSolution? solution = null;
         List<MSBuildProject> projects = [];
 
