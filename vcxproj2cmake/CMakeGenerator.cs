@@ -185,21 +185,17 @@ class CMakeGenerator
     CMakeProject[] OrderProjectsByDependencies(IEnumerable<CMakeProject> projects)
     {
         List<CMakeProject> orderedProjects = [];
-        List<CMakeProject> unorderedProjects = new(projects);
+        List<CMakeProject> unorderedProjects = projects.OrderBy(p => p.AbsoluteProjectPath).ToList();
 
         while (unorderedProjects.Count > 0)
         {
-            var projectsWithAllDependenciesSatisfied = unorderedProjects
-                .Where(project => project.ProjectReferences.All(p => orderedProjects.Any(p2 => p2.AbsoluteProjectPath == p.Project!.AbsoluteProjectPath)))
-                .ToArray();
+            var projectWithAllDependenciesSatisfied = unorderedProjects
+                .FirstOrDefault(project => project.ProjectReferences.All(p => orderedProjects.Any(p2 => p2.AbsoluteProjectPath == p.Project!.AbsoluteProjectPath)));
 
-            if (projectsWithAllDependenciesSatisfied.Length > 0)
+            if (projectWithAllDependenciesSatisfied != null)
             {
-                foreach (var project in projectsWithAllDependenciesSatisfied.OrderBy(p => p.AbsoluteProjectPath))
-                {
-                    orderedProjects.Add(project);
-                    unorderedProjects.Remove(project);
-                }
+                orderedProjects.Add(projectWithAllDependenciesSatisfied);
+                unorderedProjects.Remove(projectWithAllDependenciesSatisfied);
             }
             else
             {
