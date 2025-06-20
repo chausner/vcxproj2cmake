@@ -111,6 +111,8 @@ class DirectoryAwareProjectOrdering
 class Directory
 {
     public required string Name { get; set; }
+
+    public override string ToString() => Name;
 }
 
 class GraphEdge<TNodeValue>
@@ -158,9 +160,156 @@ class DirectedGraph<TNodeValue>
     public GraphNode<TNodeValue>? GetNodeByValue(TNodeValue value) =>
         Nodes.FirstOrDefault(node => EqualityComparer<TNodeValue>.Default.Equals(node.Value, value));
 
-    public IList<GraphNode<TNodeValue>> TopologicalSort<TStructureNodeValue>(DirectedGraph<TStructureNodeValue> structureGraph, Func<TNodeValue, GraphNode<TStructureNodeValue>> mapping)
+    public IList<GraphNode<TNodeValue>> TopologicalSort<TStructureNodeValue>(
+        DirectedGraph<TStructureNodeValue> structureGraph,
+        Func<TNodeValue, GraphNode<TStructureNodeValue>> mapping)
     {
-        return Nodes;
+        //--------------------------------------------------------------------
+        // Hilfsfunktionen – lokal, weil sie nur hier gebraucht werden
+        //--------------------------------------------------------------------
+        static GraphNode<TStructureNodeValue> GetParent(GraphNode<TStructureNodeValue> n)
+            => n.IncomingEdges.Count == 0 ? null! : n.IncomingEdges[0].Source;
+
+        // liefert das oberste Verzeichnis-Segment eines Knotens relativ zu "topDirs"
+        static GraphNode<TStructureNodeValue> AscendToTopDir(
+            GraphNode<TStructureNodeValue> dir,
+            HashSet<GraphNode<TStructureNodeValue>> topDirs)
+        {
+            var cur = dir;
+            while (!topDirs.Contains(cur))
+                cur = GetParent(cur);
+            return cur;
+        }
+
+        // einfacher, rein lexikografischer Kahn (Variante 1) – wird an den Blättern benutzt
+        List<GraphNode<TNodeValue>> LexicographicTopo(List<GraphNode<TNodeValue>> subProjects)
+        {
+            var inDeg = new Dictionary<GraphNode<TNodeValue>, int>();
+            foreach (var n in subProjects)
+                inDeg[n] = n.IncomingEdges.Count(e => subProjects.Contains(e.Source));
+
+            var ready = new SortedSet<GraphNode<TNodeValue>>(
+                Comparer<GraphNode<TNodeValue>>.Create(
+                    (a, b) => StringComparer.OrdinalIgnoreCase.Compare(
+                                  a.Value?.ToString(), b.Value?.ToString())));
+
+            foreach (var n in subProjects.Where(n => inDeg[n] == 0))
+                ready.Add(n);
+
+            var res = new List<GraphNode<TNodeValue>>(subProjects.Count);
+
+            while (ready.Count > 0)
+            {
+                var n = ready.Min!;
+                ready.Remove(n);
+                res.Add(n);
+
+                foreach (var e in n.OutgoingEdges.Where(e => inDeg.ContainsKey(e.Destination)))
+                {
+                    if (--inDeg[e.Destination] == 0)
+                        ready.Add(e.Destination);
+                }
+            }
+
+            if (res.Count != subProjects.Count)
+                throw new InvalidOperationException("Zyklen innerhalb eines Verzeichnisses erkannt.");
+
+            return res;
+        }
+
+        //--------------------------------------------------------------------
+        // Rekursiver Kern: sortiert alle Projekte einer gegebenen Teilmenge
+        //--------------------------------------------------------------------
+        List<GraphNode<TNodeValue>> SortRecursive(List<GraphNode<TNodeValue>> projectSubset)
+        {
+            // 1) alle Directory-Knoten bestimmen, in denen die Projekte liegen
+            var dirsInSubset = new HashSet<GraphNode<TStructureNodeValue>>(
+                projectSubset.Select(p => mapping(p.Value)));
+
+            // 2) Top-Level-Directories innerhalb dieses Subsets herausfiltern
+            var topDirs = new HashSet<GraphNode<TStructureNodeValue>>(
+                dirsInSubset.Where(d =>
+                {
+                    var parent = GetParent(d);
+                    return parent == null || !dirsInSubset.Contains(parent);
+                }));
+
+            // Basisfall: nur noch ein einziges Verzeichnis – lexikografische Topo genügt
+            if (topDirs.Count == 1)
+                return LexicographicTopo(projectSubset);
+
+            //----------------------------------------------------------------
+            // 3) Projekte nach ihrem Top-Level-Directory buckeln
+            //----------------------------------------------------------------
+            var bucket = new Dictionary<GraphNode<TStructureNodeValue>, List<GraphNode<TNodeValue>>>();
+            foreach (var p in projectSubset)
+            {
+                var dir = AscendToTopDir(mapping(p.Value), topDirs);
+                if (!bucket.TryGetValue(dir, out var list))
+                {
+                    list = new List<GraphNode<TNodeValue>>();
+                    bucket[dir] = list;
+                }
+                list.Add(p);
+            }
+
+            //----------------------------------------------------------------
+            // 4) Verzeichnis-Abhängigkeitsgraph aufbauen (einmal pro Dir-Paar)
+            //----------------------------------------------------------------
+            var dirInDeg = topDirs.ToDictionary(d => d, _ => 0);
+            var dirOutSet = topDirs.ToDictionary(d => d,
+                              _ => new HashSet<GraphNode<TStructureNodeValue>>());
+
+            foreach (var p in projectSubset)
+            {
+                var srcDir = AscendToTopDir(mapping(p.Value), topDirs);
+
+                foreach (var e in p.OutgoingEdges.Where(e => projectSubset.Contains(e.Destination)))
+                {
+                    var dstDir = AscendToTopDir(mapping(e.Destination.Value), topDirs);
+                    if (srcDir != dstDir && dirOutSet[srcDir].Add(dstDir))
+                        dirInDeg[dstDir] += 1;
+                }
+            }
+
+            //----------------------------------------------------------------
+            // 5) Kahn auf Verzeichnis-Ebene
+            //----------------------------------------------------------------
+            var dirReady = new SortedSet<GraphNode<TStructureNodeValue>>(
+                Comparer<GraphNode<TStructureNodeValue>>.Create(
+                    (a, b) => StringComparer.OrdinalIgnoreCase.Compare(
+                                  a.Value?.ToString(), b.Value?.ToString())));
+
+            foreach (var d in topDirs.Where(d => dirInDeg[d] == 0))
+                dirReady.Add(d);
+
+            var ordered = new List<GraphNode<TNodeValue>>(projectSubset.Count);
+
+            while (dirReady.Count > 0)
+            {
+                var dir = dirReady.Min!;
+                dirReady.Remove(dir);
+
+                // 5a) Rekursiv alle Projekte *innerhalb* dieses Verzeichnisses sortieren
+                ordered.AddRange(SortRecursive(bucket[dir]));
+
+                // 5b) Verzeichnis aus dem Graph „entfernen“
+                foreach (var succ in dirOutSet[dir])
+                    if (--dirInDeg[succ] == 0)
+                        dirReady.Add(succ);
+            }
+
+            if (ordered.Count != projectSubset.Count)
+                throw new InvalidOperationException("Zyklen zwischen Verzeichnissen erkannt.");
+
+            return ordered;
+        }
+
+        // -------------------------------------------------------------------
+        // Aufruf auf der Gesamtmenge aller Projekt-Knoten
+        // -------------------------------------------------------------------
+        return SortRecursive(Nodes.ToList());
     }
+
 }
 
