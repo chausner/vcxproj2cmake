@@ -182,48 +182,9 @@ class CMakeGenerator
         return translatedValue;
     }
 
-    CMakeProject[] OrderProjectsByDependencies(IEnumerable<CMakeProject> projects)
-    {
-        List<CMakeProject> orderedProjects = [];
-        List<CMakeProject> unorderedProjects = projects.OrderBy(p => p.AbsoluteProjectPath).ToList();
-
-        while (unorderedProjects.Count > 0)
-        {
-            var projectWithAllDependenciesSatisfied = unorderedProjects
-                .FirstOrDefault(project => project.ProjectReferences.All(p => orderedProjects.Any(p2 => p2.AbsoluteProjectPath == p.Project!.AbsoluteProjectPath)));
-
-            if (projectWithAllDependenciesSatisfied != null)
-            {
-                orderedProjects.Add(projectWithAllDependenciesSatisfied);
-                unorderedProjects.Remove(projectWithAllDependenciesSatisfied);
-            }
-            else
-            {
-                StringBuilder sb = new StringBuilder();
-                sb.AppendLine("Could not determine project dependency tree");
-
-                foreach (var project in unorderedProjects)
-                {
-                    sb.AppendLine($"Project {project.ProjectName}");
-                    foreach (var missingReference in project.ProjectReferences.Where(pr =>
-                                 orderedProjects.All(p => p.AbsoluteProjectPath != pr.Project!.AbsoluteProjectPath)))
-                    {
-                        sb.AppendLine($"  missing dependency {missingReference.Path}");
-                    }
-                }
-
-                logger.LogError(sb.ToString());
-
-                throw new CatastrophicFailureException("Could not determine project dependency tree");
-            }
-        }
-
-        return orderedProjects.ToArray();
-    }
-
     CMakeProjectReference[] OrderProjectReferencesByDependencies(IEnumerable<CMakeProjectReference> projectReferences, IEnumerable<CMakeProject>? allProjects = null)
     {
-        var orderedProjects = OrderProjectsByDependencies(allProjects ?? projectReferences.Select(pr => pr.Project!));
+        var orderedProjects = DirectoryAwareProjectOrdering.OrderProjectsByDependencies(allProjects ?? projectReferences.Select(pr => pr.Project!), logger);
 
         return projectReferences
             .OrderBy(pr => Array.FindIndex(orderedProjects, p => p.AbsoluteProjectPath == pr.Project!.AbsoluteProjectPath))
