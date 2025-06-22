@@ -115,32 +115,31 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "App", "App\App.vcxproj", "{
 EndProject
 ```
 
-`MathLib.vcxproj` includes a header and source file. It also demonstrates
-configuration-specific options and the C++17 language standard:
+`MathLib.vcxproj` includes a header and source file. It also demonstrates configuration-specific options:
 
 ```xml
 <ItemGroup>
-    <ClInclude Include="include\\MathLib.h" />
-    <ClCompile Include="MathLib.cpp" />
+  <ClInclude Include="include\MathLib.h" />
+  <ClCompile Include="MathLib.cpp" />
 </ItemGroup>
 <ItemDefinitionGroup>
-    <ClCompile>
-        <AdditionalIncludeDirectories>include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
+  <ClCompile>
+    <AdditionalIncludeDirectories>include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+  </ClCompile>
 </ItemDefinitionGroup>
 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <ClCompile>
-        <PreprocessorDefinitions>MATHLIB_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-        <AdditionalOptions>/W4 %(AdditionalOptions)</AdditionalOptions>
-        <LanguageStandard>stdcpp17</LanguageStandard>
-    </ClCompile>
+  <ClCompile>
+    <PreprocessorDefinitions>MATHLIB_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    <AdditionalOptions>/W4 %(AdditionalOptions)</AdditionalOptions>
+    <LanguageStandard>stdcpp17</LanguageStandard>
+  </ClCompile>
 </ItemDefinitionGroup>
 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <ClCompile>
-        <PreprocessorDefinitions>MATHLIB_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-        <AdditionalOptions>/O2 %(AdditionalOptions)</AdditionalOptions>
-        <LanguageStandard>stdcpp17</LanguageStandard>
-    </ClCompile>
+  <ClCompile>
+    <PreprocessorDefinitions>MATHLIB_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    <AdditionalOptions>/O2 %(AdditionalOptions)</AdditionalOptions>
+    <LanguageStandard>stdcpp17</LanguageStandard>
+  </ClCompile>
 </ItemDefinitionGroup>
 ```
 
@@ -149,28 +148,26 @@ similar configuration-specific defines and compiler options:
 
 ```xml
 <ItemDefinitionGroup>
-    <ClCompile>
-        <AdditionalIncludeDirectories>..\\MathLib\\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-    </ClCompile>
+  <ClCompile>
+    <AdditionalIncludeDirectories>..\MathLib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+  </ClCompile>
 </ItemDefinitionGroup>
 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <ClCompile>
-        <PreprocessorDefinitions>APP_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-        <AdditionalOptions>/W4 %(AdditionalOptions)</AdditionalOptions>
-        <LanguageStandard>stdcpp17</LanguageStandard>
-        <WarningLevel>Level4</WarningLevel>
-    </ClCompile>
+  <ClCompile>
+    <PreprocessorDefinitions>MATHLIB;APP_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    <LanguageStandard>stdcpp17</LanguageStandard>
+    <WarningLevel>Level4</WarningLevel>
+  </ClCompile>
 </ItemDefinitionGroup>
 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <ClCompile>
-        <PreprocessorDefinitions>APP_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-        <AdditionalOptions>/O2 %(AdditionalOptions)</AdditionalOptions>
-        <LanguageStandard>stdcpp17</LanguageStandard>
-        <WarningLevel>Level4</WarningLevel>
-    </ClCompile>
+  <ClCompile>
+    <PreprocessorDefinitions>MATHLIB;APP_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    <AdditionalOptions>/O2 %(AdditionalOptions)</AdditionalOptions>
+    <LanguageStandard>stdcpp17</LanguageStandard>
+  </ClCompile>
 </ItemDefinitionGroup>
 <ItemGroup>
-    <ProjectReference Include="..\\MathLib\\MathLib.vcxproj" />
+  <ProjectReference Include="..\MathLib\MathLib.vcxproj" />
 </ItemGroup>
 ```
 
@@ -235,6 +232,7 @@ target_include_directories(App
 
 target_compile_definitions(App
     PUBLIC
+        MATHLIB
         $<$<CONFIG:Debug>:APP_DEBUG>
         $<$<CONFIG:Release>:APP_RELEASE>
 )
@@ -246,7 +244,7 @@ target_link_libraries(App
 
 target_compile_options(App
     PUBLIC
-        /W4
+        $<$<CONFIG:Debug>:/W4>
         $<$<CONFIG:Release>:/O2>
 )
 ```
@@ -261,8 +259,6 @@ add_subdirectory(MathLib)
 add_subdirectory(App)
 ```
 
-These files are placed in `ExampleSolution`, `ExampleSolution/MathLib` and
-`ExampleSolution/App` next to the original project files.
 ## Limitations
 
 * vcxproj2cmake expects project configurations and build platforms to be named `Debug`/`Release` and `Win32`/`x86`/`x64`/`ARM32`/`ARM64`, respectively.
