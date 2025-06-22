@@ -1,6 +1,3 @@
-#ifndef MATHLIB_H
-#define MATHLIB_H
+#pragma once
 
 int add(int a, int b);
-
-#endif // MATHLIB_H
