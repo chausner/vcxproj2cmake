@@ -106,11 +106,11 @@ The top-level solution looks like this:
 ```text
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MathLib", "MathLib\MathLib.vcxproj", "{AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MathLib", "MathLib\MathLib.vcxproj", "{4D944B1C-9EBF-4086-AE57-25DDEBF92F0D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "App", "App\App.vcxproj", "{BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "App", "App\App.vcxproj", "{07DC28F8-AB37-42B2-A0C4-82D4766A9166}"
     ProjectSection(ProjectDependencies) = postProject
-        {AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA} = {AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA}
+        {4D944B1C-9EBF-4086-AE57-25DDEBF92F0D} = {4D944B1C-9EBF-4086-AE57-25DDEBF92F0D}
     EndProjectSection
 EndProject
 ```
@@ -129,15 +129,13 @@ EndProject
 </ItemDefinitionGroup>
 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
   <ClCompile>
-    <PreprocessorDefinitions>MATHLIB_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    <AdditionalOptions>/W4 %(AdditionalOptions)</AdditionalOptions>
+    <PreprocessorDefinitions>DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     <LanguageStandard>stdcpp17</LanguageStandard>
   </ClCompile>
 </ItemDefinitionGroup>
 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
   <ClCompile>
-    <PreprocessorDefinitions>MATHLIB_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    <AdditionalOptions>/O2 %(AdditionalOptions)</AdditionalOptions>
+    <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     <LanguageStandard>stdcpp17</LanguageStandard>
   </ClCompile>
 </ItemDefinitionGroup>
@@ -154,14 +152,14 @@ similar configuration-specific defines and compiler options:
 </ItemDefinitionGroup>
 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
   <ClCompile>
-    <PreprocessorDefinitions>MATHLIB;APP_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    <PreprocessorDefinitions>MATHLIB;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     <LanguageStandard>stdcpp17</LanguageStandard>
     <WarningLevel>Level4</WarningLevel>
   </ClCompile>
 </ItemDefinitionGroup>
 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
   <ClCompile>
-    <PreprocessorDefinitions>MATHLIB;APP_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    <PreprocessorDefinitions>MATHLIB;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     <AdditionalOptions>/O2 %(AdditionalOptions)</AdditionalOptions>
     <LanguageStandard>stdcpp17</LanguageStandard>
   </ClCompile>
@@ -174,13 +172,13 @@ similar configuration-specific defines and compiler options:
 Running the converter on the solution generates three `CMakeLists.txt` files:
 
 ```bash
-$ dotnet run --project vcxproj2cmake/vcxproj2cmake.csproj -- --solution ExampleSolution/ExampleSolution.sln
-Parsing ExampleSolution/ExampleSolution.sln
-Parsing ExampleSolution/MathLib/MathLib.vcxproj
-Parsing ExampleSolution/App/App.vcxproj
-Generating ExampleSolution/MathLib/CMakeLists.txt
-Generating ExampleSolution/App/CMakeLists.txt
-Generating ExampleSolution/CMakeLists.txt
+$ dotnet run -- --solution ../ExampleSolution/ExampleSolution.sln
+Parsing ../ExampleSolution/ExampleSolution.sln
+Parsing ../ExampleSolution/MathLib/MathLib.vcxproj
+Parsing ../ExampleSolution/App/App.vcxproj
+Generating ../ExampleSolution/MathLib/CMakeLists.txt
+Generating ../ExampleSolution/App/CMakeLists.txt
+Generating ../ExampleSolution/CMakeLists.txt
 ```
 
 `ExampleSolution/MathLib/CMakeLists.txt`:
@@ -202,14 +200,8 @@ target_include_directories(MathLib
 
 target_compile_definitions(MathLib
     PUBLIC
-        $<$<CONFIG:Debug>:MATHLIB_DEBUG>
-        $<$<CONFIG:Release>:MATHLIB_RELEASE>
-)
-
-target_compile_options(MathLib
-    PUBLIC
-        $<$<CONFIG:Debug>:/W4>
-        $<$<CONFIG:Release>:/O2>
+        $<$<CONFIG:Debug>:DEBUG>
+        $<$<CONFIG:Release>:NDEBUG>
 )
 ```
 
@@ -233,8 +225,8 @@ target_include_directories(App
 target_compile_definitions(App
     PUBLIC
         MATHLIB
-        $<$<CONFIG:Debug>:APP_DEBUG>
-        $<$<CONFIG:Release>:APP_RELEASE>
+        $<$<CONFIG:Debug>:DEBUG>
+        $<$<CONFIG:Release>:NDEBUG>
 )
 
 target_link_libraries(App
