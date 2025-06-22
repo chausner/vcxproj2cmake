@@ -58,6 +58,7 @@ public partial class ConverterTests
                 )
                 """.Trim(), cmake);
         }
+
         [Fact]
         public void Given_LinkerPathsDifferentPerConfig_When_Converted_Then_GeneratorExpressionsUsed()
         {
