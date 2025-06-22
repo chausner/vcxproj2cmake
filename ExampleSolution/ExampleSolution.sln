@@ -1,0 +1,11 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MathLib", "MathLib\\MathLib.vcxproj", "{AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "App", "App\\App.vcxproj", "{BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB}"
+ProjectSection(ProjectDependencies) = postProject
+{AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA} = {AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA}
+EndProjectSection
+EndProject
+Global
+EndGlobal

@@ -93,6 +93,117 @@ as well as a top-level `CMakeLists.txt` file in the same directory as the `.sln`
 * Use options `--indent-style` and `--indent-size` to customize the indentation in the generated CMake files.
 * Specify the `--dry-run` option to have the generated CMake files printed to the console without writing them to disk.
 
+
+## Example
+
+The repository contains a small demo solution under `ExampleSolution`. It
+consists of a static library project `MathLib` and an application project `App`
+that depends on the library. The solution references both projects and the
+application has a project reference to `MathLib`.
+
+The top-level solution looks like this:
+
+```text
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MathLib", "MathLib\\MathLib.vcxproj", "{AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "App", "App\\App.vcxproj", "{BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB}"
+    ProjectSection(ProjectDependencies) = postProject
+        {AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA} = {AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA}
+    EndProjectSection
+EndProject
+```
+
+`MathLib.vcxproj` includes a header and source file and sets its include
+directory:
+
+```xml
+<ItemGroup>
+    <ClInclude Include="include\\MathLib.h" />
+    <ClCompile Include="MathLib.cpp" />
+</ItemGroup>
+<ItemDefinitionGroup>
+    <ClCompile>
+        <AdditionalIncludeDirectories>include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+</ItemDefinitionGroup>
+```
+
+`App.vcxproj` references the library project and adds its include directory:
+
+```xml
+<ItemDefinitionGroup>
+    <ClCompile>
+        <AdditionalIncludeDirectories>..\\MathLib\\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+</ItemDefinitionGroup>
+<ItemGroup>
+    <ProjectReference Include="..\\MathLib\\MathLib.vcxproj" />
+</ItemGroup>
+```
+
+Running the converter on the solution generates three `CMakeLists.txt` files:
+
+```bash
+$ dotnet run --project vcxproj2cmake/vcxproj2cmake.csproj -- --solution ExampleSolution/ExampleSolution.sln
+Parsing ExampleSolution/ExampleSolution.sln
+Parsing ExampleSolution/MathLib/MathLib.vcxproj
+Parsing ExampleSolution/App/App.vcxproj
+Generating ExampleSolution/MathLib/CMakeLists.txt
+Generating ExampleSolution/App/CMakeLists.txt
+Generating ExampleSolution/CMakeLists.txt
+```
+
+`ExampleSolution/MathLib/CMakeLists.txt`:
+
+```cmake
+cmake_minimum_required(VERSION 3.13)
+project(MathLib LANGUAGES CXX)
+
+add_library(MathLib STATIC
+    MathLib.cpp
+)
+
+target_include_directories(MathLib
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+```
+
+`ExampleSolution/App/CMakeLists.txt`:
+
+```cmake
+cmake_minimum_required(VERSION 3.13)
+project(App LANGUAGES CXX)
+
+add_executable(App
+    main.cpp
+)
+
+target_include_directories(App
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/../MathLib/include
+)
+
+target_link_libraries(App
+    PUBLIC
+        MathLib
+)
+```
+
+`ExampleSolution/CMakeLists.txt`:
+
+```cmake
+cmake_minimum_required(VERSION 3.13)
+project(ExampleSolution)
+
+add_subdirectory(MathLib)
+add_subdirectory(App)
+```
+
+These files are placed in `ExampleSolution`, `ExampleSolution/MathLib` and
+`ExampleSolution/App` next to the original project files.
 ## Limitations
 
 * vcxproj2cmake expects project configurations and build platforms to be named `Debug`/`Release` and `Win32`/`x86`/`x64`/`ARM32`/`ARM64`, respectively.
