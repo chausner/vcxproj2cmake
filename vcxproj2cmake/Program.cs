@@ -38,11 +38,10 @@ static class Program
             name: "--enable-standalone-project-builds",
             description: "Generate necessary code to allow projects to be built standalone (not through the root CMakeLists.txt)");
 
-        var indentStyleOption = new Option<string>(
+        var indentStyleOption = new Option<IndentStyle>(
             name: "--indent-style",
             description: "The indentation style to use (spaces or tabs).",
-            getDefaultValue: () => "spaces")
-            .FromAmong("spaces", "tabs");
+            getDefaultValue: () => IndentStyle.Spaces);
 
         var indentSizeOption = new Option<int>(
             name: "--indent-size",
@@ -106,7 +105,7 @@ static class Program
         FileInfo? solution, 
         int? qtVersion, 
         bool enableStandaloneProjectBuilds, 
-        string indentStyle, 
+        IndentStyle indentStyle, 
         int indentSize, 
         bool dryRun, 
         LogLevel logLevel)

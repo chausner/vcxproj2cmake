@@ -19,7 +19,7 @@ public class Converter
         FileInfo? solutionFile = null,
         int? qtVersion = null,
         bool enableStandaloneProjectBuilds = false, 
-        string indentStyle = "spaces", 
+        IndentStyle indentStyle = IndentStyle.Spaces, 
         int indentSize = 4, 
         bool dryRun = false)
     {

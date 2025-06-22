@@ -68,7 +68,7 @@ class CMakeGenerator
         context.PushGlobal(scriptObject);
         var result = cmakeListsTemplate.Render(context);
 
-        if (settings.IndentStyle != "spaces" || settings.IndentSize != 4)
+        if (settings.IndentStyle != IndentStyle.Spaces || settings.IndentSize != 4)
             result = ApplyIndentation(result, settings.IndentStyle, settings.IndentSize);
 
         if (settings.DryRun)
@@ -83,15 +83,15 @@ class CMakeGenerator
         }
     }
 
-    private static string ApplyIndentation(string text, string indentStyle, int indentSize)
+    private static string ApplyIndentation(string text, IndentStyle indentStyle, int indentSize)
     {
         return Regex.Replace(text, @"^((    )+)", match =>
         {
             var indentLevel = match.Length / 4;
             return indentStyle switch
             {
-                "spaces" => new string(' ', indentLevel * indentSize),
-                "tabs" => new string('\t', indentLevel),
+                IndentStyle.Spaces => new string(' ', indentLevel * indentSize),
+                IndentStyle.Tabs => new string('\t', indentLevel),
                 _ => throw new ArgumentException($"Invalid indent style: {indentStyle}")
             };
         }, RegexOptions.Multiline);
@@ -237,4 +237,10 @@ class CMakeGenerator
     }
 }
 
-record CMakeGeneratorSettings(bool EnableStandaloneProjectBuilds, string IndentStyle, int IndentSize, bool DryRun);
+record CMakeGeneratorSettings(bool EnableStandaloneProjectBuilds, IndentStyle IndentStyle, int IndentSize, bool DryRun);
+
+public enum IndentStyle
+{
+    Spaces,
+    Tabs
+}

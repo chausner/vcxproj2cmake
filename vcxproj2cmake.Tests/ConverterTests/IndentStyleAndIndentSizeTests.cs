@@ -23,7 +23,7 @@ public partial class ConverterTests
             // Act
             converter.Convert(
                 projectFiles: [new(@"EmptyProject.vcxproj")],
-                indentStyle: "tabs");
+                indentStyle: IndentStyle.Tabs);
 
             // Assert
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, $"""            
