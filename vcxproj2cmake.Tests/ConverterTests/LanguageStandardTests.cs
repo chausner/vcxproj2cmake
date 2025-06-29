@@ -172,7 +172,7 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
-            var ex = Assert.Throws<ScriptRuntimeException>(() =>
+            var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
                     projectFiles: [new(@"Project.vcxproj")]));
 
@@ -189,7 +189,7 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
-            var ex = Assert.Throws<ScriptRuntimeException>(() =>
+            var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
                     projectFiles: [new(@"Project.vcxproj")]));
 

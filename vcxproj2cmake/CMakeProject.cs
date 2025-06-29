@@ -12,8 +12,8 @@ class CMakeProject
     public string[] ProjectConfigurations { get; set; }
     public string[] Languages { get; set; }
     public string ConfigurationType { get; set; }
-    public string CppLanguageStandard { get; set; }
-    public string CLanguageStandard { get; set; }
+    public string? CppLanguageStandard { get; set; }
+    public string? CLanguageStandard { get; set; }
     public string[] SourceFiles { get; set; }
     public CMakeConfigDependentMultiSetting IncludePaths { get; set; }
     public CMakeConfigDependentMultiSetting PublicIncludePaths { get; set; }
@@ -44,8 +44,8 @@ class CMakeProject
         ProjectConfigurations = supportedProjectConfigurations;
         Languages = DetectLanguages(project.SourceFiles, logger);
         ConfigurationType = project.ConfigurationType;
-        CppLanguageStandard = project.LanguageStandard;
-        CLanguageStandard = project.LanguageStandardC;
+        CppLanguageStandard = MapCppLanguageStandard(project.LanguageStandard);
+        CLanguageStandard = MapCLanguageStandard(project.LanguageStandardC);
         SourceFiles = project.SourceFiles;
         IncludePaths = new(project.AdditionalIncludeDirectories, supportedProjectConfigurations, logger);
         PublicIncludePaths = new(project.PublicIncludeDirectories, supportedProjectConfigurations, logger);
@@ -113,6 +113,34 @@ class CMakeProject
             logger.LogWarning("Could not detect languages for project");
 
         return result.ToArray();
+    }
+
+    static string? MapCppLanguageStandard(string? msbuildStandard)
+    {
+        return msbuildStandard switch
+        {
+            "stdcpplatest" => "cxx_std_23",
+            "stdcpp23" => "cxx_std_23",
+            "stdcpp20" => "cxx_std_20",
+            "stdcpp17" => "cxx_std_17",
+            "stdcpp14" => "cxx_std_14",
+            "stdcpp11" => "cxx_std_11",
+            "Default" or null or "" => null,
+            _ => throw new CatastrophicFailureException($"Unsupported C++ language standard: {msbuildStandard}")
+        };
+    }
+
+    static string? MapCLanguageStandard(string? msbuildStandard)
+    {
+        return msbuildStandard switch
+        {
+            "stdclatest" => "c_std_23",
+            "stdc23" => "c_std_23",
+            "stdc17" => "c_std_17",
+            "stdc11" => "c_std_11",
+            "Default" or null or "" => null,
+            _ => throw new CatastrophicFailureException($"Unsupported C language standard: {msbuildStandard}")
+        };
     }
 
     void ApplyCharacterSetSetting(MSBuildProject project, ILogger logger)
