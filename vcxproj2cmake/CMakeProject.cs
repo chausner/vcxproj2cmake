@@ -43,16 +43,7 @@ class CMakeProject
         ProjectConfigurations = supportedProjectConfigurations;
         Languages = DetectLanguages(project.SourceFiles, logger);
         ConfigurationType = project.ConfigurationType;
-
         CompileFeatures = new("CompileFeatures", []);
-        var features = new List<string>();
-        if (GetCompileFeatureForCppLanguageStandard(project.LanguageStandard) is { } cppFeature)
-            features.Add(cppFeature);
-        if (GetCompileFeatureForCLanguageStandard(project.LanguageStandardC) is { } cFeature)
-            features.Add(cFeature);
-        if (features.Count > 0)
-            CompileFeatures.Values[Config.CommonConfig] = features.ToArray();
-
         SourceFiles = project.SourceFiles;
         IncludePaths = new(project.AdditionalIncludeDirectories, supportedProjectConfigurations, logger);
         PublicIncludePaths = new(project.PublicIncludeDirectories, supportedProjectConfigurations, logger);
@@ -81,6 +72,7 @@ class CMakeProject
         // since there is no specific configuration type for header-only libraries in MSBuild.
         IsHeaderOnlyLibrary = project.SourceFiles.Length == 0 && project.HeaderFiles.Length > 0;
 
+        ApplyLanguageStandards(project);
         ApplyAllProjectIncludesArePublic(project, logger);
         ApplyCharacterSetSetting(project, logger);
         ApplyDisableSpecificWarnings(project, logger);
@@ -122,32 +114,35 @@ class CMakeProject
         return result.ToArray();
     }
 
-    static string? GetCompileFeatureForCppLanguageStandard(string? msbuildStandard)
+    void ApplyLanguageStandards(MSBuildProject project)
     {
-        return msbuildStandard switch
-        {
-            "stdcpplatest" => "cxx_std_23",
-            "stdcpp23" => "cxx_std_23",
-            "stdcpp20" => "cxx_std_20",
-            "stdcpp17" => "cxx_std_17",
-            "stdcpp14" => "cxx_std_14",
-            "stdcpp11" => "cxx_std_11",
-            "Default" or null or "" => null,
-            _ => throw new CatastrophicFailureException($"Unsupported C++ language standard: {msbuildStandard}")
-        };
-    }
+        var cppFeature = project.LanguageStandard switch
+            {
+                "stdcpplatest" => "cxx_std_23",
+                "stdcpp23" => "cxx_std_23",
+                "stdcpp20" => "cxx_std_20",
+                "stdcpp17" => "cxx_std_17",
+                "stdcpp14" => "cxx_std_14",
+                "stdcpp11" => "cxx_std_11",
+                "Default" or null or "" => null,
+                _ => throw new CatastrophicFailureException($"Unsupported C++ language standard: {project.LanguageStandard}")
+            };
 
-    static string? GetCompileFeatureForCLanguageStandard(string? msbuildStandard)
-    {
-        return msbuildStandard switch
-        {
-            "stdclatest" => "c_std_23",
-            "stdc23" => "c_std_23",
-            "stdc17" => "c_std_17",
-            "stdc11" => "c_std_11",
-            "Default" or null or "" => null,
-            _ => throw new CatastrophicFailureException($"Unsupported C language standard: {msbuildStandard}")
-        };
+        var cFeature = project.LanguageStandardC switch
+            {
+                "stdclatest" => "c_std_23",
+                "stdc23" => "c_std_23",
+                "stdc17" => "c_std_17",
+                "stdc11" => "c_std_11",
+                "Default" or null or "" => null,
+                _ => throw new CatastrophicFailureException($"Unsupported C language standard: {project.LanguageStandardC}")
+            };        
+
+        if (cppFeature != null)
+            CompileFeatures.AppendValue(Config.CommonConfig, cppFeature);
+
+        if (cFeature != null)
+            CompileFeatures.AppendValue(Config.CommonConfig, cFeature);
     }
 
     void ApplyCharacterSetSetting(MSBuildProject project, ILogger logger)

@@ -145,6 +145,14 @@ record CMakeConfigDependentMultiSetting
             logger.LogWarning($"The following values for setting {settings.SettingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings)}");
     }
 
+    public void AppendValue(Config config, string value)
+    {
+        if (!Values.ContainsKey(config))
+            Values[config] = [value];
+        else
+            Values[config] = [.. Values[config], value];
+    }
+
     public string[] GetValue(string projectConfig)
     {
         return new[] { Config.CommonConfig }
