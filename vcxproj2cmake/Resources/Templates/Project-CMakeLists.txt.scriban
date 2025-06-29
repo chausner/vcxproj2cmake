@@ -27,7 +27,7 @@ find_package({{ package.cmake_config_name }} REQUIRED CONFIG)
 {{~ if is_header_only_library ~}}
 add_library({{ project_name }} INTERFACE)
 {{~ else if configuration_type == "Application" ~}}
-add_executable({{ project_name }}{{ if linker_subsystem == "Windows" }} WIN32{{ end }}
+add_executable({{ project_name }}{{ if is_win32_executable }} WIN32{{ end }}
 {{~ else if configuration_type == "StaticLibrary" ~}}
 add_library({{ project_name }} STATIC
 {{~ else if configuration_type == "DynamicLibrary" ~}}

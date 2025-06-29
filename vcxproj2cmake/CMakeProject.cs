@@ -21,7 +21,7 @@ class CMakeProject
     public CMakeConfigDependentMultiSetting Defines { get; set; }
     public CMakeConfigDependentMultiSetting Options { get; set; }
     public CMakeProjectReference[] ProjectReferences { get; set; }
-    public string? LinkerSubsystem { get; set; }
+    public bool IsWin32Executable { get; set; }
     public bool LinkLibraryDependenciesEnabled { get; set; }
     public bool IsHeaderOnlyLibrary { get; set; }
     public CMakeConfigDependentSetting PrecompiledHeaderFile { get; set; }
@@ -61,7 +61,7 @@ class CMakeProject
         Defines = new(project.PreprocessorDefinitions, supportedProjectConfigurations, logger);
         Options = new(project.AdditionalOptions, supportedProjectConfigurations, logger);
         ProjectReferences = project.ProjectReferences.Select(path => new CMakeProjectReference { Path = path }).ToArray();
-        LinkerSubsystem = project.LinkerSubsystem;
+        IsWin32Executable = project.LinkerSubsystem == "Windows";
         LinkLibraryDependenciesEnabled = project.LinkLibraryDependenciesEnabled;
         PrecompiledHeaderFile = new CMakeConfigDependentSetting(project.PrecompiledHeaderFile, supportedProjectConfigurations, logger)
             .Map((file, mode) => mode == "Use" ? file : null, project.PrecompiledHeader, supportedProjectConfigurations, logger);
