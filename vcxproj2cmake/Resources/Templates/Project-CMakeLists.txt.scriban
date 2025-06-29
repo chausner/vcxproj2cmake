@@ -57,10 +57,14 @@ set_target_properties({{ project_name }} PROPERTIES
 
 {{~ end -}}
 
-{{~ if cpp_language_standard || clanguage_standard ~}}
-target_compile_features({{ project_name }} {{ if is_header_only_library }}INTERFACE{{ else }}PUBLIC{{ end }}
-    {{- if cpp_language_standard }} {{ cpp_language_standard }}{{ end -}}
-    {{- if clanguage_standard }} {{ clanguage_standard }}{{ end -}}
+{{~ if !compile_features.is_empty ~}}
+target_compile_features({{ project_name }}
+    {{ if is_header_only_library }}INTERFACE{{ else }}PUBLIC{{ end }}
+        {{~ for kvp in compile_features.values ~}}
+        {{~ for feature in kvp.value ~}}
+        {{ string.replace kvp.key.cmake_expression "{0}" feature }}
+        {{~ end ~}}  
+        {{~ end ~}}
 )
 
 {{~ end -}}

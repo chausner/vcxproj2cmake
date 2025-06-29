@@ -8,6 +8,13 @@ record CMakeConfigDependentSetting
     public string SettingName { get; }
     public string DefaultValue { get; }
 
+    public CMakeConfigDependentSetting(string settingName, string defaultValue)
+    {
+        Values = [];
+        SettingName = settingName;
+        DefaultValue = defaultValue;
+    }
+
     public CMakeConfigDependentSetting(
         MSBuildConfigDependentSetting<string> settings,
         IEnumerable<string> projectConfigurations,
@@ -76,6 +83,13 @@ record CMakeConfigDependentMultiSetting
     public OrderedDictionary<Config, string[]> Values { get; }
     public string SettingName { get; }
     public string[] DefaultValue { get; }
+
+    public CMakeConfigDependentMultiSetting(string settingName, string[] defaultValue)
+    {
+        Values = [];
+        SettingName = settingName;
+        DefaultValue = defaultValue;
+    }
 
     public CMakeConfigDependentMultiSetting(
         MSBuildConfigDependentSetting<string[]> settings,

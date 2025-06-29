@@ -63,7 +63,12 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
 
             if (expected != null)
-                Assert.Contains($"target_compile_features(Project PUBLIC {expected})", cmake);
+                Assert.Contains($"""
+                    target_compile_features(Project
+                        PUBLIC
+                            {expected}
+                    )
+                    """, cmake);
             else
                 Assert.DoesNotContain("target_compile_features", cmake);
         }
@@ -89,7 +94,12 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
 
             if (expected != null)
-                Assert.Contains($"target_compile_features(Project PUBLIC {expected})", cmake);
+                Assert.Contains($"""
+                    target_compile_features(Project
+                        PUBLIC
+                            {expected}
+                    )
+                    """, cmake);
             else
                 Assert.DoesNotContain("target_compile_features", cmake);
         }
@@ -108,7 +118,13 @@ public partial class ConverterTests
                 projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
-            Assert.Contains("target_compile_features(Project PUBLIC cxx_std_17 c_std_11)", cmake);
+            Assert.Contains("""
+                target_compile_features(Project
+                    PUBLIC
+                        cxx_std_17
+                        c_std_11
+                )
+                """, cmake);
         }
 
         [Fact]

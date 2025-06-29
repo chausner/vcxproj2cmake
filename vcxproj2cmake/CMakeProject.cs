@@ -12,8 +12,7 @@ class CMakeProject
     public string[] ProjectConfigurations { get; set; }
     public string[] Languages { get; set; }
     public string ConfigurationType { get; set; }
-    public string? CppLanguageStandard { get; set; }
-    public string? CLanguageStandard { get; set; }
+    public CMakeConfigDependentMultiSetting CompileFeatures { get; set; }
     public string[] SourceFiles { get; set; }
     public CMakeConfigDependentMultiSetting IncludePaths { get; set; }
     public CMakeConfigDependentMultiSetting PublicIncludePaths { get; set; }
@@ -44,8 +43,16 @@ class CMakeProject
         ProjectConfigurations = supportedProjectConfigurations;
         Languages = DetectLanguages(project.SourceFiles, logger);
         ConfigurationType = project.ConfigurationType;
-        CppLanguageStandard = MapCppLanguageStandard(project.LanguageStandard);
-        CLanguageStandard = MapCLanguageStandard(project.LanguageStandardC);
+
+        CompileFeatures = new("CompileFeatures", []);
+        var features = new List<string>();
+        if (GetCompileFeatureForCppLanguageStandard(project.LanguageStandard) is { } cppFeature)
+            features.Add(cppFeature);
+        if (GetCompileFeatureForCLanguageStandard(project.LanguageStandardC) is { } cFeature)
+            features.Add(cFeature);
+        if (features.Count > 0)
+            CompileFeatures.Values[Config.CommonConfig] = features.ToArray();
+
         SourceFiles = project.SourceFiles;
         IncludePaths = new(project.AdditionalIncludeDirectories, supportedProjectConfigurations, logger);
         PublicIncludePaths = new(project.PublicIncludeDirectories, supportedProjectConfigurations, logger);
@@ -115,7 +122,7 @@ class CMakeProject
         return result.ToArray();
     }
 
-    static string? MapCppLanguageStandard(string? msbuildStandard)
+    static string? GetCompileFeatureForCppLanguageStandard(string? msbuildStandard)
     {
         return msbuildStandard switch
         {
@@ -130,7 +137,7 @@ class CMakeProject
         };
     }
 
-    static string? MapCLanguageStandard(string? msbuildStandard)
+    static string? GetCompileFeatureForCLanguageStandard(string? msbuildStandard)
     {
         return msbuildStandard switch
         {
