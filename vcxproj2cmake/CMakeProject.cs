@@ -238,6 +238,26 @@ class CMakeProject
         }, project.OpenMPSupport, ProjectConfigurations, logger);
     }
 
+    public void FinalizeLibraries(IEnumerable<CMakeProject> allProjects)
+    {
+        if (LinkLibraryDependenciesEnabled)
+        {
+            foreach (var projectRef in ProjectDependencyUtils.OrderProjectReferencesByDependencies(ProjectReferences, allProjects))
+            {
+                var referenced = projectRef.Project!;
+                if (referenced.ConfigurationType == "StaticLibrary" || referenced.ConfigurationType == "DynamicLibrary")
+                    Libraries.AppendValue(Config.CommonConfig, referenced.ProjectName);
+            }
+        }
+
+        foreach (var qt in QtModules.OrderBy(m => m.CMakeTargetName))
+            Libraries.AppendValue(Config.CommonConfig, qt.CMakeTargetName);
+
+        foreach (var package in ConanPackages.OrderBy(p => p.CMakeTargetName))
+            Libraries.AppendValue(Config.CommonConfig, package.CMakeTargetName);
+    }
+
+
     public ISet<CMakeProject> GetAllReferencedProjects(IEnumerable<CMakeProject> allProjects)
     {
         var referencedProjects = new HashSet<CMakeProject>();

@@ -126,37 +126,13 @@ target_link_directories({{ project_name }}
 )
 
 {{~ end -}}
-{{~
-  link_library_dependencies_effective = false
-  if link_library_dependencies_enabled
-    for project_ref in project_references
-      if project_ref.project.configuration_type == "StaticLibrary" || project_ref.project.configuration_type == "DynamicLibrary"
-        link_library_dependencies_effective = true
-        break
-      end
-    end
-  end
-~}}
-{{~ if !libraries.is_empty || link_library_dependencies_effective || qt_modules.size > 0 || conan_packages.size > 0 ~}}
+{{~ if !libraries.is_empty ~}}
 target_link_libraries({{ project_name }}
     {{ if is_header_only_library }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in libraries.values ~}}
         {{~ for library in kvp.value ~}}
         {{ string.replace kvp.key.cmake_expression "{0}" (library | translate_msbuild_macros | normalize_path) }}
-        {{~ end ~}}  
-        {{~ end ~}}     
-        {{~ if link_library_dependencies_enabled ~}}
-        {{~ for project_ref in project_references | order_project_references_by_dependencies all_projects ~}}
-        {{~ if project_ref.project.configuration_type == "StaticLibrary" || project_ref.project.configuration_type == "DynamicLibrary" ~}}
-        {{ project_ref.project.project_name }}
         {{~ end ~}}
-        {{~ end ~}}
-        {{~ end ~}}
-        {{~ for qt_cmake_target in qt_modules | array.map "cmake_target_name" | array.sort ~}}
-        {{ qt_cmake_target }}
-        {{~ end ~}}
-        {{~ for conan_cmake_target in conan_packages | array.map "cmake_target_name" | array.sort ~}}
-        {{ conan_cmake_target }}
         {{~ end ~}}
 )
 
