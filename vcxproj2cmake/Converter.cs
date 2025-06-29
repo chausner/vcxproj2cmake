@@ -60,8 +60,9 @@ public class Converter
         EnsureProjectNamesAreUnique(cmakeProjects);
         ResolveProjectReferences(cmakeProjects);
         RemoveObsoleteLibrariesFromProjectReferences(cmakeProjects);
+
         foreach (var project in cmakeProjects)
-            project.FinalizeLibraries(cmakeProjects);
+            project.Finalize(cmakeProjects);
 
         var settings = new CMakeGeneratorSettings(enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun);
         var cmakeGenerator = new CMakeGenerator(fileSystem, logger);

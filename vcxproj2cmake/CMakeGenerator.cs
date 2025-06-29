@@ -54,11 +54,10 @@ class CMakeGenerator
         var scriptObject = new ScriptObject();
         scriptObject.Import(model);
         scriptObject.Import(settings);
-        scriptObject.SetValue("all_projects", allProjects, true);
         scriptObject.Import("fail", new Action<string>(error => throw new CatastrophicFailureException(error)));
         scriptObject.Import("translate_msbuild_macros", TranslateMSBuildMacros);
         scriptObject.Import("normalize_path", NormalizePath);
-        scriptObject.Import("order_project_references_by_dependencies", new Func<IEnumerable<CMakeProjectReference>, IEnumerable<CMakeProject>?, CMakeProjectReference[]>((pr, projects) => ProjectDependencyUtils.OrderProjectReferencesByDependencies(pr, projects)));
+        scriptObject.Import("order_project_references_by_dependencies", (IEnumerable<CMakeProjectReference> pr) => ProjectDependencyUtils.OrderProjectReferencesByDependencies(pr, allProjects, logger));
         scriptObject.Import("get_directory_name", new Func<string?, string?>(Path.GetDirectoryName));
         scriptObject.Import("get_relative_path", new Func<string, string, string?>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));
         scriptObject.Import("prepend_relative_paths_with_cmake_current_source_dir", PrependRelativePathsWithCMakeCurrentSourceDir);
