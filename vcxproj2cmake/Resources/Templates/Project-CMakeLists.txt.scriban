@@ -14,14 +14,14 @@ endif()
 
 {{~ end -}}
 
-{{~ if uses_open_mp ~}}
-find_package(OpenMP)
-{{~ end ~}}
-{{~ if qt_modules.size > 0 ~}}
-find_package(Qt{{ qt_version }} REQUIRED COMPONENTS {{ qt_modules | array.map "cmake_component_name" | array.sort | array.join " " }})
-{{~ end -}}
-{{~ for package in conan_packages ~}}
-find_package({{ package.cmake_config_name }} REQUIRED CONFIG)
+{{~ for find_package in find_packages ~}}
+find_package({{ find_package.package_name }}
+{{- if find_package.required }} REQUIRED{{ end -}}
+{{- if find_package.config }} CONFIG{{ end -}}
+{{- if find_package.components != null && find_package.components.size > 0 ~}}
+ COMPONENTS {{ find_package.components | array.sort | array.join " " }}
+{{- end -}}
+)
 {{~ end ~}}
 
 {{~ if is_header_only_library ~}}

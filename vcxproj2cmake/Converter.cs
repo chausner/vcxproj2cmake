@@ -105,7 +105,7 @@ public class Converter
     {
         foreach (var project in projects)
         {
-            if (!project.LinkLibraryDependenciesEnabled)
+            if (!project.MSBuildProject.LinkLibraryDependenciesEnabled)
                 continue;
 
             // Assumes that the output library names have not been customized and are the same as the project names with a .lib extension
@@ -128,7 +128,7 @@ public class Converter
     {
         foreach (var project in cmakeProjects)
         {
-            if (!project.LinkLibraryDependenciesEnabled)
+            if (!project.MSBuildProject.LinkLibraryDependenciesEnabled)
                 continue;
 
             foreach (var projectRef in ProjectDependencyUtils.OrderProjectReferencesByDependencies(project.ProjectReferences, cmakeProjects))
