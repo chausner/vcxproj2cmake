@@ -12,6 +12,7 @@ class CMakeProject
     public string[] ProjectConfigurations { get; set; }
     public string[] Languages { get; set; }
     public string ConfigurationType { get; set; }
+    public IList<CMakeFindPackage> FindPackages { get; set; }
     public CMakeConfigDependentMultiSetting CompileFeatures { get; set; }
     public string[] SourceFiles { get; set; }
     public CMakeConfigDependentMultiSetting IncludePaths { get; set; }
@@ -20,18 +21,11 @@ class CMakeProject
     public CMakeConfigDependentMultiSetting Libraries { get; set; }
     public CMakeConfigDependentMultiSetting Defines { get; set; }
     public CMakeConfigDependentMultiSetting Options { get; set; }
+    public OrderedDictionary<string, string> Properties { get; set; }
     public CMakeProjectReference[] ProjectReferences { get; set; }
     public bool IsWin32Executable { get; set; }
-    public bool LinkLibraryDependenciesEnabled { get; set; }
     public bool IsHeaderOnlyLibrary { get; set; }
     public CMakeConfigDependentSetting PrecompiledHeaderFile { get; set; }
-    public bool UsesOpenMP { get; set; }
-    public int? QtVersion { get; set; }
-    public bool RequiresQtMoc { get; set; }
-    public bool RequiresQtUic { get; set; }
-    public bool RequiresQtRcc { get; set; }
-    public QtModule[] QtModules { get; set; }
-    public ConanPackage[] ConanPackages { get; set; }
 
     public CMakeProject(MSBuildProject project, int? qtVersion, ConanPackageInfoRepository conanPackageInfoRepository, IFileSystem fileSystem, ILogger logger)
     {
@@ -43,6 +37,7 @@ class CMakeProject
         ProjectConfigurations = supportedProjectConfigurations;
         Languages = DetectLanguages(project.SourceFiles, logger);
         ConfigurationType = project.ConfigurationType;
+        FindPackages = [];
         CompileFeatures = new("CompileFeatures", []);
         SourceFiles = project.SourceFiles;
         IncludePaths = new(project.AdditionalIncludeDirectories, supportedProjectConfigurations, logger);
@@ -53,20 +48,9 @@ class CMakeProject
         Options = new(project.AdditionalOptions, supportedProjectConfigurations, logger);
         ProjectReferences = project.ProjectReferences.Select(path => new CMakeProjectReference { Path = path }).ToArray();
         IsWin32Executable = project.LinkerSubsystem == "Windows";
-        LinkLibraryDependenciesEnabled = project.LinkLibraryDependenciesEnabled;
         PrecompiledHeaderFile = new CMakeConfigDependentSetting(project.PrecompiledHeaderFile, supportedProjectConfigurations, logger)
             .Map((file, mode) => mode == "Use" ? file : null, project.PrecompiledHeader, supportedProjectConfigurations, logger);
-        UsesOpenMP = project.OpenMPSupport.Values.Values.Contains("true", StringComparer.OrdinalIgnoreCase);
-        QtVersion = qtVersion;
-        RequiresQtMoc = project.RequiresQtMoc;
-        RequiresQtUic = project.RequiresQtUic;
-        RequiresQtRcc = project.RequiresQtRcc;
-
-        if (project.QtModules.Any() && qtVersion == null)
-            throw new CatastrophicFailureException("Project uses Qt but no Qt version is set. Specify the version with --qt-version.");
-
-        QtModules = project.QtModules.Select(module => QtModuleInfoRepository.GetQtModuleInfo(module, qtVersion!.Value)).ToArray();
-        ConanPackages = project.ConanPackages.Select(packageName => conanPackageInfoRepository.GetConanPackageInfo(packageName!)).ToArray();
+        Properties = [];
 
         // We don't rely on ConfigurationType to determine if the project is a header-only library
         // since there is no specific configuration type for header-only libraries in MSBuild.
@@ -82,6 +66,8 @@ class CMakeProject
         ApplyExternalWarningLevel(project, logger);
         ApplyTreatAngleIncludeAsExternal(project, logger);
         ApplyOpenMPSupport(project, logger);
+        ApplyQt(project, qtVersion);
+        ApplyConanPackages(project, conanPackageInfoRepository);
     }
 
     static string[] FilterSupportedProjectConfigurations(IEnumerable<string> projectConfigurations, ILogger logger)
@@ -230,12 +216,59 @@ class CMakeProject
 
     void ApplyOpenMPSupport(MSBuildProject project, ILogger logger)
     {
-        Libraries = Libraries.Map((libs, openMP) => (openMP?.ToLowerInvariant()) switch
+        var usesOpenMP = project.OpenMPSupport.Values.Values.Contains("true", StringComparer.OrdinalIgnoreCase);
+        if (usesOpenMP)
         {
-            "true" => [.. libs, "OpenMP::OpenMP_CXX"],
-            "false" or "" or null => libs,
-            _ => throw new CatastrophicFailureException($"Invalid value for OpenMPSupport: {openMP}"),
-        }, project.OpenMPSupport, ProjectConfigurations, logger);
+            FindPackages.Add(new CMakeFindPackage("OpenMP", Required: true));
+
+            Libraries = Libraries.Map((libs, openMP) => (openMP?.ToLowerInvariant()) switch
+            {
+                "true" => [.. libs, "OpenMP::OpenMP_CXX"],
+                "false" or "" or null => libs,
+                _ => throw new CatastrophicFailureException($"Invalid value for OpenMPSupport: {openMP}"),
+            }, project.OpenMPSupport, ProjectConfigurations, logger);
+        }
+    }
+
+    private void ApplyQt(MSBuildProject project, int? qtVersion)
+    {
+        if (project.QtModules.Length == 0)
+            return;
+                
+        if (qtVersion == null)
+            throw new CatastrophicFailureException("Project uses Qt but no Qt version is set. Specify the version with --qt-version.");
+
+        var qtModules =
+            project.QtModules
+            .Select(module => QtModuleInfoRepository.GetQtModuleInfo(module, qtVersion!.Value))
+            .OrderBy(m => m.CMakeTargetName);
+
+        var qtComponents = qtModules.Select(m => m.CMakeComponentName).ToArray();
+        FindPackages.Add(new CMakeFindPackage($"Qt{qtVersion}", Required: true, Components: qtComponents));
+
+        foreach (var module in qtModules)        
+            Libraries.AppendValue(Config.CommonConfig, module.CMakeTargetName);
+
+        if (project.RequiresQtMoc)
+            Properties.Add("AUTOMOC", "ON");
+        if (project.RequiresQtUic)
+            Properties.Add("AUTOUIC", "ON");
+        if (project.RequiresQtRcc)
+            Properties.Add("AUTORCC", "ON");
+    }
+
+    private void ApplyConanPackages(MSBuildProject project, ConanPackageInfoRepository conanPackageInfoRepository)
+    {
+        var conanPackages =
+            project.ConanPackages
+            .Select(packageName => conanPackageInfoRepository.GetConanPackageInfo(packageName!))
+            .OrderBy(p => p.CMakeTargetName);
+
+        foreach (var package in conanPackages)
+        {
+            FindPackages.Add(new CMakeFindPackage(package.CMakeConfigName, Required: true, Config: true));
+            Libraries.AppendValue(Config.CommonConfig, package.CMakeTargetName);
+        }
     }
 
     public ISet<CMakeProject> GetAllReferencedProjects(IEnumerable<CMakeProject> allProjects)
@@ -254,6 +287,8 @@ class CMakeProject
         return referencedProjects;
     }
 }
+
+record CMakeFindPackage(string PackageName, bool Required = false, bool Config = false, string[]? Components = null);
 
 class CMakeProjectReference
 {

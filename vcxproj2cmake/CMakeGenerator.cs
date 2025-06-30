@@ -3,7 +3,6 @@ using Scriban;
 using Scriban.Runtime;
 using System.IO.Abstractions;
 using System.Reflection;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace vcxproj2cmake;
@@ -55,11 +54,10 @@ class CMakeGenerator
         var scriptObject = new ScriptObject();
         scriptObject.Import(model);
         scriptObject.Import(settings);
-        scriptObject.SetValue("all_projects", allProjects, true);
         scriptObject.Import("fail", new Action<string>(error => throw new CatastrophicFailureException(error)));
         scriptObject.Import("translate_msbuild_macros", TranslateMSBuildMacros);
         scriptObject.Import("normalize_path", NormalizePath);
-        scriptObject.Import("order_project_references_by_dependencies", OrderProjectReferencesByDependencies);
+        scriptObject.Import("order_project_references_by_dependencies", (IEnumerable<CMakeProjectReference> pr) => ProjectDependencyUtils.OrderProjectReferencesByDependencies(pr, allProjects, logger));
         scriptObject.Import("get_directory_name", new Func<string?, string?>(Path.GetDirectoryName));
         scriptObject.Import("get_relative_path", new Func<string, string, string?>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));
         scriptObject.Import("prepend_relative_paths_with_cmake_current_source_dir", PrependRelativePathsWithCMakeCurrentSourceDir);
@@ -188,53 +186,6 @@ class CMakeGenerator
         return translatedValue;
     }
 
-    CMakeProject[] OrderProjectsByDependencies(IEnumerable<CMakeProject> projects)
-    {
-        List<CMakeProject> orderedProjects = [];
-        List<CMakeProject> unorderedProjects = projects.OrderBy(p => p.AbsoluteProjectPath).ToList();
-
-        while (unorderedProjects.Count > 0)
-        {
-            var projectWithAllDependenciesSatisfied = unorderedProjects
-                .FirstOrDefault(project => project.ProjectReferences.All(p => orderedProjects.Any(p2 => p2.AbsoluteProjectPath == p.Project!.AbsoluteProjectPath)));
-
-            if (projectWithAllDependenciesSatisfied != null)
-            {
-                orderedProjects.Add(projectWithAllDependenciesSatisfied);
-                unorderedProjects.Remove(projectWithAllDependenciesSatisfied);
-            }
-            else
-            {
-                StringBuilder sb = new StringBuilder();
-                sb.AppendLine("Could not determine project dependency tree");
-
-                foreach (var project in unorderedProjects)
-                {
-                    sb.AppendLine($"Project {project.ProjectName}");
-                    foreach (var missingReference in project.ProjectReferences.Where(pr =>
-                                 orderedProjects.All(p => p.AbsoluteProjectPath != pr.Project!.AbsoluteProjectPath)))
-                    {
-                        sb.AppendLine($"  missing dependency {missingReference.Path}");
-                    }
-                }
-
-                logger.LogError(sb.ToString());
-
-                throw new CatastrophicFailureException("Could not determine project dependency tree");
-            }
-        }
-
-        return orderedProjects.ToArray();
-    }
-
-    CMakeProjectReference[] OrderProjectReferencesByDependencies(IEnumerable<CMakeProjectReference> projectReferences, IEnumerable<CMakeProject>? allProjects = null)
-    {
-        var orderedProjects = OrderProjectsByDependencies(allProjects ?? projectReferences.Select(pr => pr.Project!));
-
-        return projectReferences
-            .OrderBy(pr => Array.FindIndex(orderedProjects, p => p.AbsoluteProjectPath == pr.Project!.AbsoluteProjectPath))
-            .ToArray();
-    }
 }
 
 record CMakeGeneratorSettings(bool EnableStandaloneProjectBuilds, IndentStyle IndentStyle, int IndentSize, bool DryRun);

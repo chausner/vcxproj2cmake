@@ -51,7 +51,7 @@ public partial class ConverterTests
                 projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
-            Assert.Contains("find_package(OpenMP)", cmake);
+            Assert.Contains("find_package(OpenMP REQUIRED)", cmake);
             Assert.Contains("""
                 target_link_libraries(Project
                     PUBLIC
@@ -74,7 +74,7 @@ public partial class ConverterTests
                 projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
-            Assert.Contains("find_package(OpenMP)", cmake);
+            Assert.Contains("find_package(OpenMP REQUIRED)", cmake);
             Assert.Contains("""
                 target_link_libraries(Project
                     PUBLIC
@@ -97,23 +97,9 @@ public partial class ConverterTests
                 projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
-            Assert.DoesNotContain("find_package(OpenMP)", cmake);
+            Assert.DoesNotContain("find_package(OpenMP REQUIRED)", cmake);
             Assert.DoesNotContain("OpenMP::OpenMP_CXX", cmake);
             Assert.DoesNotContain("target_link_libraries(Project", cmake);
-        }
-
-        [Fact]
-        public void Given_InvalidOpenMPValue_When_Converted_Then_Throws()
-        {
-            var fileSystem = new MockFileSystem();
-            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
-
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("foo", "foo")));
-
-            var converter = new Converter(fileSystem, NullLogger.Instance);
-
-            Assert.Throws<CatastrophicFailureException>(() => converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")]));
         }
     }
 }

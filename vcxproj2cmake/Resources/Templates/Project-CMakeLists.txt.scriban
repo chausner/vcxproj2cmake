@@ -6,7 +6,7 @@ project({{ project_name }}
 )
 
 {{~ if enable_standalone_project_builds && project_references.size > 0 ~}}
-{{~ for project_ref in project_references | order_project_references_by_dependencies all_projects ~}}
+{{~ for project_ref in project_references | order_project_references_by_dependencies ~}}
 if(NOT TARGET {{ project_ref.project.project_name }})
     add_subdirectory({{ project_ref.project.absolute_project_path | get_directory_name | get_relative_path (absolute_project_path | get_directory_name) | normalize_path }} "${CMAKE_BINARY_DIR}/{{ project_ref.project.project_name }}")
 endif()
@@ -14,14 +14,14 @@ endif()
 
 {{~ end -}}
 
-{{~ if uses_open_mp ~}}
-find_package(OpenMP)
-{{~ end ~}}
-{{~ if qt_modules.size > 0 ~}}
-find_package(Qt{{ qt_version }} REQUIRED COMPONENTS {{ qt_modules | array.map "cmake_component_name" | array.sort | array.join " " }})
-{{~ end -}}
-{{~ for package in conan_packages ~}}
-find_package({{ package.cmake_config_name }} REQUIRED CONFIG)
+{{~ for find_package in find_packages ~}}
+find_package({{ find_package.package_name }}
+{{- if find_package.required }} REQUIRED{{ end -}}
+{{- if find_package.config }} CONFIG{{ end -}}
+{{- if find_package.components != null && find_package.components.size > 0 ~}}
+ COMPONENTS {{ find_package.components | array.sort | array.join " " }}
+{{- end -}}
+)
 {{~ end ~}}
 
 {{~ if is_header_only_library ~}}
@@ -42,17 +42,11 @@ add_library({{ project_name }} SHARED
 )
 {{~ end ~}}
 
-{{~ if requires_qt_moc || requires_qt_uic || requires_qt_rcc ~}}
+{{~ if properties | array.size > 0 ~}}
 set_target_properties({{ project_name }} PROPERTIES
-{{~ if requires_qt_moc ~}}
-    AUTOMOC ON
-{{~ end ~}}
-{{~ if requires_qt_uic ~}}
-    AUTOUIC ON
-{{~ end ~}}
-{{~ if requires_qt_rcc ~}}
-    AUTORCC ON
-{{~ end ~}}
+    {{~ for kvp in properties ~}}
+    {{ kvp.key }} {{ kvp.value }}
+    {{~ end ~}}
 )
 
 {{~ end -}}
@@ -126,37 +120,13 @@ target_link_directories({{ project_name }}
 )
 
 {{~ end -}}
-{{~
-  link_library_dependencies_effective = false
-  if link_library_dependencies_enabled
-    for project_ref in project_references
-      if project_ref.project.configuration_type == "StaticLibrary" || project_ref.project.configuration_type == "DynamicLibrary"
-        link_library_dependencies_effective = true
-        break
-      end
-    end
-  end
-~}}
-{{~ if !libraries.is_empty || link_library_dependencies_effective || qt_modules.size > 0 || conan_packages.size > 0 ~}}
+{{~ if !libraries.is_empty ~}}
 target_link_libraries({{ project_name }}
     {{ if is_header_only_library }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in libraries.values ~}}
         {{~ for library in kvp.value ~}}
         {{ string.replace kvp.key.cmake_expression "{0}" (library | translate_msbuild_macros | normalize_path) }}
-        {{~ end ~}}  
-        {{~ end ~}}     
-        {{~ if link_library_dependencies_enabled ~}}
-        {{~ for project_ref in project_references | order_project_references_by_dependencies all_projects ~}}
-        {{~ if project_ref.project.configuration_type == "StaticLibrary" || project_ref.project.configuration_type == "DynamicLibrary" ~}}
-        {{ project_ref.project.project_name }}
         {{~ end ~}}
-        {{~ end ~}}
-        {{~ end ~}}
-        {{~ for qt_cmake_target in qt_modules | array.map "cmake_target_name" | array.sort ~}}
-        {{ qt_cmake_target }}
-        {{~ end ~}}
-        {{~ for conan_cmake_target in conan_packages | array.map "cmake_target_name" | array.sort ~}}
-        {{ conan_cmake_target }}
         {{~ end ~}}
 )
 
