@@ -30,8 +30,6 @@ class CMakeProject
     public bool RequiresQtMoc { get; set; }
     public bool RequiresQtUic { get; set; }
     public bool RequiresQtRcc { get; set; }
-    public QtModule[] QtModules { get; set; }
-    public ConanPackage[] ConanPackages { get; set; }
 
     public CMakeProject(MSBuildProject project, int? qtVersion, ConanPackageInfoRepository conanPackageInfoRepository, IFileSystem fileSystem, ILogger logger)
     {
@@ -65,8 +63,21 @@ class CMakeProject
         if (project.QtModules.Any() && qtVersion == null)
             throw new CatastrophicFailureException("Project uses Qt but no Qt version is set. Specify the version with --qt-version.");
 
-        QtModules = project.QtModules.Select(module => QtModuleInfoRepository.GetQtModuleInfo(module, qtVersion!.Value)).ToArray();
-        ConanPackages = project.ConanPackages.Select(packageName => conanPackageInfoRepository.GetConanPackageInfo(packageName!)).ToArray();
+        var qtModules =
+            project.QtModules
+            .Select(module => QtModuleInfoRepository.GetQtModuleInfo(module, qtVersion!.Value))
+            .OrderBy(m => m.CMakeTargetName);
+
+        foreach (var module in qtModules)
+            Libraries.AppendValue(Config.CommonConfig, module.CMakeTargetName);
+
+        var conanPackages =
+            project.ConanPackages
+            .Select(packageName => conanPackageInfoRepository.GetConanPackageInfo(packageName!))
+            .OrderBy(p => p.CMakeTargetName);
+
+        foreach (var package in conanPackages)
+            Libraries.AppendValue(Config.CommonConfig, package.CMakeTargetName);
 
         // We don't rely on ConfigurationType to determine if the project is a header-only library
         // since there is no specific configuration type for header-only libraries in MSBuild.
@@ -236,22 +247,6 @@ class CMakeProject
             "false" or "" or null => libs,
             _ => throw new CatastrophicFailureException($"Invalid value for OpenMPSupport: {openMP}"),
         }, project.OpenMPSupport, ProjectConfigurations, logger);
-    }
-
-    public void Finalize(IEnumerable<CMakeProject> allProjects)
-    {
-        if (LinkLibraryDependenciesEnabled)
-        {
-            foreach (var projectRef in ProjectDependencyUtils.OrderProjectReferencesByDependencies(ProjectReferences, allProjects))
-                if (projectRef.Project!.ConfigurationType == "StaticLibrary" || projectRef.Project.ConfigurationType == "DynamicLibrary")
-                    Libraries.AppendValue(Config.CommonConfig, projectRef.Project.ProjectName);
-        }
-
-        foreach (var module in QtModules.OrderBy(m => m.CMakeTargetName))
-            Libraries.AppendValue(Config.CommonConfig, module.CMakeTargetName);
-
-        foreach (var package in ConanPackages.OrderBy(p => p.CMakeTargetName))
-            Libraries.AppendValue(Config.CommonConfig, package.CMakeTargetName);
     }
 
     public ISet<CMakeProject> GetAllReferencedProjects(IEnumerable<CMakeProject> allProjects)

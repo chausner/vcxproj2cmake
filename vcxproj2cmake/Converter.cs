@@ -60,9 +60,7 @@ public class Converter
         EnsureProjectNamesAreUnique(cmakeProjects);
         ResolveProjectReferences(cmakeProjects);
         RemoveObsoleteLibrariesFromProjectReferences(cmakeProjects);
-
-        foreach (var project in cmakeProjects)
-            project.Finalize(cmakeProjects);
+        AddLibrariesFromProjectReferences(cmakeProjects);
 
         var settings = new CMakeGeneratorSettings(enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun);
         var cmakeGenerator = new CMakeGenerator(fileSystem, logger);
@@ -123,6 +121,19 @@ public class Converter
                 }
 
             project.Libraries = project.Libraries.Map(libraries => libraries.Except(dependencyTargets, StringComparer.OrdinalIgnoreCase).ToArray(), project.ProjectConfigurations, logger!);
+        }
+    }
+
+    private static void AddLibrariesFromProjectReferences(IEnumerable<CMakeProject> cmakeProjects)
+    {
+        foreach (var project in cmakeProjects)
+        {
+            if (!project.LinkLibraryDependenciesEnabled)
+                continue;
+
+            foreach (var projectRef in ProjectDependencyUtils.OrderProjectReferencesByDependencies(project.ProjectReferences, cmakeProjects))
+                if (projectRef.Project!.ConfigurationType == "StaticLibrary" || projectRef.Project.ConfigurationType == "DynamicLibrary")
+                    project.Libraries.AppendValue(Config.CommonConfig, projectRef.Project.ProjectName);
         }
     }
 }
