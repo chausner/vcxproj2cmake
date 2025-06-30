@@ -21,13 +21,11 @@ class CMakeProject
     public CMakeConfigDependentMultiSetting Libraries { get; set; }
     public CMakeConfigDependentMultiSetting Defines { get; set; }
     public CMakeConfigDependentMultiSetting Options { get; set; }
+    public OrderedDictionary<string, string> Properties { get; set; }
     public CMakeProjectReference[] ProjectReferences { get; set; }
     public bool IsWin32Executable { get; set; }
     public bool IsHeaderOnlyLibrary { get; set; }
     public CMakeConfigDependentSetting PrecompiledHeaderFile { get; set; }
-    public bool RequiresQtMoc { get; set; }
-    public bool RequiresQtUic { get; set; }
-    public bool RequiresQtRcc { get; set; }
 
     public CMakeProject(MSBuildProject project, int? qtVersion, ConanPackageInfoRepository conanPackageInfoRepository, IFileSystem fileSystem, ILogger logger)
     {
@@ -52,9 +50,7 @@ class CMakeProject
         IsWin32Executable = project.LinkerSubsystem == "Windows";
         PrecompiledHeaderFile = new CMakeConfigDependentSetting(project.PrecompiledHeaderFile, supportedProjectConfigurations, logger)
             .Map((file, mode) => mode == "Use" ? file : null, project.PrecompiledHeader, supportedProjectConfigurations, logger);
-        RequiresQtMoc = project.RequiresQtMoc;
-        RequiresQtUic = project.RequiresQtUic;
-        RequiresQtRcc = project.RequiresQtRcc;
+        Properties = [];
 
         // We don't rely on ConfigurationType to determine if the project is a header-only library
         // since there is no specific configuration type for header-only libraries in MSBuild.
@@ -70,7 +66,7 @@ class CMakeProject
         ApplyExternalWarningLevel(project, logger);
         ApplyTreatAngleIncludeAsExternal(project, logger);
         ApplyOpenMPSupport(project, logger);
-        ApplyQtModules(project, qtVersion);
+        ApplyQt(project, qtVersion);
         ApplyConanPackages(project, conanPackageInfoRepository);
     }
 
@@ -234,7 +230,7 @@ class CMakeProject
         }
     }
 
-    private void ApplyQtModules(MSBuildProject project, int? qtVersion)
+    private void ApplyQt(MSBuildProject project, int? qtVersion)
     {
         if (project.QtModules.Length == 0)
             return;
@@ -252,6 +248,13 @@ class CMakeProject
 
         foreach (var module in qtModules)        
             Libraries.AppendValue(Config.CommonConfig, module.CMakeTargetName);
+
+        if (project.RequiresQtMoc)
+            Properties.Add("AUTOMOC", "ON");
+        if (project.RequiresQtUic)
+            Properties.Add("AUTOUIC", "ON");
+        if (project.RequiresQtRcc)
+            Properties.Add("AUTORCC", "ON");
     }
 
     private void ApplyConanPackages(MSBuildProject project, ConanPackageInfoRepository conanPackageInfoRepository)
