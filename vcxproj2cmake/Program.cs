@@ -92,6 +92,7 @@ static class Program
 
         var parser = new CommandLineBuilder(rootCommand)
             .UseHelp()
+            .UseVersionOption()
             .UseTypoCorrections()
             .UseParseErrorReporting()
             .UseExceptionHandler((ex, context) => HandleException(ex))
