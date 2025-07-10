@@ -1,5 +1,8 @@
 # vcxproj2cmake
 
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/chausner/vcxproj2cmake)](https://github.com/chausner/vcxproj2cmake/releases/latest)
+[![license](https://img.shields.io/github/license/chausner/vcxproj2cmake.svg)](https://github.com/chausner/vcxproj2cmake/blob/master/LICENSE)
+
 **vcxproj2cmake** is a tool designed to convert Microsoft Visual C++ project files (`.vcxproj`) to equivalent CMake files (`CMakeLists.txt`).
 
 > [!NOTE]
@@ -40,11 +43,8 @@
 
 ## Installation
 
-At the moment, no binary releases are available.
-Therefore, you need to build the application from source:
-
-1. Make sure you have .NET 9 SDK installed.
-2. Run `cd vcxproj2cmake` and `dotnet run -- --help` to compile the project and see the usage instructions.
+1. Make sure you have the [.NET 9 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/9.0) installed.
+2. Download the latest release from the [releases page](https://github.com/chausner/vcxproj2cmake/releases) and unzip it to a directory of your choice.
 
 ## Usage
 
@@ -55,8 +55,7 @@ Therefore, you need to build the application from source:
 To convert a single `.vcxproj` file with no dependency to other projects, run:
 
 ```
-cd vcxproj2cmake
-dotnet run -- --projects MyProject.vcxproj
+.\vcxproj2cmake --projects MyProject.vcxproj
 ```
 
 This will generate a `CMakeLists.txt` file in the same directory as the `.vcxproj` file.
@@ -67,8 +66,7 @@ If the project has dependencies on other projects, or you want to convert multip
 specify the paths to all `.vcxproj` files:
 
 ```
-cd vcxproj2cmake
-dotnet run -- --projects MyProject1.vcxproj MyProject2.vcxproj
+.\vcxproj2cmake --projects MyProject1.vcxproj MyProject2.vcxproj
 ```
 
 This will generate a `CMakeLists.txt` file for each specified project in their respective directories.
@@ -78,8 +76,7 @@ This will generate a `CMakeLists.txt` file for each specified project in their r
 If you have a `.sln` solution file, you can convert all projects in the solution by running:
 
 ```
-cd vcxproj2cmake
-dotnet run -- --solution MySolution.sln
+.\vcxproj2cmake --solution MySolution.sln
 ```
 
 This will generate a `CMakeLists.txt` file for each project next to the `.vcxproj` file,
@@ -171,8 +168,8 @@ similar configuration-specific defines and compiler options:
 
 Running the converter on the solution generates three `CMakeLists.txt` files:
 
-```bash
-$ dotnet run -- --solution ../ExampleSolution/ExampleSolution.sln
+```
+> .\vcxproj2cmake --solution ../ExampleSolution/ExampleSolution.sln
 Parsing ../ExampleSolution/ExampleSolution.sln
 Parsing ../ExampleSolution/MathLib/MathLib.vcxproj
 Parsing ../ExampleSolution/App/App.vcxproj
