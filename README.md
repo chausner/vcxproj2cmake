@@ -34,6 +34,7 @@
   `PreprocessorDefinitions`
   `PublicIncludeDirectories`
   `SubSystem`
+  `TargetName`
   `TreatAngleIncludeAsExternal`
   `TreatSpecificWarningsAsErrors`
   `TreatWarningAsError`
