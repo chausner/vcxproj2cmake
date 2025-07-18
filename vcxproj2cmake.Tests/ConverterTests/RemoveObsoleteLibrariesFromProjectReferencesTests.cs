@@ -8,7 +8,7 @@ public partial class ConverterTests
 {
     public class RemoveObsoleteLibrariesFromProjectReferencesTests
     {
-        static string CreateAppProject(bool linkLibraryDependencies) => $"""
+        static string CreateAppProject(bool linkLibraryDependencies, string additionalDependency) => $"""
             <?xml version="1.0" encoding="utf-8"?>
             <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                 <ItemGroup Label="ProjectConfigurations">
@@ -32,7 +32,7 @@ public partial class ConverterTests
                         <LinkLibraryDependencies>{(linkLibraryDependencies ? "true" : "false")}</LinkLibraryDependencies>
                     </ProjectReference>
                     <Link>
-                        <AdditionalDependencies>Lib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+                        <AdditionalDependencies>{additionalDependency};%(AdditionalDependencies)</AdditionalDependencies>
                     </Link>
                 </ItemDefinitionGroup>
             </Project>
@@ -46,7 +46,7 @@ public partial class ConverterTests
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
             fileSystem.AddFile(@"Lib/Lib.vcxproj", new(TestData.CreateProject("Lib", "StaticLibrary")));
-            fileSystem.AddFile(@"App/App.vcxproj", new(CreateAppProject(false)));
+            fileSystem.AddFile(@"App/App.vcxproj", new(CreateAppProject(false, "Lib.lib")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -78,7 +78,7 @@ public partial class ConverterTests
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
             fileSystem.AddFile(@"Lib/Lib.vcxproj", new(TestData.CreateProject("Lib", "StaticLibrary")));
-            fileSystem.AddFile(@"App/App.vcxproj", new(CreateAppProject(true)));
+            fileSystem.AddFile(@"App/App.vcxproj", new(CreateAppProject(true, "Lib.lib")));
 
             var logger = new InMemoryLogger();
             var converter = new Converter(fileSystem, logger);
@@ -107,5 +107,41 @@ public partial class ConverterTests
                 logger.AllMessageText);
         }
 
+        [Fact]
+        public void Given_ProjectLinksLibraryExplicitlyAndLinkLibraryDependenciesEnabledAndProjectTargetNameIsOverridden_When_Converted_Then_LibraryIsRemovedAndLogged()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Lib/Lib.vcxproj", new(TestData.CreateProject("Lib", "StaticLibrary", targetName: "MyLib")));
+            fileSystem.AddFile(@"App/App.vcxproj", new(CreateAppProject(true, "MyLib.lib")));
+
+            var logger = new InMemoryLogger();
+            var converter = new Converter(fileSystem, logger);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"App/App.vcxproj"), new(@"Lib/Lib.vcxproj")]);
+
+            // Assert
+            AssertEx.FileHasContent(@"App/CMakeLists.txt", fileSystem, """
+                cmake_minimum_required(VERSION 3.13)
+                project(App)
+
+
+                add_executable(App
+                )
+
+                target_link_libraries(App
+                    PUBLIC
+                        Lib
+                )
+                """);
+
+            Assert.Contains(
+                "Removing explicit library dependency MyLib.lib from project App since LinkLibraryDependencies is enabled.",
+                logger.AllMessageText);
+        }
     }
 }

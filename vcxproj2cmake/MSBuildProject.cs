@@ -15,6 +15,7 @@ class MSBuildProject
     public required string LanguageStandardC { get; init; }
     public required string[] SourceFiles { get; init; }
     public required string[] HeaderFiles { get; init; }
+    public required MSBuildConfigDependentSetting<string> TargetName { get; init; }
     public required MSBuildConfigDependentSetting<string[]> AdditionalIncludeDirectories { get; init; }
     public required MSBuildConfigDependentSetting<string[]> PublicIncludeDirectories { get; init; }
     public required MSBuildConfigDependentSetting<string[]> AdditionalLibraryDirectories { get; init; }
@@ -229,6 +230,7 @@ class MSBuildProject
         var languageStandard = GetCommonSetting("LanguageStandard", compilerSettings) ?? "Default";
         var languageStandardC = GetCommonSetting("LanguageStandard_C", compilerSettings) ?? "Default";
 
+        var targetName = ParseSetting("TargetName", otherSettings, Path.GetFileNameWithoutExtension(projectPath));
         var additionalIncludeDirectories = ParseMultiSetting("AdditionalIncludeDirectories", ';', compilerSettings, []);
         var publicIncludeDirectories = ParseMultiSetting("PublicIncludeDirectories", ';', otherSettings, []);
         var additionalLibraryDirectories = ParseMultiSetting("AdditionalLibraryDirectories", ';', linkerSettings, []);
@@ -269,6 +271,7 @@ class MSBuildProject
             LanguageStandardC = languageStandardC,
             SourceFiles = sourceFiles.ToArray(),
             HeaderFiles = headerFiles.ToArray(),
+            TargetName = targetName,
             AdditionalIncludeDirectories = additionalIncludeDirectories,
             PublicIncludeDirectories = publicIncludeDirectories,
             AdditionalLibraryDirectories = additionalLibraryDirectories,

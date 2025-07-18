@@ -108,10 +108,9 @@ public class Converter
             if (!project.MSBuildProject.LinkLibraryDependenciesEnabled)
                 continue;
 
-            // Assumes that the output library names have not been customized and are the same as the project names with a .lib extension
             var dependencyTargets = project.GetAllReferencedProjects(projects)
                 .Where(project => project.ConfigurationType == "StaticLibrary" || project.ConfigurationType == "DynamicLibrary")
-                .Select(project => project.ProjectName + ".lib")
+                .Select(project => project.OutputName + ".lib")
                 .ToArray();
 
             foreach (var dependencyTarget in dependencyTargets)

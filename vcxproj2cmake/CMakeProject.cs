@@ -15,6 +15,7 @@ class CMakeProject
     public IList<CMakeFindPackage> FindPackages { get; set; }
     public CMakeConfigDependentMultiSetting CompileFeatures { get; set; }
     public string[] SourceFiles { get; set; }
+    public string OutputName { get; set; }
     public CMakeConfigDependentMultiSetting IncludePaths { get; set; }
     public CMakeConfigDependentMultiSetting PublicIncludePaths { get; set; }
     public CMakeConfigDependentMultiSetting LinkerPaths { get; set; }
@@ -40,6 +41,7 @@ class CMakeProject
         FindPackages = [];
         CompileFeatures = new("CompileFeatures", []);
         SourceFiles = project.SourceFiles;
+        OutputName = project.ProjectName;  // may get overridden in ApplyTargetName
         IncludePaths = new(project.AdditionalIncludeDirectories, supportedProjectConfigurations, logger);
         PublicIncludePaths = new(project.PublicIncludeDirectories, supportedProjectConfigurations, logger);
         LinkerPaths = new(project.AdditionalLibraryDirectories, supportedProjectConfigurations, logger);
@@ -56,6 +58,7 @@ class CMakeProject
         // since there is no specific configuration type for header-only libraries in MSBuild.
         IsHeaderOnlyLibrary = project.SourceFiles.Length == 0 && project.HeaderFiles.Length > 0;
 
+        ApplyTargetName(project);
         ApplyLanguageStandards(project);
         ApplyAllProjectIncludesArePublic(project, logger);
         ApplyCharacterSetSetting(project, logger);
@@ -98,6 +101,25 @@ class CMakeProject
             logger.LogWarning("Could not detect languages for project");
 
         return result.ToArray();
+    }
+
+    void ApplyTargetName(MSBuildProject project)
+    {
+        if (project.TargetName.Values.Count == 0)
+            return;
+
+        var targetName =
+            project.TargetName.Values.Values
+            .Distinct()
+            .SingleWithException(() =>
+                throw new CatastrophicFailureException(
+                    "TargetName property is inconsistent between configurations"));
+
+        if (targetName != project.ProjectName)
+        {
+            Properties["OUTPUT_NAME"] = targetName;
+            OutputName = targetName;
+        }
     }
 
     void ApplyLanguageStandards(MSBuildProject project)
