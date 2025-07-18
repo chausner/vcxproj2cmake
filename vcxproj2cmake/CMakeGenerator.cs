@@ -3,6 +3,7 @@ using Scriban;
 using Scriban.Runtime;
 using System.IO.Abstractions;
 using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace vcxproj2cmake;
@@ -55,6 +56,8 @@ class CMakeGenerator
         scriptObject.Import(model);
         scriptObject.Import(settings);
         scriptObject.Import("fail", new Action<string>(error => throw new CatastrophicFailureException(error)));
+        scriptObject.Import("literal", ToCMakeLiteral);
+        scriptObject.Import("unquoted_literal", (string s) => ToCMakeLiteral(s, unquoted: true));
         scriptObject.Import("translate_msbuild_macros", TranslateMSBuildMacros);
         scriptObject.Import("normalize_path", NormalizePath);
         scriptObject.Import("order_project_references_by_dependencies", (IEnumerable<CMakeProjectReference> pr) => ProjectDependencyUtils.OrderProjectReferencesByDependencies(pr, allProjects, logger));
@@ -116,6 +119,43 @@ class CMakeGenerator
         using var streamReader = new StreamReader(stream);
         string content = streamReader.ReadToEnd();
         return Template.Parse(content);
+    }
+
+    static string ToCMakeLiteral(string value, bool unquoted = false)
+    {
+        bool NeedsQuoting(char c) =>
+            char.IsWhiteSpace(c) ||  // space, tab, newline …
+            c == ';' ||              // list separator inside variables
+            c == '#' ||              // comment introducer
+            c == '(' || c == ')' ||  // command delimiters
+            c == '"' || c == '\\' || // must be escaped inside quotes
+            c == '$';                // variable expansion
+
+        bool mustQuote = value.Length == 0 || value.Any(NeedsQuoting);
+        if (!mustQuote)
+            return value;
+
+        var sb = new StringBuilder(value.Length + 8);
+
+        if (!unquoted)
+            sb.Append('"');
+
+        foreach (char c in value)
+            sb.Append(c switch
+            {
+                '\\' => "\\\\", // backslash
+                '\"' => "\\\"", // quote
+                '\n' => "\\n",  // newline
+                '\r' => "\\r",  // carriage return
+                '\t' => "\\t",  // tab
+                '$' => "\\$",   // prevent ${VAR} expansion
+                _ => c.ToString()
+            });  
+
+        if (!unquoted)
+            sb.Append('"');
+
+        return sb.ToString();
     }
 
     static string NormalizePath(string path)
