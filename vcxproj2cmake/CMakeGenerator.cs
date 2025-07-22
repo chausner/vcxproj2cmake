@@ -148,7 +148,8 @@ class CMakeGenerator
                 '\n' => "\\n",  // newline
                 '\r' => "\\r",  // carriage return
                 '\t' => "\\t",  // tab
-                '$' => "\\$",   // prevent ${VAR} expansion
+                // commented out for now since it conflicts with TranslateMSBuildMacros
+                //'$' => "\\$",   // prevent ${VAR} expansion
                 _ => c.ToString()
             });  
 
