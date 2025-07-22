@@ -26,13 +26,13 @@ public partial class ConverterTests
             // Assert
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """            
                 cmake_minimum_required(VERSION 3.13)
-                project("Project with \$pecial c#aracters")
+                project("Project with $pecial c#aracters")
 
 
-                add_executable("Project with \$pecial c#aracters"
+                add_executable("Project with $pecial c#aracters"
                 )
 
-                target_compile_definitions("Project with \$pecial c#aracters"
+                target_compile_definitions("Project with $pecial c#aracters"
                     PUBLIC
                         WIN32
                         _CONSOLE
@@ -42,7 +42,7 @@ public partial class ConverterTests
                         $<$<CONFIG:Release>:NDEBUG>
                 )
 
-                target_compile_options("Project with \$pecial c#aracters"
+                target_compile_options("Project with $pecial c#aracters"
                     PUBLIC
                         /W3
                 )            
