@@ -75,6 +75,11 @@ record CMakeConfigDependentSetting
         return Values.GetValueOrDefault(Config.CommonConfig);
     }
 
+    public string ToCMakeExpression()
+    {
+        return string.Join(string.Empty, Values.Select(kvp => string.Format(kvp.Key.CMakeExpression, kvp.Value)));
+    }
+
     public bool IsEmpty => Values.Count == 0;
 }
 

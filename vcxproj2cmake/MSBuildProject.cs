@@ -23,6 +23,7 @@ class MSBuildProject
     public required MSBuildConfigDependentSetting<string[]> PreprocessorDefinitions { get; init; }
     public required MSBuildConfigDependentSetting<string[]> AdditionalOptions { get; init; }
     public required MSBuildConfigDependentSetting<string> CharacterSet { get; init; }
+    public required MSBuildConfigDependentSetting<string> RuntimeLibrary { get; init; }
     public required MSBuildConfigDependentSetting<string[]> DisableSpecificWarnings { get; init; }
     public required MSBuildConfigDependentSetting<string[]> TreatSpecificWarningsAsErrors { get; init; }
     public required MSBuildConfigDependentSetting<string> TreatWarningAsError { get; init; }
@@ -238,6 +239,13 @@ class MSBuildProject
         var preprocessorDefinitions = ParseMultiSetting("PreprocessorDefinitions", ';', compilerSettings, []);
         var additionalOptions = ParseMultiSetting("AdditionalOptions", ' ', compilerSettings, []);
         var characterSet = ParseSetting("CharacterSet", otherSettings, "NotSet");
+        var useDebugLibraries = ParseSetting("UseDebugLibraries", otherSettings, "false");
+        var runtimeLibrary = ParseSettingWithConfigSpecificDefault("RuntimeLibrary", compilerSettings, new(projectConfig => {
+            if (useDebugLibraries.GetEffectiveValue(projectConfig) == "true")
+                return "MultiThreadedDebugDLL";
+            else
+                return "MultiThreadedDLL";
+        }));
         var disableSpecificWarnings = ParseMultiSetting("DisableSpecificWarnings", ';', compilerSettings, []);
         var treatSpecificWarningsAsErrors = ParseMultiSetting("TreatSpecificWarningsAsErrors", ';', compilerSettings, []);
         var treatWarningAsError = ParseSetting("TreatWarningAsError", compilerSettings, "false");
@@ -279,6 +287,7 @@ class MSBuildProject
             PreprocessorDefinitions = preprocessorDefinitions,
             AdditionalOptions = additionalOptions,
             CharacterSet = characterSet,
+            RuntimeLibrary = runtimeLibrary,
             DisableSpecificWarnings = disableSpecificWarnings,
             TreatSpecificWarningsAsErrors = treatSpecificWarningsAsErrors,
             TreatWarningAsError = treatWarningAsError,
@@ -312,6 +321,20 @@ class MSBuildProject
             string defaultValue)
         {
             return new(property, defaultValue, settings.GetValueOrDefault(property, []), value => value);
+        }
+
+        MSBuildConfigDependentSetting<string> ParseSettingWithConfigSpecificDefault(
+            string property,
+            Dictionary<string, Dictionary<string, string>> settings,
+            Func<string, string> defaultValueForConfig)
+        {
+            var settingsForProperty = settings.GetValueOrDefault(property, []).ToDictionary();
+
+            foreach (var projectConfig in projectConfigurations)            
+                if (!settingsForProperty.ContainsKey(projectConfig))                
+                    settingsForProperty[projectConfig] = defaultValueForConfig(projectConfig);
+
+            return new(property, string.Empty, settingsForProperty, value => value);
         }
 
         MSBuildConfigDependentSetting<string[]> ParseMultiSetting(
