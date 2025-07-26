@@ -1,5 +1,7 @@
 # vcxproj2cmake
 
+<img src="vcxproj2cmake.png" alt="Logo" width="200" />
+
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/chausner/vcxproj2cmake)](https://github.com/chausner/vcxproj2cmake/releases/latest)
 [![license](https://img.shields.io/github/license/chausner/vcxproj2cmake.svg)](https://github.com/chausner/vcxproj2cmake/blob/master/LICENSE)
 
