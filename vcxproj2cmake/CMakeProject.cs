@@ -9,7 +9,7 @@ class CMakeProject
     public MSBuildProject MSBuildProject { get; }
     public string AbsoluteProjectPath { get; set; }
     public string ProjectName { get; set; }
-    public string[] ProjectConfigurations { get; set; }
+    public MSBuildProjectConfig[] ProjectConfigurations { get; set; }
     public string[] Languages { get; set; }
     public string ConfigurationType { get; set; }
     public IList<CMakeFindPackage> FindPackages { get; set; }
@@ -74,9 +74,9 @@ class CMakeProject
         ApplyConanPackages(project, conanPackageInfoRepository);
     }
 
-    static string[] FilterSupportedProjectConfigurations(IEnumerable<string> projectConfigurations, ILogger logger)
+    static MSBuildProjectConfig[] FilterSupportedProjectConfigurations(IEnumerable<MSBuildProjectConfig> projectConfigurations, ILogger logger)
     {
-        List<string> supportedProjectConfigurations = [];
+        List<MSBuildProjectConfig> supportedProjectConfigurations = [];
 
         foreach (var projectConfig in projectConfigurations)
         {
@@ -154,7 +154,7 @@ class CMakeProject
             CompileFeatures.AppendValue(Config.CommonConfig, cFeature);
     }
 
-    void ApplyRuntimeLibrary(MSBuildProject project, IEnumerable<string> projectConfigurations, ILogger logger)
+    void ApplyRuntimeLibrary(MSBuildProject project, IEnumerable<MSBuildProjectConfig> projectConfigurations, ILogger logger)
     {
         var msvcRuntimeLibrary = new CMakeConfigDependentSetting(project.RuntimeLibrary, projectConfigurations, logger).ToCMakeExpression();
 

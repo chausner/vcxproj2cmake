@@ -9,7 +9,7 @@ class MSBuildProject
 {
     public required string AbsoluteProjectPath { get; init; }
     public required string ProjectName { get; init; }
-    public required string[] ProjectConfigurations { get; init; }
+    public required MSBuildProjectConfig[] ProjectConfigurations { get; init; }
     public required string ConfigurationType { get; init; }
     public required string LanguageStandard { get; init; }
     public required string LanguageStandardC { get; init; }
@@ -80,6 +80,7 @@ class MSBuildProject
                 .Elements(itemGroupXName)
                 .SelectMany(group => group.Elements(projectConfigurationXName))
                 .Select(element => PathUtils.NormalizePathSeparators(element.Attribute("Include")!.Value.Trim()))
+                .Select(config => new MSBuildProjectConfig(config))
                 .ToList();
 
         var configurationType =
@@ -169,9 +170,9 @@ class MSBuildProject
             .SelectMany(group => group.Elements(qtRccXName))
             .Any();
 
-        Dictionary<string, Dictionary<string, string>> compilerSettings = [];
-        Dictionary<string, Dictionary<string, string>> linkerSettings = [];
-        Dictionary<string, Dictionary<string, string>> otherSettings = [];
+        Dictionary<string, Dictionary<MSBuildProjectConfig, string>> compilerSettings = [];
+        Dictionary<string, Dictionary<MSBuildProjectConfig, string>> linkerSettings = [];
+        Dictionary<string, Dictionary<MSBuildProjectConfig, string>> otherSettings = [];
 
         foreach (var projectConfig in projectConfigurations)
         {
@@ -180,7 +181,7 @@ class MSBuildProject
                     .Elements(itemDefinitionGroupXName)
                     .Where(group => group.Attribute("Condition") == null ||
                                     Regex.IsMatch(group.Attribute("Condition")!.Value,
-                                        $@"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'{Regex.Escape(projectConfig)}'"))
+                                        $@"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'{Regex.Escape(projectConfig.Name)}'"))
                     .ToList();
 
             var propertyGroups =
@@ -188,7 +189,7 @@ class MSBuildProject
                     .Elements(propertyGroupXName)
                     .Where(group => group.Attribute("Condition") == null ||
                                     Regex.IsMatch(group.Attribute("Condition")!.Value,
-                                        $@"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'{Regex.Escape(projectConfig)}'"))
+                                        $@"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'{Regex.Escape(projectConfig.Name)}'"))
                     .ToList();
 
             var projectConfigCompilerSettings =
@@ -308,7 +309,7 @@ class MSBuildProject
             ConanPackages = conanPackages!
         };
 
-        string? GetCommonSetting(string property, Dictionary<string, Dictionary<string, string>> settings)
+        string? GetCommonSetting(string property, Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings)
         {
             return settings.GetValueOrDefault(property)?.Values
                 .Distinct()
@@ -317,7 +318,7 @@ class MSBuildProject
 
         MSBuildConfigDependentSetting<string> ParseSetting(
             string property,
-            Dictionary<string, Dictionary<string, string>> settings,
+            Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings,
             string defaultValue)
         {
             return new(property, defaultValue, settings.GetValueOrDefault(property, []), value => value);
@@ -325,8 +326,8 @@ class MSBuildProject
 
         MSBuildConfigDependentSetting<string> ParseSettingWithConfigSpecificDefault(
             string property,
-            Dictionary<string, Dictionary<string, string>> settings,
-            Func<string, string> defaultValueForConfig)
+            Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings,
+            Func<MSBuildProjectConfig, string> defaultValueForConfig)
         {
             var settingsForProperty = settings.GetValueOrDefault(property, []).ToDictionary();
 
@@ -340,7 +341,7 @@ class MSBuildProject
         MSBuildConfigDependentSetting<string[]> ParseMultiSetting(
             string property,
             char separator,
-            Dictionary<string, Dictionary<string, string>> settings,
+            Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings,
             string[] defaultValue)
         {
             var parser = (string value) =>

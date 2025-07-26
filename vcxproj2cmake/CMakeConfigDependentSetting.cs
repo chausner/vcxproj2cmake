@@ -17,7 +17,7 @@ record CMakeConfigDependentSetting
 
     public CMakeConfigDependentSetting(
         MSBuildConfigDependentSetting<string> settings,
-        IEnumerable<string> projectConfigurations,
+        IEnumerable<MSBuildProjectConfig> projectConfigurations,
         ILogger logger)
     {
         if (settings.Values.Count == 0)
@@ -28,7 +28,7 @@ record CMakeConfigDependentSetting
             return;
         }
 
-        var effectiveSettings = new Dictionary<string, string>(settings.Values);
+        var effectiveSettings = new Dictionary<MSBuildProjectConfig, string>(settings.Values);
         foreach (var config in projectConfigurations)
             if (!effectiveSettings.ContainsKey(config))
                 effectiveSettings[config] = settings.DefaultValue;
@@ -67,7 +67,7 @@ record CMakeConfigDependentSetting
             logger.LogWarning($"The following values for setting {settings.SettingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings)}");
     }
 
-    public string? GetValue(string projectConfig)
+    public string? GetValue(MSBuildProjectConfig projectConfig)
     {
         var config = Config.Configs.SingleOrDefault(config => config.MatchesProjectConfigName(projectConfig) && Values.ContainsKey(config));
         if (config != null)
@@ -98,7 +98,7 @@ record CMakeConfigDependentMultiSetting
 
     public CMakeConfigDependentMultiSetting(
         MSBuildConfigDependentSetting<string[]> settings,
-        IEnumerable<string> projectConfigurations,
+        IEnumerable<MSBuildProjectConfig> projectConfigurations,
         ILogger logger)
     {
         if (settings.Values.Count == 0)
@@ -109,7 +109,7 @@ record CMakeConfigDependentMultiSetting
             return;
         }
 
-        var effectiveSettings = new Dictionary<string, string[]>(settings.Values);
+        var effectiveSettings = new Dictionary<MSBuildProjectConfig, string[]>(settings.Values);
         foreach (var config in projectConfigurations)
             if (!effectiveSettings.ContainsKey(config))
                 effectiveSettings[config] = settings.DefaultValue;
@@ -158,7 +158,7 @@ record CMakeConfigDependentMultiSetting
             Values[config] = [.. Values[config], value];
     }
 
-    public string[] GetValue(string projectConfig)
+    public string[] GetValue(MSBuildProjectConfig projectConfig)
     {
         return new[] { Config.CommonConfig }
             .Concat(Config.Configs)
