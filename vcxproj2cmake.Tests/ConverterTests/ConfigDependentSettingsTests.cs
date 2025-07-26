@@ -21,6 +21,12 @@ public partial class ConverterTests
                         <Platform>Win32</Platform>
                     </ProjectConfiguration>
                 </ItemGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
+                </PropertyGroup>
                 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
                     <Link>
                         <AdditionalLibraryDirectories>{debugDirs}</AdditionalLibraryDirectories>
@@ -47,6 +53,12 @@ public partial class ConverterTests
                         <Platform>x64</Platform>
                     </ProjectConfiguration>
                 </ItemGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
+                </PropertyGroup>
                 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
                     <Link>
                         <AdditionalLibraryDirectories>{win32Dirs}</AdditionalLibraryDirectories>
@@ -81,6 +93,18 @@ public partial class ConverterTests
                         <Platform>x64</Platform>
                     </ProjectConfiguration>
                 </ItemGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
+                </PropertyGroup>
                 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
                     <Link>
                         <AdditionalLibraryDirectories>DebugWin32</AdditionalLibraryDirectories>
@@ -117,6 +141,12 @@ public partial class ConverterTests
                         <Platform>Win32</Platform>
                     </ProjectConfiguration>
                 </ItemGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
+                </PropertyGroup>
                 <ItemDefinitionGroup>
                     <Link>
                         <AdditionalLibraryDirectories>{dirs}</AdditionalLibraryDirectories>
@@ -138,6 +168,12 @@ public partial class ConverterTests
                         <Platform>Win32</Platform>
                     </ProjectConfiguration>
                 </ItemGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
+                </PropertyGroup>
                 <ItemDefinitionGroup>
                     <Link>
                         <AdditionalLibraryDirectories>Libs1</AdditionalLibraryDirectories>

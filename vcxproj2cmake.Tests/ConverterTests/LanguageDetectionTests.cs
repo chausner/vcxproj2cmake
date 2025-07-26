@@ -22,6 +22,12 @@ public partial class ConverterTests
                     <Platform>Win32</Platform>
                 </ProjectConfiguration>
             </ItemGroup>
+            <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                <UseDebugLibraries>true</UseDebugLibraries>
+            </PropertyGroup>
+            <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                <UseDebugLibraries>false</UseDebugLibraries>
+            </PropertyGroup>
             {(sources.Length > 0 ? $"""
             <ItemGroup>
                 {string.Join(Environment.NewLine, sources.Select(s => $"                <ClCompile Include=\"{s}\" />"))}
