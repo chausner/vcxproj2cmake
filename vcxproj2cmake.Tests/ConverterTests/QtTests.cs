@@ -18,7 +18,6 @@ public partial class ConverterTests
                 </ProjectConfiguration>
             </ItemGroup>
             <PropertyGroup>
-                <ConfigurationType>Application</ConfigurationType>
                 <QtModules>{modules}</QtModules>
             </PropertyGroup>
             <ItemGroup>

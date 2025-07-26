@@ -27,9 +27,6 @@ public partial class ConverterTests
                             <Platform>Win32</Platform>
                         </ProjectConfiguration>
                     </ItemGroup>
-                    <PropertyGroup>
-                        <ConfigurationType>Application</ConfigurationType>
-                    </PropertyGroup>
                     <ItemDefinitionGroup>
                         <Link>
                             <AdditionalDependencies>Foo.lib;Bar.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -74,9 +71,6 @@ public partial class ConverterTests
                             <Platform>Win32</Platform>
                         </ProjectConfiguration>
                     </ItemGroup>
-                    <PropertyGroup>
-                        <ConfigurationType>Application</ConfigurationType>
-                    </PropertyGroup>
                     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
                         <Link>
                             <AdditionalDependencies>Foo_d.lib;%(AdditionalDependencies)</AdditionalDependencies>

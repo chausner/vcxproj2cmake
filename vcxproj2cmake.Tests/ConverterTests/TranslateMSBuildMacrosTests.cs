@@ -22,9 +22,6 @@ public partial class ConverterTests
                     <Platform>Win32</Platform>
                 </ProjectConfiguration>
             </ItemGroup>
-            <PropertyGroup>
-                <ConfigurationType>Application</ConfigurationType>
-            </PropertyGroup>
             {(sources.Length > 0 ? $"""
             <ItemGroup>
                 {string.Join(Environment.NewLine, sources.Select(s => $"                <ClCompile Include=\"{s}\" />"))}
