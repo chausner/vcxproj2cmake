@@ -40,7 +40,7 @@ record CMakeConfigDependentSetting
         string? FilterByConfig(Config config)
         {
             return allSettingValues
-                .Where(s => effectiveSettings.All(kvp => config.MatchesProjectConfigName(kvp.Key) == (kvp.Value == s)))
+                .Where(s => effectiveSettings.All(kvp => config.MatchesProjectConfig(kvp.Key) == (kvp.Value == s)))
                 .FirstOrDefault(s => s != commonSettingValue);
         }
 
@@ -69,7 +69,7 @@ record CMakeConfigDependentSetting
 
     public string? GetValue(MSBuildProjectConfig projectConfig)
     {
-        var config = Config.Configs.SingleOrDefault(config => config.MatchesProjectConfigName(projectConfig) && Values.ContainsKey(config));
+        var config = Config.Configs.SingleOrDefault(config => config.MatchesProjectConfig(projectConfig) && Values.ContainsKey(config));
         if (config != null)
             return Values[config];        
         return Values.GetValueOrDefault(Config.CommonConfig);
@@ -116,7 +116,7 @@ record CMakeConfigDependentMultiSetting
         string[] FilterByConfig(Config config)
         {
             return allSettingValues
-                .Where(s => effectiveSettings.All(kvp => config.MatchesProjectConfigName(kvp.Key) == kvp.Value.Contains(s)))
+                .Where(s => effectiveSettings.All(kvp => config.MatchesProjectConfig(kvp.Key) == kvp.Value.Contains(s)))
                 .Except(commonSettingValues)
                 .ToArray();
         }
@@ -157,7 +157,7 @@ record CMakeConfigDependentMultiSetting
     {
         return new[] { Config.CommonConfig }
             .Concat(Config.Configs)
-            .Where(config => config.MatchesProjectConfigName(projectConfig) && Values.ContainsKey(config))
+            .Where(config => config.MatchesProjectConfig(projectConfig) && Values.ContainsKey(config))
             .SelectMany(config => Values[config])
             .ToArray();
     }
