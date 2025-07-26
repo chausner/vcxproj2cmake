@@ -33,6 +33,7 @@
   `PrecompiledHeaderFile`
   `PreprocessorDefinitions`
   `PublicIncludeDirectories`
+  `RuntimeLibrary`
   `SubSystem`
   `TargetName`
   `TreatAngleIncludeAsExternal`
