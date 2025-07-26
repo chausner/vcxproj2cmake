@@ -22,9 +22,6 @@ public partial class ConverterTests
                     <Platform>Win32</Platform>
                 </ProjectConfiguration>
             </ItemGroup>
-            <PropertyGroup>
-                <ConfigurationType>Application</ConfigurationType>
-            </PropertyGroup>
             {string.Join(Environment.NewLine, packages.Select(p => $"<Import Project=\"conan_{p}.props\" />"))}
         </Project>
         """;

@@ -16,12 +16,12 @@ record Config(Regex MSBuildProjectConfigPattern, string CMakeExpression)
         new Config(new(@"\|ARM64$"), "$<$<STREQUAL:$<CMAKE_CXX_COMPILER_ARCHITECTURE_ID>,ARM64>:{0}>")
     ];
 
-    public bool MatchesProjectConfigName(MSBuildProjectConfig projectConfig)
+    public bool MatchesProjectConfig(MSBuildProjectConfig projectConfig)
     {
         return MSBuildProjectConfigPattern.IsMatch(projectConfig.Name);
     }
 
-    public static bool IsMSBuildProjectConfigNameSupported(MSBuildProjectConfig projectConfig)
+    public static bool IsMSBuildProjectConfigSupported(MSBuildProjectConfig projectConfig)
     {
         return Regex.IsMatch(projectConfig.Name, @"^(Debug|Release)\|(Win32|x86|x64|ARM32|ARM64)$");
     }

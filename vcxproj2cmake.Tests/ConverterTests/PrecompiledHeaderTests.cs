@@ -25,9 +25,6 @@ public partial class ConverterTests
                         <Platform>Win32</Platform>
                     </ProjectConfiguration>
                 </ItemGroup>
-                <PropertyGroup>
-                    <ConfigurationType>Application</ConfigurationType>
-                </PropertyGroup>
                 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
                     <ClCompile>
                         <PrecompiledHeader>{debugMode}</PrecompiledHeader>

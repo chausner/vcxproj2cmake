@@ -21,9 +21,6 @@ public partial class ConverterTests
                         <Platform>Win32</Platform>
                     </ProjectConfiguration>
                 </ItemGroup>
-                <PropertyGroup>
-                    <ConfigurationType>Application</ConfigurationType>
-                </PropertyGroup>
                 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
                     <TargetName>{debugValue}</TargetName>
                 </PropertyGroup>

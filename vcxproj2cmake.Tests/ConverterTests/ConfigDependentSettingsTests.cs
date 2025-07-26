@@ -21,9 +21,6 @@ public partial class ConverterTests
                         <Platform>Win32</Platform>
                     </ProjectConfiguration>
                 </ItemGroup>
-                <PropertyGroup>
-                    <ConfigurationType>Application</ConfigurationType>
-                </PropertyGroup>
                 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
                     <Link>
                         <AdditionalLibraryDirectories>{debugDirs}</AdditionalLibraryDirectories>
@@ -50,9 +47,6 @@ public partial class ConverterTests
                         <Platform>x64</Platform>
                     </ProjectConfiguration>
                 </ItemGroup>
-                <PropertyGroup>
-                    <ConfigurationType>Application</ConfigurationType>
-                </PropertyGroup>
                 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
                     <Link>
                         <AdditionalLibraryDirectories>{win32Dirs}</AdditionalLibraryDirectories>
@@ -87,9 +81,6 @@ public partial class ConverterTests
                         <Platform>x64</Platform>
                     </ProjectConfiguration>
                 </ItemGroup>
-                <PropertyGroup>
-                    <ConfigurationType>Application</ConfigurationType>
-                </PropertyGroup>
                 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
                     <Link>
                         <AdditionalLibraryDirectories>DebugWin32</AdditionalLibraryDirectories>
@@ -126,9 +117,6 @@ public partial class ConverterTests
                         <Platform>Win32</Platform>
                     </ProjectConfiguration>
                 </ItemGroup>
-                <PropertyGroup>
-                    <ConfigurationType>Application</ConfigurationType>
-                </PropertyGroup>
                 <ItemDefinitionGroup>
                     <Link>
                         <AdditionalLibraryDirectories>{dirs}</AdditionalLibraryDirectories>
@@ -150,9 +138,6 @@ public partial class ConverterTests
                         <Platform>Win32</Platform>
                     </ProjectConfiguration>
                 </ItemGroup>
-                <PropertyGroup>
-                    <ConfigurationType>Application</ConfigurationType>
-                </PropertyGroup>
                 <ItemDefinitionGroup>
                     <Link>
                         <AdditionalLibraryDirectories>Libs1</AdditionalLibraryDirectories>

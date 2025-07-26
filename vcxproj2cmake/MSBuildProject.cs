@@ -50,7 +50,6 @@ class MSBuildProject
         var msbuildNamespace = "http://schemas.microsoft.com/developer/msbuild/2003";
         var clCompileXName = XName.Get("ClCompile", msbuildNamespace);
         var clIncludeXName = XName.Get("ClInclude", msbuildNamespace);
-        var configurationTypeXName = XName.Get("ConfigurationType", msbuildNamespace);
         var importGroupXName = XName.Get("ImportGroup", msbuildNamespace);
         var importXName = XName.Get("Import", msbuildNamespace);
         var itemDefinitionGroupXName = XName.Get("ItemDefinitionGroup", msbuildNamespace);
@@ -82,16 +81,6 @@ class MSBuildProject
                 .Select(element => PathUtils.NormalizePathSeparators(element.Attribute("Include")!.Value.Trim()))
                 .Select(config => new MSBuildProjectConfig(config))
                 .ToList();
-
-        var configurationType =
-            projectElement
-                .Elements(propertyGroupXName)
-                .SelectMany(group => group.Elements(configurationTypeXName))
-                .Select(element => element.Value.Trim())
-                .Distinct()
-                .SingleWithException(() =>
-                    throw new CatastrophicFailureException(
-                        "Configuration type is absent or inconsistent between configurations"));
 
         var sourceFiles =
             projectElement
@@ -229,6 +218,7 @@ class MSBuildProject
             }
         }
 
+        var configurationType = GetCommonSetting("ConfigurationType", otherSettings) ?? "Application";
         var languageStandard = GetCommonSetting("LanguageStandard", compilerSettings) ?? "Default";
         var languageStandardC = GetCommonSetting("LanguageStandard_C", compilerSettings) ?? "Default";
 

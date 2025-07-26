@@ -80,7 +80,7 @@ class CMakeProject
 
         foreach (var projectConfig in projectConfigurations)
         {
-            if (Config.IsMSBuildProjectConfigNameSupported(projectConfig))
+            if (Config.IsMSBuildProjectConfigSupported(projectConfig))
                 supportedProjectConfigurations.Add(projectConfig);
             else
                 logger.LogWarning($"Skipping unsupported project configuration: {projectConfig}");

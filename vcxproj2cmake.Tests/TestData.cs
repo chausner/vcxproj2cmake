@@ -24,13 +24,11 @@ internal class TestData
             </PropertyGroup>
             <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
             <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-            <ConfigurationType>Application</ConfigurationType>
             <UseDebugLibraries>true</UseDebugLibraries>
             <PlatformToolset>v143</PlatformToolset>
             <CharacterSet>Unicode</CharacterSet>
             </PropertyGroup>
             <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-            <ConfigurationType>Application</ConfigurationType>
             <UseDebugLibraries>false</UseDebugLibraries>
             <PlatformToolset>v143</PlatformToolset>
             <WholeProgramOptimization>true</WholeProgramOptimization>
