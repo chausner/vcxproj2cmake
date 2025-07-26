@@ -23,7 +23,7 @@ public partial class ConverterTests
                 projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Dll", "Dll.vcxproj"))]);
 
             AssertEx.FileHasContent(Path.Combine("Dll", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.15)
                 project(Dll)
 
 
@@ -32,7 +32,7 @@ public partial class ConverterTests
                 """);
 
             AssertEx.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.15)
                 project(App)
 
 
@@ -65,6 +65,12 @@ public partial class ConverterTests
                             <Platform>Win32</Platform>
                         </ProjectConfiguration>
                     </ItemGroup>
+                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                        <UseDebugLibraries>true</UseDebugLibraries>
+                    </PropertyGroup>
+                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                        <UseDebugLibraries>false</UseDebugLibraries>
+                    </PropertyGroup>
                     <PropertyGroup>
                         <ConfigurationType>StaticLibrary</ConfigurationType>
                     </PropertyGroup>
@@ -81,7 +87,7 @@ public partial class ConverterTests
                 projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("HeaderOnly", "HeaderOnly.vcxproj"))]);
 
             AssertEx.FileHasContent(Path.Combine("HeaderOnly", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.15)
                 project(HeaderOnly)
 
 
@@ -89,7 +95,7 @@ public partial class ConverterTests
                 """);
 
             AssertEx.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.15)
                 project(App)
 
 

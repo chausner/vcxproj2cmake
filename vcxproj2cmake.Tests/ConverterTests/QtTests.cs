@@ -16,7 +16,17 @@ public partial class ConverterTests
                     <Configuration>Debug</Configuration>
                     <Platform>Win32</Platform>
                 </ProjectConfiguration>
+                <ProjectConfiguration Include="Release|Win32">
+                    <Configuration>Release</Configuration>
+                    <Platform>Win32</Platform>
+                </ProjectConfiguration>
             </ItemGroup>
+            <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                <UseDebugLibraries>true</UseDebugLibraries>
+            </PropertyGroup>
+            <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                <UseDebugLibraries>false</UseDebugLibraries>
+            </PropertyGroup>
             <PropertyGroup>
                 <QtModules>{modules}</QtModules>
             </PropertyGroup>
@@ -78,7 +88,7 @@ public partial class ConverterTests
                 qtVersion: 6);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-            cmake_minimum_required(VERSION 3.13)
+            cmake_minimum_required(VERSION 3.15)
             project(QtProject)
 
             find_package(Qt6 REQUIRED COMPONENTS Core Widgets)

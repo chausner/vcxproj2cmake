@@ -19,6 +19,8 @@ class MSBuildConfigDependentSetting<TValue>
         DefaultValue = defaultValue;
         Values = settings.ToDictionary(kvp => kvp.Key, kvp => parser(kvp.Value));
     }
+
+    public TValue GetEffectiveValue(MSBuildProjectConfig projectConfig) => Values.GetValueOrDefault(projectConfig, DefaultValue);
 }
 
 record MSBuildProjectConfig(string Name)

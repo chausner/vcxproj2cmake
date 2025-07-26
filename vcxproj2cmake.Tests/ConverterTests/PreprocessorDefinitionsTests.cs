@@ -22,6 +22,12 @@ public partial class ConverterTests
                     </ProjectConfiguration>
                 </ItemGroup>
                 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
                     <CharacterSet>NotSet</CharacterSet>
                 </PropertyGroup>
                 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -53,6 +59,12 @@ public partial class ConverterTests
                         <Platform>Win32</Platform>
                     </ProjectConfiguration>
                 </ItemGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
+                </PropertyGroup>
                 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
                     <CharacterSet>MultiByte</CharacterSet>
                 </PropertyGroup>
@@ -86,6 +98,12 @@ public partial class ConverterTests
                     </ProjectConfiguration>
                 </ItemGroup>
                 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
                     <CharacterSet>InvalidCharSet</CharacterSet>
                 </PropertyGroup>
                 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
@@ -107,6 +125,12 @@ public partial class ConverterTests
                         <Platform>x64</Platform>
                     </ProjectConfiguration>
                 </ItemGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
                 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
                     <ClCompile>
                         <PreprocessorDefinitions>X86_DEF;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -134,7 +158,7 @@ public partial class ConverterTests
                 projectFiles: [new(@"Project.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.15)
                 project(Project)
 
 
@@ -166,7 +190,7 @@ public partial class ConverterTests
                 projectFiles: [new(@"ProjectMBCS.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.15)
                 project(ProjectMBCS)
 
 
@@ -213,11 +237,15 @@ public partial class ConverterTests
                 projectFiles: [new(@"ProjectArch.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.15)
                 project(ProjectArch)
 
 
                 add_executable(ProjectArch
+                )
+
+                set_target_properties(ProjectArch PROPERTIES
+                    MSVC_RUNTIME_LIBRARY MultiThreadedDebugDLL
                 )
 
                 target_compile_definitions(ProjectArch

@@ -75,6 +75,11 @@ record CMakeConfigDependentSetting
         return Values.GetValueOrDefault(Config.CommonConfig);
     }
 
+    public string ToCMakeExpression()
+    {
+        return string.Join(string.Empty, Values.Select(kvp => string.Format(kvp.Key.CMakeExpression, kvp.Value)));
+    }
+
     public bool IsEmpty => Values.Count == 0;
 }
 
@@ -160,6 +165,11 @@ record CMakeConfigDependentMultiSetting
             .Where(config => config.MatchesProjectConfig(projectConfig) && Values.ContainsKey(config))
             .SelectMany(config => Values[config])
             .ToArray();
+    }
+
+    public string ToCMakeExpression()
+    {
+        return string.Join(' ', Values.SelectMany(kvp => kvp.Value.Select(value => string.Format(kvp.Key.CMakeExpression, value))));
     }
 
     public bool IsEmpty => Values.Count == 0;

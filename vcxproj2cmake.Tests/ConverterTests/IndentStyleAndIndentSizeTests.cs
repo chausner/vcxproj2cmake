@@ -27,7 +27,7 @@ public partial class ConverterTests
 
             // Assert
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, $"""            
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.15)
                 project(EmptyProject)
 
 
@@ -69,7 +69,7 @@ public partial class ConverterTests
 
             // Assert
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """            
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.15)
                 project(EmptyProject)
 
 

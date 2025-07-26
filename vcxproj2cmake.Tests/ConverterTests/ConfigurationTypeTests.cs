@@ -23,7 +23,7 @@ public partial class ConverterTests
                 projectFiles: [new(@"App.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.15)
                 project(App)
 
 
@@ -47,7 +47,7 @@ public partial class ConverterTests
                 projectFiles: [new(@"Lib.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.15)
                 project(Lib)
 
 
@@ -70,7 +70,7 @@ public partial class ConverterTests
                 projectFiles: [new(@"Dll.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.15)
                 project(Dll)
 
 
@@ -98,6 +98,12 @@ public partial class ConverterTests
                             <Platform>Win32</Platform>
                         </ProjectConfiguration>
                     </ItemGroup>
+                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                        <UseDebugLibraries>true</UseDebugLibraries>
+                    </PropertyGroup>
+                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                        <UseDebugLibraries>false</UseDebugLibraries>
+                    </PropertyGroup>
                     <PropertyGroup>
                         <ConfigurationType>StaticLibrary</ConfigurationType>
                     </PropertyGroup>
@@ -113,7 +119,7 @@ public partial class ConverterTests
                 projectFiles: [new(@"HeaderOnly.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.15)
                 project(HeaderOnly)
 
 

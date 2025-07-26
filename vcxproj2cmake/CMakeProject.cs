@@ -61,6 +61,7 @@ class CMakeProject
         ApplyTargetName(project);
         ApplyLanguageStandards(project);
         ApplyAllProjectIncludesArePublic(project, logger);
+        ApplyRuntimeLibrary(project, supportedProjectConfigurations, logger);
         ApplyCharacterSetSetting(project, logger);
         ApplyDisableSpecificWarnings(project, logger);
         ApplyTreatSpecificWarningsAsErrors(project, logger);
@@ -151,6 +152,21 @@ class CMakeProject
 
         if (cFeature != null)
             CompileFeatures.AppendValue(Config.CommonConfig, cFeature);
+    }
+
+    void ApplyRuntimeLibrary(MSBuildProject project, IEnumerable<MSBuildProjectConfig> projectConfigurations, ILogger logger)
+    {
+        var msvcRuntimeLibrary = new CMakeConfigDependentSetting(project.RuntimeLibrary, projectConfigurations, logger).ToCMakeExpression();
+
+        // if the setting has its default value, we prefer to not set it at all
+        if (msvcRuntimeLibrary == "$<$<CONFIG:Debug>:MultiThreadedDebugDLL>$<$<CONFIG:Release>:MultiThreadedDLL>")
+            return;
+
+        // for the common case of MultiThreadedDebug for debug and MultiThreaded for release, replace the CMake expression with a simpler, equivalent one
+        if (msvcRuntimeLibrary == "$<$<CONFIG:Debug>:MultiThreadedDebug>$<$<CONFIG:Release>:MultiThreaded>")
+            msvcRuntimeLibrary = "MultiThreaded$<$<CONFIG:Debug>:Debug>";
+
+        Properties["MSVC_RUNTIME_LIBRARY"] = msvcRuntimeLibrary;
     }
 
     void ApplyCharacterSetSetting(MSBuildProject project, ILogger logger)
