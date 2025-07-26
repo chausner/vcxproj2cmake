@@ -158,8 +158,15 @@ class CMakeProject
     {
         var msvcRuntimeLibrary = new CMakeConfigDependentSetting(project.RuntimeLibrary, projectConfigurations, logger).ToCMakeExpression();
 
-        if (msvcRuntimeLibrary != "$<$<CONFIG:Debug>:MultiThreadedDebugDLL>$<$<CONFIG:Release>:MultiThreadedDLL>")
-            Properties["MSVC_RUNTIME_LIBRARY"] = msvcRuntimeLibrary;
+        // if the setting has its default value, we prefer to not set it at all
+        if (msvcRuntimeLibrary == "$<$<CONFIG:Debug>:MultiThreadedDebugDLL>$<$<CONFIG:Release>:MultiThreadedDLL>")
+            return;
+
+        // for the common case of MultiThreadedDebug for debug and MultiThreaded for release, replace the CMake expression with a simpler, equivalent one
+        if (msvcRuntimeLibrary == "$<$<CONFIG:Debug>:MultiThreadedDebug>$<$<CONFIG:Release>:MultiThreaded>")
+            msvcRuntimeLibrary = "MultiThreaded$<$<CONFIG:Debug>:Debug>";
+
+        Properties["MSVC_RUNTIME_LIBRARY"] = msvcRuntimeLibrary;
     }
 
     void ApplyCharacterSetSetting(MSBuildProject project, ILogger logger)
