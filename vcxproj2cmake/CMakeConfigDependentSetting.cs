@@ -167,5 +167,10 @@ record CMakeConfigDependentMultiSetting
             .ToArray();
     }
 
+    public string ToCMakeExpression()
+    {
+        return string.Join(' ', Values.SelectMany(kvp => kvp.Value.Select(value => string.Format(kvp.Key.CMakeExpression, value))));
+    }
+
     public bool IsEmpty => Values.Count == 0;
 }
