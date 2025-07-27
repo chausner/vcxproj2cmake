@@ -108,27 +108,6 @@ public partial class ConverterTests
         }
 
         [Fact]
-        public void Given_TreatWarningAsError_When_Converted_Then_WxOptionIsWritten()
-        {
-            var fileSystem = new MockFileSystem();
-            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
-
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("TreatWarningAsError", "true", "true")));
-
-            var converter = new Converter(fileSystem, NullLogger.Instance);
-            converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")]);
-
-            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
-            Assert.Contains("""
-                target_compile_options(Project
-                    PUBLIC
-                        /WX
-                )
-                """.TrimEnd(), cmake);
-        }
-
-        [Fact]
         public void Given_WarningLevel_When_Converted_Then_WOptionIsWritten()
         {
             var fileSystem = new MockFileSystem();

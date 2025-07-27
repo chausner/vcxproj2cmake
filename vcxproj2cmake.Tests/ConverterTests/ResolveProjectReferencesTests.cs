@@ -44,7 +44,7 @@ public partial class ConverterTests
 
             // Assert
             AssertEx.FileHasContent(Path.Combine("Lib", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.15)
+                cmake_minimum_required(VERSION 3.24)
                 project(Lib)
 
 
@@ -53,7 +53,7 @@ public partial class ConverterTests
                 """);
 
             AssertEx.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.15)
+                cmake_minimum_required(VERSION 3.24)
                 project(App)
 
 
@@ -86,7 +86,7 @@ public partial class ConverterTests
 
             // Assert
             AssertEx.FileHasContent(Path.Combine("Lib", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.15)
+                cmake_minimum_required(VERSION 3.24)
                 project(Lib)
 
 
@@ -95,7 +95,7 @@ public partial class ConverterTests
                 """);
 
             AssertEx.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.15)
+                cmake_minimum_required(VERSION 3.24)
                 project(App)
 
 

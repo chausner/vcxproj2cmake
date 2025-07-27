@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.15)
+﻿cmake_minimum_required(VERSION 3.24)
 project({{ project_name | literal }}
 {{- if languages.size > 0 ~}}
  LANGUAGES {{ languages | array.join " " }}

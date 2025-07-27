@@ -196,12 +196,20 @@ class CMakeProject
 
     void ApplyTreatWarningAsError(MSBuildProject project, ILogger logger)
     {
-        Options = Options.Map((options, treatAsError) => (treatAsError?.ToLowerInvariant()) switch
-        {
-            "true" => [.. options, "/WX"],
-            "false" or "" or null => options,
-            _ => throw new CatastrophicFailureException($"Invalid value for TreatWarningAsError: {treatAsError}"),
-        }, project.TreatWarningAsError, ProjectConfigurations, logger);
+        var compileWarningAsError = new CMakeConfigDependentSetting(project.TreatWarningAsError, ProjectConfigurations, logger)
+            .Map(value => value switch
+            {
+                "true" => "ON",
+                "false" or "" or null => "OFF",
+                _ => throw new CatastrophicFailureException($"Invalid value for TreatWarningAsError: {value}")
+            }, ProjectConfigurations, logger)
+            .ToCMakeExpression();
+
+        // if the setting has its default value, we prefer to not set it at all
+        if (compileWarningAsError == "OFF")
+            return;
+
+        Properties["COMPILE_WARNING_AS_ERROR"] = compileWarningAsError;
     }
 
     void ApplyWarningLevel(MSBuildProject project, ILogger logger)

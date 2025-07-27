@@ -158,7 +158,7 @@ public partial class ConverterTests
                 projectFiles: [new(@"Project.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.15)
+                cmake_minimum_required(VERSION 3.24)
                 project(Project)
 
 
@@ -190,7 +190,7 @@ public partial class ConverterTests
                 projectFiles: [new(@"ProjectMBCS.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.15)
+                cmake_minimum_required(VERSION 3.24)
                 project(ProjectMBCS)
 
 
@@ -237,7 +237,7 @@ public partial class ConverterTests
                 projectFiles: [new(@"ProjectArch.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.15)
+                cmake_minimum_required(VERSION 3.24)
                 project(ProjectArch)
 
 

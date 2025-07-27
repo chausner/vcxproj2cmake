@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.15)
+﻿cmake_minimum_required(VERSION 3.24)
 project({{ solution_name | literal }})
 
 {{~ for project_ref in projects | order_project_references_by_dependencies ~}}
