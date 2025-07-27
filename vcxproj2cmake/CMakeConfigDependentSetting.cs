@@ -77,7 +77,7 @@ record CMakeConfigDependentSetting
 
     public string ToCMakeExpression()
     {
-        return string.Join(string.Empty, Values.Select(kvp => string.Format(kvp.Key.CMakeExpression, kvp.Value)));
+        return string.Join(string.Empty, Values.Select(kvp => kvp.Key.CMakeExpression.Replace("{0}", kvp.Value)));
     }
 
     public bool IsEmpty => Values.Count == 0;
@@ -169,7 +169,7 @@ record CMakeConfigDependentMultiSetting
 
     public string ToCMakeExpression()
     {
-        return string.Join(' ', Values.SelectMany(kvp => kvp.Value.Select(value => string.Format(kvp.Key.CMakeExpression, value))));
+        return string.Join(' ', Values.SelectMany(kvp => kvp.Value.Select(value => kvp.Key.CMakeExpression.Replace("{0}", value))));
     }
 
     public bool IsEmpty => Values.Count == 0;

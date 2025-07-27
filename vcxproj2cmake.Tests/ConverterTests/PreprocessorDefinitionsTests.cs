@@ -250,8 +250,8 @@ public partial class ConverterTests
 
                 target_compile_definitions(ProjectArch
                     PUBLIC
-                        $<$<STREQUAL:$<CMAKE_CXX_COMPILER_ARCHITECTURE_ID>,X86>:X86_DEF>
-                        $<$<STREQUAL:$<CMAKE_CXX_COMPILER_ARCHITECTURE_ID>,x64>:X64_DEF>
+                        $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:X86_DEF>
+                        $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:X64_DEF>
                 )
                 """);
         }

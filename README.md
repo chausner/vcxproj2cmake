@@ -258,7 +258,7 @@ add_subdirectory(App)
 * MSBuild properties whose value depends on the build configuration or platform are only supported
   if the value depends solely on the configuration or platform, but not both.
   E.g. preprocessor definitions like `_DEBUG` or `WIN32` are supported.
-  They are converted to CMake generator expressions like `$<$<CONFIG:Debug>:_DEBUG>` or `$<$<STREQUAL:$<CMAKE_CXX_COMPILER_ARCHITECTURE_ID>,x86>:WIN32>`.
+  They are converted to CMake generator expressions like `$<$<CONFIG:Debug>:_DEBUG>` or `$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x86>:WIN32>`.
   A definition that is specific to a certain combination of configuration and platform, is not supported and skipped with a warning.
 * MSBuild properties defined in imported .props or .targets files are not considered.
 * Many advanced compiler and linker options are not supported and silently ignored.
