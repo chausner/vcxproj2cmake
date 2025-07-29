@@ -1,8 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using System.CommandLine;
-using System.CommandLine.Builder;
-using System.CommandLine.Parsing;
 using System.IO.Abstractions;
 
 namespace vcxproj2cmake;
@@ -13,92 +11,100 @@ static class Program
 
     static int Main(string[] args)
     {
-        var projectsOption = new Option<List<FileInfo>>(
-            name: "--projects",
-            description: "Paths to one or multiple .vcxproj files")
+        var projectsOption = new Option<List<FileInfo>>("--projects")
         {
             AllowMultipleArgumentsPerToken = true,
-            ArgumentHelpName = "path(s)"
-        }.ExistingOnly();
+            Description = "Paths to one or multiple .vcxproj files",
+            HelpName = "path(s)"
+        }.AcceptExistingOnly();
 
-        var solutionOption = new Option<FileInfo>(
-            name: "--solution",
-            description: "Path to a solution .sln file")
-        { 
-            ArgumentHelpName = "path"
-        }
-        .ExistingOnly();
-
-        var qtVersionOption = new Option<int?>(
-            name: "--qt-version",
-            description: "Set Qt version (required for Qt projects)")
-            .FromAmong("5", "6");
-
-        var enableStandaloneProjectBuildsOption = new Option<bool>(
-            name: "--enable-standalone-project-builds",
-            description: "Generate necessary code to allow projects to be built standalone (not through the root CMakeLists.txt)");
-
-        var indentStyleOption = new Option<IndentStyle>(
-            name: "--indent-style",
-            description: "The indentation style to use (spaces or tabs).",
-            getDefaultValue: () => IndentStyle.Spaces);
-
-        var indentSizeOption = new Option<int>(
-            name: "--indent-size",
-            description: "The number of spaces to use for indentation.",
-            getDefaultValue: () => 4)
+        var solutionOption = new Option<FileInfo>("--solution")
         {
-            ArgumentHelpName = "count"
+            Description = "Path to a solution .sln file",
+            HelpName = "path"
+        }.AcceptExistingOnly();
+
+        var qtVersionOption = new Option<int?>("--qt-version") 
+        { 
+            Description = "Set Qt version (required for Qt projects)" 
+        }.AcceptOnlyFromAmong("5", "6");
+
+        var enableStandaloneProjectBuildsOption = new Option<bool>("--enable-standalone-project-builds")
+        {
+            Description = "Generate necessary code to allow projects to be built standalone (not through the root CMakeLists.txt)"
         };
 
-        var dryRunOption = new Option<bool>(
-            name: "--dry-run",
-            description: "Print generated output to the console, do not store generated files");
+        var indentStyleOption = new Option<IndentStyle>("--indent-style")
+        {
+            Description = "The indentation style to use (spaces or tabs).",
+            DefaultValueFactory = _ => IndentStyle.Spaces,
+        };
 
-        var logLevelOption = new Option<LogLevel>(
-            name: "--log-level",
-            description: "Set the minimum log level",
-            getDefaultValue: () => LogLevel.Information
-        );
+        var indentSizeOption = new Option<int>("--indent-size")
+        {
+            Description = "The number of spaces to use for indentation.",
+            HelpName = "count",
+            DefaultValueFactory = _ => 4
+        };
+
+        var dryRunOption = new Option<bool>("--dry-run")
+        {
+            Description = "Print generated output to the console, do not store generated files"
+        };
+
+        var logLevelOption = new Option<LogLevel>("--log-level")
+        { 
+            Description = "Set the minimum log level",
+            DefaultValueFactory = _ => LogLevel.Information
+        };
 
         var rootCommand = new RootCommand("Converts Microsoft Visual C++ projects and solutions to CMake");
-        rootCommand.AddOption(projectsOption);
-        rootCommand.AddOption(solutionOption);
-        rootCommand.AddOption(qtVersionOption);
-        rootCommand.AddOption(enableStandaloneProjectBuildsOption);
-        rootCommand.AddOption(indentStyleOption);
-        rootCommand.AddOption(indentSizeOption);
-        rootCommand.AddOption(dryRunOption);
-        rootCommand.AddOption(logLevelOption);
-        rootCommand.AddValidator(result =>
+
+        rootCommand.Options.Add(projectsOption);
+        rootCommand.Options.Add(solutionOption);
+        rootCommand.Options.Add(qtVersionOption);
+        rootCommand.Options.Add(enableStandaloneProjectBuildsOption);
+        rootCommand.Options.Add(indentStyleOption);
+        rootCommand.Options.Add(indentSizeOption);
+        rootCommand.Options.Add(dryRunOption);
+        rootCommand.Options.Add(logLevelOption);
+
+        rootCommand.Validators.Add(result =>
         {
-            var hasProjects = result.GetValueForOption(projectsOption)?.Count > 0;
-            var hasSolution = result.GetValueForOption(solutionOption) != null;
+            var hasProjects = result.GetValue(projectsOption)?.Count > 0;
+            var hasSolution = result.GetValue(solutionOption) != null;
+
             if (hasProjects == hasSolution)
-            {
-                result.ErrorMessage = "Specify either --projects or --solution, but not both.";
-            }
+                result.AddError("Specify either --projects or --solution, but not both.");
         });
-        rootCommand.SetHandler(
-            Run, 
-            projectsOption, 
-            solutionOption, 
-            qtVersionOption, 
-            enableStandaloneProjectBuildsOption,
-            indentStyleOption,
-            indentSizeOption,
-            dryRunOption, 
-            logLevelOption);
 
-        var parser = new CommandLineBuilder(rootCommand)
-            .UseHelp()
-            .UseVersionOption()
-            .UseTypoCorrections()
-            .UseParseErrorReporting()
-            .UseExceptionHandler((ex, context) => HandleException(ex))
-            .Build();
+        rootCommand.SetAction(parseResult =>
+            {
+                var projects = parseResult.GetValue(projectsOption);
+                var solution = parseResult.GetValue(solutionOption);
+                var qtVersion = parseResult.GetValue(qtVersionOption);
+                var enableStandaloneProjectBuilds = parseResult.GetValue(enableStandaloneProjectBuildsOption);
+                var indentStyle = parseResult.GetValue(indentStyleOption);
+                var indentSize = parseResult.GetValue(indentSizeOption);
+                var dryRun = parseResult.GetValue(dryRunOption);
+                var logLevel = parseResult.GetValue(logLevelOption);
+                Run(projects, solution, qtVersion, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, logLevel);
+            });
 
-        return parser.Invoke(args);
+        var config = new CommandLineConfiguration(rootCommand)
+        {
+            EnableDefaultExceptionHandler = false
+        };
+
+        try
+        {
+            return config.Invoke(args);
+        }         
+        catch (Exception ex)
+        {
+            HandleException(ex);
+            return 1;
+        }
     }
 
     static void Run(
