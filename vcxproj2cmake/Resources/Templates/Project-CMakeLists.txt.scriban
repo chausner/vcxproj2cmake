@@ -24,23 +24,21 @@ find_package({{ find_package.package_name | literal }}
 )
 {{~ end ~}}
 
-{{~ if is_header_only_library ~}}
-add_library({{ project_name | literal }} INTERFACE)
-{{~ else if configuration_type == "Application" ~}}
+{{~ if target_type == "Executable" ~}}
 add_executable({{ project_name | literal }}{{ if is_win32_executable }} WIN32{{ end }}
-{{~ else if configuration_type == "StaticLibrary" ~}}
+{{~ else if target_type == "StaticLibrary" ~}}
 add_library({{ project_name | literal }} STATIC
-{{~ else if configuration_type == "DynamicLibrary" ~}}
+{{~ else if target_type == "SharedLibrary" ~}}
 add_library({{ project_name | literal }} SHARED
+{{~ else if target_type == "InterfaceLibrary" ~}}
+add_library({{ project_name | literal }} INTERFACE
 {{~ else ~}}
-{{ fail $"Unsupported configuration type: {configuration_type}" }}
+{{ fail $"Unsupported CMake target type: {target_type}" }}
 {{~ end ~}}
-{{~ if !is_header_only_library ~}}
     {{~ for file in source_files | array.sort ~}}
     {{ file | translate_msbuild_macros | normalize_path | literal }}
     {{~ end ~}}
 )
-{{~ end ~}}
 
 {{~ if properties | array.size > 0 ~}}
 set_target_properties({{ project_name | literal }} PROPERTIES
@@ -53,7 +51,7 @@ set_target_properties({{ project_name | literal }} PROPERTIES
 
 {{~ if !compile_features.is_empty ~}}
 target_compile_features({{ project_name | literal }}
-    {{ if is_header_only_library }}INTERFACE{{ else }}PUBLIC{{ end }}
+    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in compile_features.values ~}}
         {{~ for feature in kvp.value ~}}
         {{ string.replace kvp.key.cmake_expression "{0}" feature }}
@@ -86,7 +84,7 @@ target_include_directories({{ project_name | literal }}
         {{~ end ~}}  
 {{~ end ~}}
 {{~ if !include_paths.is_empty ~}}
-    {{ if is_header_only_library }}INTERFACE{{ else }}PUBLIC{{ end }}
+    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in include_paths.values ~}}
         {{~ for path in kvp.value ~}}
         {{ string.replace kvp.key.cmake_expression "{0}" (path | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir) }}
@@ -99,7 +97,7 @@ target_include_directories({{ project_name | literal }}
 
 {{~ if !defines.is_empty ~}}
 target_compile_definitions({{ project_name | literal }}
-    {{ if is_header_only_library }}INTERFACE{{ else }}PUBLIC{{ end }}
+    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in defines.values ~}}
         {{~ for define in kvp.value ~}}
         {{ string.replace kvp.key.cmake_expression "{0}" define }}
@@ -111,7 +109,7 @@ target_compile_definitions({{ project_name | literal }}
 
 {{~ if !linker_paths.is_empty ~}}
 target_link_directories({{ project_name | literal }}
-    {{ if is_header_only_library }}INTERFACE{{ else }}PUBLIC{{ end }}
+    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in linker_paths.values ~}}
         {{~ for path in kvp.value ~}}
         {{ string.replace kvp.key.cmake_expression "{0}" (path | translate_msbuild_macros | normalize_path) }}
@@ -122,7 +120,7 @@ target_link_directories({{ project_name | literal }}
 {{~ end -}}
 {{~ if !libraries.is_empty ~}}
 target_link_libraries({{ project_name | literal }}
-    {{ if is_header_only_library }}INTERFACE{{ else }}PUBLIC{{ end }}
+    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in libraries.values ~}}
         {{~ for library in kvp.value ~}}
         {{ string.replace kvp.key.cmake_expression "{0}" (library | translate_msbuild_macros | normalize_path) }}
@@ -134,7 +132,7 @@ target_link_libraries({{ project_name | literal }}
 
 {{~ if !options.is_empty ~}}
 target_compile_options({{ project_name | literal }}
-    {{ if is_header_only_library }}INTERFACE{{ else }}PUBLIC{{ end }}
+    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in options.values ~}}
         {{~ for option in kvp.value ~}}
         {{ string.replace kvp.key.cmake_expression "{0}" option }}

@@ -123,7 +123,8 @@ public partial class ConverterTests
                 project(HeaderOnly)
 
 
-                add_library(HeaderOnly INTERFACE)
+                add_library(HeaderOnly INTERFACE
+                )
                 """);
         }
 
@@ -137,11 +138,11 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
-            var ex = Assert.Throws<ScriptRuntimeException>(() =>
+            var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
                     projectFiles: [new(@"Bad.vcxproj")]));
 
-            Assert.Contains("Unsupported configuration type", ex.Message);
+            Assert.Contains("ConfigurationType property is unsupported: Makefile", ex.Message);
         }
     }
 }

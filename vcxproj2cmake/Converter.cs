@@ -109,7 +109,7 @@ public class Converter
                 continue;
 
             var dependencyTargets = project.GetAllReferencedProjects(projects)
-                .Where(project => project.ConfigurationType == "StaticLibrary" || project.ConfigurationType == "DynamicLibrary")
+                .Where(project => project.TargetType is CMakeTargetType.StaticLibrary or CMakeTargetType.SharedLibrary)
                 .Select(project => project.OutputName + ".lib")
                 .ToArray();
 
@@ -131,7 +131,7 @@ public class Converter
                 continue;
 
             foreach (var projectRef in ProjectDependencyUtils.OrderProjectReferencesByDependencies(project.ProjectReferences, cmakeProjects))
-                if (projectRef.Project!.ConfigurationType == "StaticLibrary" || projectRef.Project.ConfigurationType == "DynamicLibrary")
+                if (projectRef.Project!.TargetType is CMakeTargetType.StaticLibrary or CMakeTargetType.SharedLibrary)
                     project.Libraries.AppendValue(Config.CommonConfig, projectRef.Project.ProjectName);
         }
     }

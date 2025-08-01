@@ -11,7 +11,7 @@ class CMakeProject
     public string ProjectName { get; set; }
     public MSBuildProjectConfig[] ProjectConfigurations { get; set; }
     public string[] Languages { get; set; }
-    public string ConfigurationType { get; set; }
+    public CMakeTargetType TargetType { get; set; }
     public IList<CMakeFindPackage> FindPackages { get; set; }
     public CMakeConfigDependentMultiSetting CompileFeatures { get; set; }
     public string[] SourceFiles { get; set; }
@@ -25,7 +25,6 @@ class CMakeProject
     public OrderedDictionary<string, string> Properties { get; set; }
     public CMakeProjectReference[] ProjectReferences { get; set; }
     public bool IsWin32Executable { get; set; }
-    public bool IsHeaderOnlyLibrary { get; set; }
     public CMakeConfigDependentSetting PrecompiledHeaderFile { get; set; }
 
     public CMakeProject(MSBuildProject project, int? qtVersion, ConanPackageInfoRepository conanPackageInfoRepository, IFileSystem fileSystem, ILogger logger)
@@ -37,7 +36,7 @@ class CMakeProject
         ProjectName = project.ProjectName;
         ProjectConfigurations = supportedProjectConfigurations;
         Languages = DetectLanguages(project.SourceFiles, logger);
-        ConfigurationType = project.ConfigurationType;
+        TargetType = DetermineTargetType(project); 
         FindPackages = [];
         CompileFeatures = new("CompileFeatures", []);
         SourceFiles = project.SourceFiles;
@@ -53,10 +52,6 @@ class CMakeProject
         PrecompiledHeaderFile = new CMakeConfigDependentSetting(project.PrecompiledHeaderFile, supportedProjectConfigurations, logger)
             .Map((file, mode) => mode == "Use" ? file : null, project.PrecompiledHeader, supportedProjectConfigurations, logger);
         Properties = [];
-
-        // We don't rely on ConfigurationType to determine if the project is a header-only library
-        // since there is no specific configuration type for header-only libraries in MSBuild.
-        IsHeaderOnlyLibrary = project.SourceFiles.Length == 0 && project.HeaderFiles.Length > 0;
 
         ApplyTargetName(project);
         ApplyLanguageStandards(project);
@@ -87,6 +82,22 @@ class CMakeProject
         }
 
         return supportedProjectConfigurations.ToArray();
+    }
+
+    static CMakeTargetType DetermineTargetType(MSBuildProject project)
+    {
+        var isHeaderOnlyLibrary = project.SourceFiles.Length == 0 && project.HeaderFiles.Length > 0;
+
+        if (isHeaderOnlyLibrary)
+            return CMakeTargetType.InterfaceLibrary;
+        else
+            return project.ConfigurationType switch
+            {
+                "Application" => CMakeTargetType.Executable,
+                "StaticLibrary" => CMakeTargetType.StaticLibrary,
+                "DynamicLibrary" => CMakeTargetType.SharedLibrary,
+                _ => throw new CatastrophicFailureException($"ConfigurationType property is unsupported: {project.ConfigurationType}")
+            };
     }
 
     static string[] DetectLanguages(IEnumerable<string> sourceFiles, ILogger logger)
@@ -332,6 +343,14 @@ class CMakeProject
 
         return referencedProjects;
     }
+}
+
+enum CMakeTargetType
+{
+    Executable,
+    StaticLibrary,
+    SharedLibrary,
+    InterfaceLibrary
 }
 
 record CMakeFindPackage(string PackageName, bool Required = false, bool Config = false, string[]? Components = null);

@@ -47,7 +47,45 @@ public partial class ConverterTests
         }
 
         [Fact]
-        public void Given_ProjectReferencesHeaderOnlyLibrary_When_Converted_Then_LibraryIsLinked()
+        public void Given_ProjectReferencesStaticLibrary_When_Converted_Then_LibraryIsLinked()
+        {
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(Path.Combine("Dll", "Dll.vcxproj"), new(TestData.CreateProject("Dll", "StaticLibrary")));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("App", "Application", "..\\Dll\\Dll.vcxproj")));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            converter.Convert(
+                projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Dll", "Dll.vcxproj"))]);
+
+            AssertEx.FileHasContent(Path.Combine("Dll", "CMakeLists.txt"), fileSystem, """
+                cmake_minimum_required(VERSION 3.24)
+                project(Dll)
+
+
+                add_library(Dll STATIC
+                )
+                """);
+
+            AssertEx.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
+                cmake_minimum_required(VERSION 3.24)
+                project(App)
+
+
+                add_executable(App
+                )
+
+                target_link_libraries(App
+                    PUBLIC
+                        Dll
+                )
+                """);
+        }
+
+        [Fact]
+        public void Given_ProjectReferencesHeaderOnlyLibrary_When_Converted_Then_NoLibraryIsLinked()
         {
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
@@ -86,27 +124,8 @@ public partial class ConverterTests
             converter.Convert(
                 projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("HeaderOnly", "HeaderOnly.vcxproj"))]);
 
-            AssertEx.FileHasContent(Path.Combine("HeaderOnly", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
-                project(HeaderOnly)
-
-
-                add_library(HeaderOnly INTERFACE)
-                """);
-
-            AssertEx.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
-                project(App)
-
-
-                add_executable(App
-                )
-
-                target_link_libraries(App
-                    PUBLIC
-                        HeaderOnly
-                )
-                """);
+            var cmake = fileSystem.GetFile(Path.Combine("App", "CMakeLists.txt")).TextContents;
+            Assert.DoesNotContain("target_link_libraries(App", cmake);
         }
 
         [Fact]
