@@ -5,11 +5,11 @@ using System.IO.Abstractions;
 
 namespace vcxproj2cmake;
 
-static class Program
+public static class Program
 {
     static ILogger? logger;
 
-    static int Main(string[] args)
+    public static int Main(string[] args)
     {
         var projectsOption = new Option<List<FileInfo>>("--projects")
         {
