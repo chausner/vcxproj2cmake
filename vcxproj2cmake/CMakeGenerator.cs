@@ -58,8 +58,7 @@ class CMakeGenerator
         scriptObject.Import("fail", new Action<string>(error => throw new CatastrophicFailureException(error)));
         scriptObject.Import("literal", ToCMakeLiteral);
         scriptObject.Import("unquoted_literal", (string s) => ToCMakeLiteral(s, unquoted: true));
-        scriptObject.Import("translate_msbuild_macros", TranslateMSBuildMacros);
-        scriptObject.Import("normalize_path", NormalizePath);
+        scriptObject.Import("normalize_path", PathUtils.NormalizePath);
         scriptObject.Import("order_project_references_by_dependencies", (IEnumerable<CMakeProjectReference> pr) => ProjectDependencyUtils.OrderProjectReferencesByDependencies(pr, allProjects, logger));
         scriptObject.Import("get_directory_name", new Func<string?, string?>(Path.GetDirectoryName));
         scriptObject.Import("get_relative_path", new Func<string, string, string?>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));
@@ -159,39 +158,6 @@ class CMakeGenerator
         return sb.ToString();
     }
 
-    static string NormalizePath(string path)
-    {
-        if (path == string.Empty)
-            return string.Empty;
-
-        // In CMake, we should always use forward-slashes as directory separator, even on Windows
-        string normalizedPath = path.Replace(@"\", "/");
-
-        // Remove duplicated separators
-        normalizedPath = Regex.Replace(normalizedPath, @"//+", "/");
-
-        // Remove ./ prefix(es)
-        while (normalizedPath.StartsWith("./"))
-            normalizedPath = normalizedPath[2..];
-        if (normalizedPath == string.Empty)
-            return ".";
-
-        // Remove /. suffix(es)
-        while (normalizedPath.EndsWith("/."))
-            normalizedPath = normalizedPath[..^2];
-        if (normalizedPath == string.Empty)
-            return "/";
-
-        // Remove unnecessary path components
-        normalizedPath = normalizedPath.Replace("/./", "/");
-
-        // Remove trailing separator
-        if (normalizedPath.EndsWith('/') && normalizedPath != "/")
-            normalizedPath = normalizedPath[..^1];
-
-        return normalizedPath;
-    }
-
     static string PrependRelativePathsWithCMakeCurrentSourceDir(string normalizedPath)
     {
         var isAbsolutePath = Path.IsPathRooted(normalizedPath);
@@ -207,26 +173,6 @@ class CMakeGenerator
         else
             return normalizedPath;
     }
-
-    string TranslateMSBuildMacros(string value)
-    {
-        string translatedValue = value;
-        translatedValue = Regex.Replace(translatedValue, @"\$\(Configuration(Name)?\)", "${CMAKE_BUILD_TYPE}");
-        translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectDir\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/");
-        translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectName\)", "${PROJECT_NAME}");
-        translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/");
-        translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionName\)", "${CMAKE_PROJECT_NAME}");
-
-        if (Regex.IsMatch(translatedValue, @"\$\([A-Za-z0-9_]+\)"))
-        {
-            logger.LogWarning($"Value contains unsupported MSBuild macros/properties: {value}");
-        }
-
-        translatedValue = Regex.Replace(translatedValue, @"\$\(([A-Za-z0-9_]+)\)", "${$1}");
-
-        return translatedValue;
-    }
-
 }
 
 record CMakeGeneratorSettings(bool EnableStandaloneProjectBuilds, IndentStyle IndentStyle, int IndentSize, bool DryRun);

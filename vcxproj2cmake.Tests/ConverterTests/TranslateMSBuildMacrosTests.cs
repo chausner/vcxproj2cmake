@@ -64,9 +64,9 @@ public partial class ConverterTests
                     "${CMAKE_BUILD_TYPE}.cpp"
                     "${CMAKE_BUILD_TYPE}.cpp"
                     "${CMAKE_CURRENT_SOURCE_DIR}/SomeFile.cpp"
-                    "${PROJECT_NAME}.cpp"
-                    "${CMAKE_SOURCE_DIR}/SomeFile.cpp"
                     "${CMAKE_PROJECT_NAME}.cpp"
+                    "${CMAKE_SOURCE_DIR}/SomeFile.cpp"
+                    "${PROJECT_NAME}.cpp"
                 )
                 """, cmake);
         }

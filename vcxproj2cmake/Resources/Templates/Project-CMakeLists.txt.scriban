@@ -36,7 +36,7 @@ add_library({{ project_name | literal }} INTERFACE
 {{ fail $"Unsupported CMake target type: {target_type}" }}
 {{~ end ~}}
     {{~ for file in source_files | array.sort ~}}
-    {{ file | translate_msbuild_macros | normalize_path | literal }}
+    {{ file | literal }}
     {{~ end ~}}
 )
 
@@ -66,7 +66,7 @@ target_precompile_headers({{ project_name | literal }}
     PRIVATE
         {{~ for kvp in precompiled_header_file.values ~}}
         {{~ if kvp.value != "" ~}}
-        {{ string.replace kvp.key.cmake_expression "{0}" (kvp.value | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir) }}
+        {{ string.replace kvp.key.cmake_expression "{0}" (kvp.value | prepend_relative_paths_with_cmake_current_source_dir) }}
         {{~ end ~}}
         {{~ end ~}}
 )
@@ -79,7 +79,7 @@ target_include_directories({{ project_name | literal }}
     INTERFACE
         {{~ for kvp in public_include_paths.values ~}}
         {{~ for path in kvp.value ~}}
-        {{ string.replace kvp.key.cmake_expression "{0}" (path | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir) }}
+        {{ string.replace kvp.key.cmake_expression "{0}" (path | prepend_relative_paths_with_cmake_current_source_dir) }}
         {{~ end ~}}  
         {{~ end ~}}  
 {{~ end ~}}
@@ -87,7 +87,7 @@ target_include_directories({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in include_paths.values ~}}
         {{~ for path in kvp.value ~}}
-        {{ string.replace kvp.key.cmake_expression "{0}" (path | translate_msbuild_macros | normalize_path | prepend_relative_paths_with_cmake_current_source_dir) }}
+        {{ string.replace kvp.key.cmake_expression "{0}" (path | prepend_relative_paths_with_cmake_current_source_dir) }}
         {{~ end ~}}  
         {{~ end ~}}  
 {{~ end ~}}
@@ -112,18 +112,19 @@ target_link_directories({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in linker_paths.values ~}}
         {{~ for path in kvp.value ~}}
-        {{ string.replace kvp.key.cmake_expression "{0}" (path | translate_msbuild_macros | normalize_path) }}
+        {{ string.replace kvp.key.cmake_expression "{0}" path }}
         {{~ end ~}}  
         {{~ end ~}}      
 )
 
 {{~ end -}}
+
 {{~ if !libraries.is_empty ~}}
 target_link_libraries({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in libraries.values ~}}
         {{~ for library in kvp.value ~}}
-        {{ string.replace kvp.key.cmake_expression "{0}" (library | translate_msbuild_macros | normalize_path) }}
+        {{ string.replace kvp.key.cmake_expression "{0}" library }}
         {{~ end ~}}
         {{~ end ~}}
 )

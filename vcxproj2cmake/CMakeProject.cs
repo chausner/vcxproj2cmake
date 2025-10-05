@@ -39,18 +39,22 @@ class CMakeProject
         TargetType = DetermineTargetType(project); 
         FindPackages = [];
         CompileFeatures = new("CompileFeatures", []);
-        SourceFiles = project.SourceFiles;
+        SourceFiles = project.SourceFiles.Select(value => TranslateAndNormalize(value, logger)).ToArray();
         OutputName = project.ProjectName;  // may get overridden in ApplyTargetName
-        IncludePaths = new(project.AdditionalIncludeDirectories, supportedProjectConfigurations, logger);
-        PublicIncludePaths = new(project.PublicIncludeDirectories, supportedProjectConfigurations, logger);
-        LinkerPaths = new(project.AdditionalLibraryDirectories, supportedProjectConfigurations, logger);
-        Libraries = new(project.AdditionalDependencies, supportedProjectConfigurations, logger);
+        IncludePaths = new CMakeConfigDependentMultiSetting(project.AdditionalIncludeDirectories, supportedProjectConfigurations, logger)
+            .Map(values => values.Select(value => TranslateAndNormalize(value, logger)).ToArray(), supportedProjectConfigurations, logger);
+        PublicIncludePaths = new CMakeConfigDependentMultiSetting(project.PublicIncludeDirectories, supportedProjectConfigurations, logger)
+            .Map(values => values.Select(value => TranslateAndNormalize(value, logger)).ToArray(), supportedProjectConfigurations, logger);
+        LinkerPaths = new CMakeConfigDependentMultiSetting(project.AdditionalLibraryDirectories, supportedProjectConfigurations, logger)
+            .Map(values => values.Select(value => TranslateAndNormalize(value, logger)).ToArray(), supportedProjectConfigurations, logger);
+        Libraries = new CMakeConfigDependentMultiSetting(project.AdditionalDependencies, supportedProjectConfigurations, logger)
+            .Map(values => values.Select(value => TranslateAndNormalize(value, logger)).ToArray(), supportedProjectConfigurations, logger);
         Defines = new(project.PreprocessorDefinitions, supportedProjectConfigurations, logger);
         Options = new(project.AdditionalOptions, supportedProjectConfigurations, logger);
         ProjectReferences = project.ProjectReferences.Select(path => new CMakeProjectReference { Path = path }).ToArray();
         IsWin32Executable = project.LinkerSubsystem == "Windows";
         PrecompiledHeaderFile = new CMakeConfigDependentSetting(project.PrecompiledHeaderFile, supportedProjectConfigurations, logger)
-            .Map((file, mode) => mode == "Use" ? file : null, project.PrecompiledHeader, supportedProjectConfigurations, logger);
+            .Map((file, mode) => mode == "Use" && file != null ? TranslateAndNormalize(file, logger) : null, project.PrecompiledHeader, supportedProjectConfigurations, logger);
         Properties = [];
 
         ApplyTargetName(project);
@@ -67,6 +71,30 @@ class CMakeProject
         ApplyOpenMPSupport(project, logger);
         ApplyQt(project, qtVersion);
         ApplyConanPackages(project, conanPackageInfoRepository);
+    }
+
+    static string TranslateMSBuildMacros(string value, ILogger logger)
+    {
+        string translatedValue = value;
+        translatedValue = Regex.Replace(translatedValue, @"\$\(Configuration(Name)?\)", "${CMAKE_BUILD_TYPE}");
+        translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectDir\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/");
+        translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectName\)", "${PROJECT_NAME}");
+        translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/");
+        translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionName\)", "${CMAKE_PROJECT_NAME}");
+
+        if (Regex.IsMatch(translatedValue, @"\$\([A-Za-z0-9_]+\)"))
+        {
+            logger.LogWarning($"Value contains unsupported MSBuild macros/properties: {value}");
+        }
+
+        translatedValue = Regex.Replace(translatedValue, @"\$\(([A-Za-z0-9_]+)\)", "${$1}");
+
+        return translatedValue;
+    }
+
+    static string TranslateAndNormalize(string path, ILogger logger)
+    {
+        return PathUtils.NormalizePath(TranslateMSBuildMacros(path, logger));
     }
 
     static MSBuildProjectConfig[] FilterSupportedProjectConfigurations(IEnumerable<MSBuildProjectConfig> projectConfigurations, ILogger logger)
@@ -265,7 +293,7 @@ class CMakeProject
     {
         PublicIncludePaths = PublicIncludePaths.Map((directories, allArePublic) => (allArePublic?.ToLowerInvariant()) switch
         {
-            "true" => [.. directories, "$(ProjectDir)"],
+            "true" => [.. directories, "${CMAKE_CURRENT_SOURCE_DIR}"],
             "false" or "" or null => directories,
             _ => throw new CatastrophicFailureException($"Invalid value for AllProjectIncludesArePublic: {allArePublic}"),
         }, project.AllProjectIncludesArePublic, ProjectConfigurations, logger);
