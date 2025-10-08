@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using System.CommandLine;
+using System.Globalization;
 using System.IO.Abstractions;
 
 namespace vcxproj2cmake;
@@ -11,6 +12,12 @@ public static class Program
 
     public static int Main(string[] args)
     {
+        var englishCulture = CultureInfo.GetCultureInfo("en-US");
+        CultureInfo.CurrentCulture = englishCulture;
+        CultureInfo.DefaultThreadCurrentCulture = englishCulture;
+        CultureInfo.CurrentUICulture = englishCulture;
+        CultureInfo.DefaultThreadCurrentUICulture = englishCulture;
+
         var projectsOption = new Option<List<FileInfo>>("--projects")
         {
             AllowMultipleArgumentsPerToken = true,
