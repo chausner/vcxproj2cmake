@@ -29,6 +29,8 @@ class CMakeProject
 
     public CMakeProject(MSBuildProject project, int? qtVersion, ConanPackageInfoRepository conanPackageInfoRepository, IFileSystem fileSystem, ILogger logger)
     {
+        logger.LogInformation($"Processing project {project.AbsoluteProjectPath}");
+
         var supportedProjectConfigurations = FilterSupportedProjectConfigurations(project.ProjectConfigurations, logger);
 
         MSBuildProject = project;

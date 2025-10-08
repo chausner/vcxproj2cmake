@@ -21,7 +21,8 @@ public class Converter
         bool enableStandaloneProjectBuilds = false, 
         IndentStyle indentStyle = IndentStyle.Spaces, 
         int indentSize = 4, 
-        bool dryRun = false)
+        bool dryRun = false,
+        bool continueOnError = false)
     {
         if ((projectFiles == null || projectFiles.Count == 0) && solutionFile == null)
             throw new ArgumentException($"Either {nameof(projectFiles)} or {nameof(solutionFile)} must be provided.");
@@ -30,12 +31,22 @@ public class Converter
 
         MSBuildSolution? solution = null;
         List<MSBuildProject> projects = [];
+        List<string> failedProjectPaths = [];
 
         if (projectFiles != null && projectFiles.Any())
         {
             foreach (var project in projectFiles!)
             {
-                projects.Add(MSBuildProject.ParseProjectFile(project.FullName, fileSystem, logger));
+                var absolutePath = Path.GetFullPath(project.FullName);
+                try
+                {                    
+                    projects.Add(MSBuildProject.ParseProjectFile(absolutePath, fileSystem, logger));
+                }
+                catch (Exception ex) when (continueOnError)
+                {
+                    logger.LogError(ex, "Error processing project file {ProjectFile}: {ErrorMessage}", project.FullName, ex.Message);
+                    failedProjectPaths.Add(absolutePath);
+                }
             }
         }
         else if (solutionFile != null)
@@ -48,17 +59,53 @@ public class Converter
             foreach (var projectReference in solution.Projects)
             {
                 string absolutePath = Path.GetFullPath(Path.Combine(solutionFile.DirectoryName!, projectReference));
-                projects.Add(MSBuildProject.ParseProjectFile(absolutePath, fileSystem, logger));
+                try
+                {                    
+                    projects.Add(MSBuildProject.ParseProjectFile(absolutePath, fileSystem, logger));
+                }
+                catch (Exception ex) when (continueOnError)
+                {
+                    logger.LogError(ex, "Error processing project file {ProjectFile}: {ErrorMessage}", projectReference, ex.Message);
+                    failedProjectPaths.Add(absolutePath);
+                }
             }
         }
 
         var conanPackageInfoRepository = new ConanPackageInfoRepository();
 
-        var cmakeProjects = projects.Select(project => new CMakeProject(project, qtVersion, conanPackageInfoRepository, fileSystem, logger)).ToList();
+        List<CMakeProject> cmakeProjects = [];
+
+        foreach (var project in projects)
+        {
+            try
+            {
+                cmakeProjects.Add(new CMakeProject(project, qtVersion, conanPackageInfoRepository, fileSystem, logger));
+            }
+            catch (Exception ex) when (continueOnError)
+            {
+                logger.LogError(ex, "Error processing project file {ProjectFile}: {ErrorMessage}", project.AbsoluteProjectPath, ex.Message);
+                failedProjectPaths.Add(project.AbsoluteProjectPath);
+            }
+        }
+
+        if (solution != null && solution.Projects.Length != cmakeProjects.Count)
+        {
+            solution = new MSBuildSolution
+            {
+                AbsoluteSolutionPath = solution.AbsoluteSolutionPath,
+                SolutionName = solution.SolutionName,
+                Projects = solution.Projects.Where(projectRef =>
+                {
+                    string absolutePath = Path.GetFullPath(Path.Combine(solutionFile!.DirectoryName!, projectRef));
+                    return cmakeProjects.Any(p => p.AbsoluteProjectPath == absolutePath);
+                }).ToArray()
+            };
+        }
+
         var cmakeSolution = solution != null ? new CMakeSolution(solution, cmakeProjects) : null;
 
         EnsureProjectNamesAreUnique(cmakeProjects);
-        ResolveProjectReferences(cmakeProjects);
+        ResolveProjectReferences(cmakeProjects, continueOnError, failedProjectPaths);
         RemoveObsoleteLibrariesFromProjectReferences(cmakeProjects);
         AddLibrariesFromProjectReferences(cmakeProjects);
 
@@ -83,10 +130,12 @@ public class Converter
         }
     }
 
-    static void ResolveProjectReferences(IEnumerable<CMakeProject> projects)
+    void ResolveProjectReferences(IEnumerable<CMakeProject> projects, bool continueOnError, IEnumerable<string> failedProjectPaths)
     {
         foreach (var project in projects)
         {
+            List<CMakeProjectReference> resolvedReferences = [];
+
             foreach (var projectReference in project.ProjectReferences)
             {
                 var absoluteReference = Path.GetFullPath(projectReference.Path, Path.GetDirectoryName(project.AbsoluteProjectPath)!);
@@ -94,10 +143,21 @@ public class Converter
                 var referencedProject = projects.FirstOrDefault(p => p.AbsoluteProjectPath == absoluteReference);
 
                 if (referencedProject == null)
-                    throw new CatastrophicFailureException($"Project {project.AbsoluteProjectPath} references project {absoluteReference} which is not part of the solution or the list of projects.");
+                {
+                    if (continueOnError && failedProjectPaths.Contains(absoluteReference, StringComparer.OrdinalIgnoreCase))
+                    {
+                        logger.LogError("Skipping project reference {MissingProjectReference} in project {ProjectFile} because the referenced project could not be converted.", absoluteReference, project.AbsoluteProjectPath);
+                        continue;
+                    }
+
+                    throw new CatastrophicFailureException($"Project {project.AbsoluteProjectPath} references project {absoluteReference} which is not part of the solution or the list of projects.");                    
+                }
 
                 projectReference.Project = referencedProject;
+                resolvedReferences.Add(projectReference);
             }
+
+            project.ProjectReferences = resolvedReferences.ToArray();
         }
     }
 

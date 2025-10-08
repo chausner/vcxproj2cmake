@@ -52,6 +52,11 @@ public static class Program
             Description = "Print generated output to the console, do not store generated files"
         };
 
+        var continueOnErrorOption = new Option<bool>("--continue-on-error")
+        {
+            Description = "Do not abort when a project cannot be converted and continue with the remaining projects"
+        };
+
         var logLevelOption = new Option<LogLevel>("--log-level")
         { 
             Description = "Set the minimum log level",
@@ -67,6 +72,7 @@ public static class Program
         rootCommand.Options.Add(indentStyleOption);
         rootCommand.Options.Add(indentSizeOption);
         rootCommand.Options.Add(dryRunOption);
+        rootCommand.Options.Add(continueOnErrorOption);
         rootCommand.Options.Add(logLevelOption);
 
         rootCommand.Validators.Add(result =>
@@ -87,8 +93,9 @@ public static class Program
                 var indentStyle = parseResult.GetValue(indentStyleOption);
                 var indentSize = parseResult.GetValue(indentSizeOption);
                 var dryRun = parseResult.GetValue(dryRunOption);
+                var continueOnError = parseResult.GetValue(continueOnErrorOption);
                 var logLevel = parseResult.GetValue(logLevelOption);
-                Run(projects, solution, qtVersion, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, logLevel);
+                Run(projects, solution, qtVersion, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError, logLevel);
             });
 
         var config = new CommandLineConfiguration(rootCommand)
@@ -115,12 +122,13 @@ public static class Program
         IndentStyle indentStyle, 
         int indentSize, 
         bool dryRun, 
+        bool continueOnError,
         LogLevel logLevel)
     {
         logger = CreateLogger(logLevel);
 
         var converter = new Converter(new FileSystem(), logger);
-        converter.Convert(projects, solution, qtVersion, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun);
+        converter.Convert(projects, solution, qtVersion, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError);
     }
 
     static ILogger CreateLogger(LogLevel logLevel)
