@@ -34,7 +34,7 @@ public partial class ConverterTests
 
             // Assert
             var logs = string.Join(Environment.NewLine, logger.Messages);
-            Assert.Contains("Error processing project file Missing\\Missing.vcxproj: ", logs);
+            Assert.Matches("Error processing project file Missing(\\\\|/)Missing.vcxproj: ", logs);
 
             Assert.True(fileSystem.FileExists(Path.Combine("App", "CMakeLists.txt")), "CMakeLists.txt should be generated for App project");
             Assert.False(fileSystem.FileExists(Path.Combine("Lib", "CMakeLists.txt")), "CMakeLists.txt should not be generated for Lib project");
@@ -68,7 +68,7 @@ public partial class ConverterTests
 
             // Assert
             var logs = string.Join(Environment.NewLine, logger.Messages);
-            Assert.Matches("Error processing project file .*\\\\Lib\\\\Lib.vcxproj", logs);
+            Assert.Matches("Error processing project file .*(\\\\|/)Lib(\\\\|/)Lib.vcxproj", logs);
 
             Assert.True(fileSystem.FileExists(Path.Combine("App", "CMakeLists.txt")), "CMakeLists.txt should be generated for App project");
             Assert.False(fileSystem.FileExists(Path.Combine("Lib", "CMakeLists.txt")), "CMakeLists.txt should not be generated for Lib project");
