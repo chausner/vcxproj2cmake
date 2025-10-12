@@ -12,8 +12,8 @@
     <AssemblyTitle>vcxproj2cmake</AssemblyTitle>
     <AssemblyDescription>Tool to convert Microsoft Visual C++ projects and solutions to CMake</AssemblyDescription>
     <AssemblyProduct>vcxproj2cmake</AssemblyProduct>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
     <Authors>Christoph Hausner</Authors>
     <Copyright>Copyright © Christoph Hausner 2025</Copyright>
   </PropertyGroup>
