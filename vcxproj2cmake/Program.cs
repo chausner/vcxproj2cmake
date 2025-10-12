@@ -105,15 +105,13 @@ public static class Program
                 Run(projects, solution, qtVersion, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError, logLevel);
             });
 
-        var config = new CommandLineConfiguration(rootCommand)
-        {
-            EnableDefaultExceptionHandler = false
-        };
-
         try
         {
-            return config.Invoke(args);
-        }         
+            return rootCommand.Parse(args).Invoke(new InvocationConfiguration
+            {
+                EnableDefaultExceptionHandler = false
+            });
+        }
         catch (Exception ex)
         {
             HandleException(ex);
