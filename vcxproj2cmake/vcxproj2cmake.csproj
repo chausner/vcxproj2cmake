@@ -12,8 +12,8 @@
     <AssemblyTitle>vcxproj2cmake</AssemblyTitle>
     <AssemblyDescription>Tool to convert Microsoft Visual C++ projects and solutions to CMake</AssemblyDescription>
     <AssemblyProduct>vcxproj2cmake</AssemblyProduct>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
     <Authors>Christoph Hausner</Authors>
     <Copyright>Copyright © Christoph Hausner 2025</Copyright>
   </PropertyGroup>
@@ -34,14 +34,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.5" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.5" />
-    <PackageReference Include="Scriban" Version="6.2.1" />
-    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.9" />
+    <PackageReference Include="Scriban" Version="6.4.0" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-rc.1.25451.107" />
     <PackageReference Include="Microsoft.Build" Version="17.14.8" />
-    <PackageReference Include="TestableIO.System.IO.Abstractions" Version="22.0.14" />
-    <PackageReference Include="TestableIO.System.IO.Abstractions.Extensions" Version="22.0.3" />
-    <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" Version="22.0.14" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions" Version="22.0.16" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions.Extensions" Version="22.0.4" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions.Wrappers" Version="22.0.16" />
   </ItemGroup>
 
   <ItemGroup>

@@ -6,7 +6,7 @@ namespace vcxproj2cmake.Tests;
 
 public partial class ConverterTests
 {
-    public class OpenMPSupportTests
+    public class RuntimeLibraryTests
     {
         static string CreateProject(string debugValue, string releaseValue) => $"""
             <?xml version="1.0" encoding="utf-8"?>
@@ -29,24 +29,24 @@ public partial class ConverterTests
                 </PropertyGroup>
                 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
                     <ClCompile>
-                        <OpenMPSupport>{debugValue}</OpenMPSupport>
+                        <RuntimeLibrary>{debugValue}</RuntimeLibrary>
                     </ClCompile>
                 </ItemDefinitionGroup>
                 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
                     <ClCompile>
-                        <OpenMPSupport>{releaseValue}</OpenMPSupport>
+                        <RuntimeLibrary>{releaseValue}</RuntimeLibrary>
                     </ClCompile>
                 </ItemDefinitionGroup>
             </Project>
             """;
 
         [Fact]
-        public void Given_OpenMPEnabledForAllConfigs_When_Converted_Then_LibraryAndPackageAdded()
+        public void Given_RuntimeLibrarySetToDefaultsInAllConfigs_When_Converted_Then_NoSetTargetPropertiesMsvcRuntimeLibraryAdded()
         {
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("true", "true")));
+            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("MultiThreadedDebugDLL", "MultiThreadedDLL")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -54,22 +54,16 @@ public partial class ConverterTests
                 projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
-            Assert.Contains("find_package(OpenMP REQUIRED)", cmake);
-            Assert.Contains("""
-                target_link_libraries(Project
-                    PUBLIC
-                        OpenMP::OpenMP_CXX
-                )
-                """, cmake);
+            Assert.DoesNotContain("MSVC_RUNTIME_LIBRARY", cmake);
         }
 
         [Fact]
-        public void Given_OpenMPEnabledOnlyForDebug_When_Converted_Then_LibraryUsesGeneratorExpression()
+        public void Given_RuntimeLibrarySetEquallyInAllConfigs_When_Converted_Then_SetTargetPropertiesMsvcRuntimeLibraryAdded()
         {
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("true", "false")));
+            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("MultiThreaded", "MultiThreaded")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -77,22 +71,22 @@ public partial class ConverterTests
                 projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
-            Assert.Contains("find_package(OpenMP REQUIRED)", cmake);
-            Assert.Contains("""
-                target_link_libraries(Project
-                    PUBLIC
-                        $<$<CONFIG:Debug>:OpenMP::OpenMP_CXX>
+            Assert.Contains(
+                """
+                set_target_properties(Project PROPERTIES
+                    MSVC_RUNTIME_LIBRARY MultiThreaded
                 )
-                """, cmake);
+                """,
+                cmake);
         }
 
         [Fact]
-        public void Given_OpenMPDisabled_When_Converted_Then_NoPackageOrLibraryAdded()
+        public void Given_RuntimeLibrarySetToCustomConfigDependentValue_When_Converted_Then_SetTargetPropertiesMsvcRuntimeLibraryAddedWithCMakeExpression()
         {
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("false", "false")));
+            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("MultiThreadedDebug", "MultiThreadedDLL")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -100,9 +94,36 @@ public partial class ConverterTests
                 projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
-            Assert.DoesNotContain("find_package(OpenMP REQUIRED)", cmake);
-            Assert.DoesNotContain("OpenMP::OpenMP_CXX", cmake);
-            Assert.DoesNotContain("target_link_libraries(Project", cmake);
+            Assert.Contains(
+                """
+                set_target_properties(Project PROPERTIES
+                    MSVC_RUNTIME_LIBRARY "$<$<CONFIG:Debug>:MultiThreadedDebug>$<$<CONFIG:Release>:MultiThreadedDLL>"
+                )
+                """,
+                cmake);
+        }
+
+        [Fact]
+        public void Given_RuntimeLibrarySetToNonDllConfigDependentValue_When_Converted_Then_SetTargetPropertiesMsvcRuntimeLibraryAddedWithSimpleCMakeExpression()
+        {
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("MultiThreadedDebug", "MultiThreaded")));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+            Assert.Contains(
+                """
+                set_target_properties(Project PROPERTIES
+                    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+                )
+                """,
+                cmake);
         }
     }
 }

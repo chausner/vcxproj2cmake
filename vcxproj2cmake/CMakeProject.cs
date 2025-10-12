@@ -9,33 +9,28 @@ class CMakeProject
     public MSBuildProject MSBuildProject { get; }
     public string AbsoluteProjectPath { get; set; }
     public string ProjectName { get; set; }
-    public string[] ProjectConfigurations { get; set; }
+    public MSBuildProjectConfig[] ProjectConfigurations { get; set; }
     public string[] Languages { get; set; }
-    public string ConfigurationType { get; set; }
-    public string CppLanguageStandard { get; set; }
-    public string CLanguageStandard { get; set; }
+    public CMakeTargetType TargetType { get; set; }
+    public IList<CMakeFindPackage> FindPackages { get; set; }
+    public CMakeConfigDependentMultiSetting CompileFeatures { get; set; }
     public string[] SourceFiles { get; set; }
+    public string OutputName { get; set; }
     public CMakeConfigDependentMultiSetting IncludePaths { get; set; }
     public CMakeConfigDependentMultiSetting PublicIncludePaths { get; set; }
     public CMakeConfigDependentMultiSetting LinkerPaths { get; set; }
     public CMakeConfigDependentMultiSetting Libraries { get; set; }
     public CMakeConfigDependentMultiSetting Defines { get; set; }
     public CMakeConfigDependentMultiSetting Options { get; set; }
+    public OrderedDictionary<string, string> Properties { get; set; }
     public CMakeProjectReference[] ProjectReferences { get; set; }
-    public string? LinkerSubsystem { get; set; }
-    public bool LinkLibraryDependenciesEnabled { get; set; }
-    public bool IsHeaderOnlyLibrary { get; set; }
+    public bool IsWin32Executable { get; set; }
     public CMakeConfigDependentSetting PrecompiledHeaderFile { get; set; }
-    public bool UsesOpenMP { get; set; }
-    public int? QtVersion { get; set; }
-    public bool RequiresQtMoc { get; set; }
-    public bool RequiresQtUic { get; set; }
-    public bool RequiresQtRcc { get; set; }
-    public QtModule[] QtModules { get; set; }
-    public ConanPackage[] ConanPackages { get; set; }
 
     public CMakeProject(MSBuildProject project, int? qtVersion, ConanPackageInfoRepository conanPackageInfoRepository, IFileSystem fileSystem, ILogger logger)
     {
+        logger.LogInformation($"Processing project {project.AbsoluteProjectPath}");
+
         var supportedProjectConfigurations = FilterSupportedProjectConfigurations(project.ProjectConfigurations, logger);
 
         MSBuildProject = project;
@@ -43,38 +38,31 @@ class CMakeProject
         ProjectName = project.ProjectName;
         ProjectConfigurations = supportedProjectConfigurations;
         Languages = DetectLanguages(project.SourceFiles, logger);
-        ConfigurationType = project.ConfigurationType;
-        CppLanguageStandard = project.LanguageStandard;
-        CLanguageStandard = project.LanguageStandardC;
-        SourceFiles = project.SourceFiles;
-        IncludePaths = new(project.AdditionalIncludeDirectories, supportedProjectConfigurations, logger);
-        PublicIncludePaths = new(project.PublicIncludeDirectories, supportedProjectConfigurations, logger);
-        LinkerPaths = new(project.AdditionalLibraryDirectories, supportedProjectConfigurations, logger);
-        Libraries = new(project.AdditionalDependencies, supportedProjectConfigurations, logger);
+        TargetType = DetermineTargetType(project); 
+        FindPackages = [];
+        CompileFeatures = new("CompileFeatures", []);
+        SourceFiles = project.SourceFiles.Select(value => TranslateAndNormalize(value, "SourceFiles", logger)).ToArray();
+        OutputName = project.ProjectName;  // may get overridden in ApplyTargetName
+        IncludePaths = new CMakeConfigDependentMultiSetting(project.AdditionalIncludeDirectories, supportedProjectConfigurations, logger)
+            .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalIncludeDirectories", logger)).ToArray(), supportedProjectConfigurations, logger);
+        PublicIncludePaths = new CMakeConfigDependentMultiSetting(project.PublicIncludeDirectories, supportedProjectConfigurations, logger)
+            .Map(values => values.Select(value => TranslateAndNormalize(value, "PublicIncludeDirectories", logger)).ToArray(), supportedProjectConfigurations, logger);
+        LinkerPaths = new CMakeConfigDependentMultiSetting(project.AdditionalLibraryDirectories, supportedProjectConfigurations, logger)
+            .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalLibraryDirectories", logger)).ToArray(), supportedProjectConfigurations, logger);
+        Libraries = new CMakeConfigDependentMultiSetting(project.AdditionalDependencies, supportedProjectConfigurations, logger)
+            .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalDependencies", logger)).ToArray(), supportedProjectConfigurations, logger);
         Defines = new(project.PreprocessorDefinitions, supportedProjectConfigurations, logger);
         Options = new(project.AdditionalOptions, supportedProjectConfigurations, logger);
         ProjectReferences = project.ProjectReferences.Select(path => new CMakeProjectReference { Path = path }).ToArray();
-        LinkerSubsystem = project.LinkerSubsystem;
-        LinkLibraryDependenciesEnabled = project.LinkLibraryDependenciesEnabled;
+        IsWin32Executable = project.LinkerSubsystem == "Windows";
         PrecompiledHeaderFile = new CMakeConfigDependentSetting(project.PrecompiledHeaderFile, supportedProjectConfigurations, logger)
-            .Map((file, mode) => mode == "Use" ? file : null, project.PrecompiledHeader, supportedProjectConfigurations, logger);
-        UsesOpenMP = project.OpenMPSupport.Values.Values.Contains("true", StringComparer.OrdinalIgnoreCase);
-        QtVersion = qtVersion;
-        RequiresQtMoc = project.RequiresQtMoc;
-        RequiresQtUic = project.RequiresQtUic;
-        RequiresQtRcc = project.RequiresQtRcc;
+            .Map((file, mode) => mode == "Use" && file != null ? TranslateAndNormalize(file, "PrecompiledHeaderFile", logger) : null, project.PrecompiledHeader, supportedProjectConfigurations, logger);
+        Properties = [];
 
-        if (project.QtModules.Any() && qtVersion == null)
-            throw new CatastrophicFailureException("Project uses Qt but no Qt version is set. Specify the version with --qt-version.");
-
-        QtModules = project.QtModules.Select(module => QtModuleInfoRepository.GetQtModuleInfo(module, qtVersion!.Value)).ToArray();
-        ConanPackages = project.ConanPackages.Select(packageName => conanPackageInfoRepository.GetConanPackageInfo(packageName!)).ToArray();
-
-        // We don't rely on ConfigurationType to determine if the project is a header-only library
-        // since there is no specific configuration type for header-only libraries in MSBuild.
-        IsHeaderOnlyLibrary = project.SourceFiles.Length == 0 && project.HeaderFiles.Length > 0;
-
+        ApplyTargetName(project);
+        ApplyLanguageStandards(project);
         ApplyAllProjectIncludesArePublic(project, logger);
+        ApplyRuntimeLibrary(project, logger);
         ApplyCharacterSetSetting(project, logger);
         ApplyDisableSpecificWarnings(project, logger);
         ApplyTreatSpecificWarningsAsErrors(project, logger);
@@ -83,21 +71,63 @@ class CMakeProject
         ApplyExternalWarningLevel(project, logger);
         ApplyTreatAngleIncludeAsExternal(project, logger);
         ApplyOpenMPSupport(project, logger);
+        ApplyQt(project, qtVersion);
+        ApplyConanPackages(project, conanPackageInfoRepository);
     }
 
-    static string[] FilterSupportedProjectConfigurations(IEnumerable<string> projectConfigurations, ILogger logger)
+    static string TranslateMSBuildMacros(string value, string settingName, ILogger logger)
     {
-        List<string> supportedProjectConfigurations = [];
+        string translatedValue = value;
+        translatedValue = Regex.Replace(translatedValue, @"\$\(Configuration(Name)?\)", "${CMAKE_BUILD_TYPE}");
+        translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectDir\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/");
+        translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectName\)", "${PROJECT_NAME}");
+        translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/");
+        translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionName\)", "${CMAKE_PROJECT_NAME}");
+
+        if (Regex.IsMatch(translatedValue, @"\$\([A-Za-z0-9_]+\)"))
+        {
+            logger.LogWarning($"Setting {settingName} contains unsupported MSBuild macros/properties: {value}.");
+        }
+
+        translatedValue = Regex.Replace(translatedValue, @"\$\(([A-Za-z0-9_]+)\)", "${$1}");
+
+        return translatedValue;
+    }
+
+    static string TranslateAndNormalize(string path, string settingName, ILogger logger)
+    {
+        return PathUtils.NormalizePath(TranslateMSBuildMacros(path, settingName, logger));
+    }
+
+    static MSBuildProjectConfig[] FilterSupportedProjectConfigurations(IEnumerable<MSBuildProjectConfig> projectConfigurations, ILogger logger)
+    {
+        List<MSBuildProjectConfig> supportedProjectConfigurations = [];
 
         foreach (var projectConfig in projectConfigurations)
         {
-            if (Config.IsMSBuildProjectConfigNameSupported(projectConfig))
+            if (Config.IsMSBuildProjectConfigSupported(projectConfig))
                 supportedProjectConfigurations.Add(projectConfig);
             else
                 logger.LogWarning($"Skipping unsupported project configuration: {projectConfig}");
         }
 
         return supportedProjectConfigurations.ToArray();
+    }
+
+    static CMakeTargetType DetermineTargetType(MSBuildProject project)
+    {
+        var isHeaderOnlyLibrary = project.SourceFiles.Length == 0 && project.HeaderFiles.Length > 0;
+
+        if (isHeaderOnlyLibrary)
+            return CMakeTargetType.InterfaceLibrary;
+        else
+            return project.ConfigurationType switch
+            {
+                "Application" => CMakeTargetType.Executable,
+                "StaticLibrary" => CMakeTargetType.StaticLibrary,
+                "DynamicLibrary" => CMakeTargetType.SharedLibrary,
+                _ => throw new CatastrophicFailureException($"ConfigurationType property is unsupported: {project.ConfigurationType}")
+            };
     }
 
     static string[] DetectLanguages(IEnumerable<string> sourceFiles, ILogger logger)
@@ -113,6 +143,71 @@ class CMakeProject
             logger.LogWarning("Could not detect languages for project");
 
         return result.ToArray();
+    }
+
+    void ApplyTargetName(MSBuildProject project)
+    {
+        if (project.TargetName.Values.Count == 0)
+            return;
+
+        var targetName =
+            project.TargetName.Values.Values
+            .Distinct()
+            .SingleWithException(() =>
+                throw new CatastrophicFailureException(
+                    "TargetName property is inconsistent between configurations"));
+
+        if (targetName != project.ProjectName)
+        {
+            Properties["OUTPUT_NAME"] = targetName;
+            OutputName = targetName;
+        }
+    }
+
+    void ApplyLanguageStandards(MSBuildProject project)
+    {
+        var cppFeature = project.LanguageStandard switch
+            {
+                "stdcpplatest" => "cxx_std_23",
+                "stdcpp23" => "cxx_std_23",
+                "stdcpp20" => "cxx_std_20",
+                "stdcpp17" => "cxx_std_17",
+                "stdcpp14" => "cxx_std_14",
+                "stdcpp11" => "cxx_std_11",
+                "Default" or null or "" => null,
+                _ => throw new CatastrophicFailureException($"Unsupported C++ language standard: {project.LanguageStandard}")
+            };
+
+        var cFeature = project.LanguageStandardC switch
+            {
+                "stdclatest" => "c_std_23",
+                "stdc23" => "c_std_23",
+                "stdc17" => "c_std_17",
+                "stdc11" => "c_std_11",
+                "Default" or null or "" => null,
+                _ => throw new CatastrophicFailureException($"Unsupported C language standard: {project.LanguageStandardC}")
+            };        
+
+        if (cppFeature != null)
+            CompileFeatures.AppendValue(Config.CommonConfig, cppFeature);
+
+        if (cFeature != null)
+            CompileFeatures.AppendValue(Config.CommonConfig, cFeature);
+    }
+
+    void ApplyRuntimeLibrary(MSBuildProject project, ILogger logger)
+    {
+        var msvcRuntimeLibrary = new CMakeConfigDependentSetting(project.RuntimeLibrary, ProjectConfigurations, logger).ToCMakeExpression();
+
+        // if the setting has its default value, we prefer to not set it at all
+        if (msvcRuntimeLibrary == "$<$<CONFIG:Debug>:MultiThreadedDebugDLL>$<$<CONFIG:Release>:MultiThreadedDLL>")
+            return;
+
+        // for the common case of MultiThreadedDebug for debug and MultiThreaded for release, replace the CMake expression with a simpler, equivalent one
+        if (msvcRuntimeLibrary == "$<$<CONFIG:Debug>:MultiThreadedDebug>$<$<CONFIG:Release>:MultiThreaded>")
+            msvcRuntimeLibrary = "MultiThreaded$<$<CONFIG:Debug>:Debug>";
+
+        Properties["MSVC_RUNTIME_LIBRARY"] = msvcRuntimeLibrary;
     }
 
     void ApplyCharacterSetSetting(MSBuildProject project, ILogger logger)
@@ -142,12 +237,20 @@ class CMakeProject
 
     void ApplyTreatWarningAsError(MSBuildProject project, ILogger logger)
     {
-        Options = Options.Map((options, treatAsError) => (treatAsError?.ToLowerInvariant()) switch
-        {
-            "true" => [.. options, "/WX"],
-            "false" or "" or null => options,
-            _ => throw new CatastrophicFailureException($"Invalid value for TreatWarningAsError: {treatAsError}"),
-        }, project.TreatWarningAsError, ProjectConfigurations, logger);
+        var compileWarningAsError = new CMakeConfigDependentSetting(project.TreatWarningAsError, ProjectConfigurations, logger)
+            .Map(value => value switch
+            {
+                "true" => "ON",
+                "false" or "" or null => "OFF",
+                _ => throw new CatastrophicFailureException($"Invalid value for TreatWarningAsError: {value}")
+            }, ProjectConfigurations, logger)
+            .ToCMakeExpression();
+
+        // if the setting has its default value, we prefer to not set it at all
+        if (compileWarningAsError == "OFF")
+            return;
+
+        Properties["COMPILE_WARNING_AS_ERROR"] = compileWarningAsError;
     }
 
     void ApplyWarningLevel(MSBuildProject project, ILogger logger)
@@ -192,7 +295,7 @@ class CMakeProject
     {
         PublicIncludePaths = PublicIncludePaths.Map((directories, allArePublic) => (allArePublic?.ToLowerInvariant()) switch
         {
-            "true" => [.. directories, "$(ProjectDir)"],
+            "true" => [.. directories, "${CMAKE_CURRENT_SOURCE_DIR}"],
             "false" or "" or null => directories,
             _ => throw new CatastrophicFailureException($"Invalid value for AllProjectIncludesArePublic: {allArePublic}"),
         }, project.AllProjectIncludesArePublic, ProjectConfigurations, logger);
@@ -200,12 +303,59 @@ class CMakeProject
 
     void ApplyOpenMPSupport(MSBuildProject project, ILogger logger)
     {
-        Libraries = Libraries.Map((libs, openMP) => (openMP?.ToLowerInvariant()) switch
+        var usesOpenMP = project.OpenMPSupport.Values.Values.Contains("true", StringComparer.OrdinalIgnoreCase);
+        if (usesOpenMP)
         {
-            "true" => [.. libs, "OpenMP::OpenMP_CXX"],
-            "false" or "" or null => libs,
-            _ => throw new CatastrophicFailureException($"Invalid value for OpenMPSupport: {openMP}"),
-        }, project.OpenMPSupport, ProjectConfigurations, logger);
+            FindPackages.Add(new CMakeFindPackage("OpenMP", Required: true));
+
+            Libraries = Libraries.Map((libs, openMP) => (openMP?.ToLowerInvariant()) switch
+            {
+                "true" => [.. libs, "OpenMP::OpenMP_CXX"],
+                "false" or "" or null => libs,
+                _ => throw new CatastrophicFailureException($"Invalid value for OpenMPSupport: {openMP}"),
+            }, project.OpenMPSupport, ProjectConfigurations, logger);
+        }
+    }
+
+    private void ApplyQt(MSBuildProject project, int? qtVersion)
+    {
+        if (project.QtModules.Length == 0)
+            return;
+                
+        if (qtVersion == null)
+            throw new CatastrophicFailureException("Project uses Qt but no Qt version is set. Specify the version with --qt-version.");
+
+        var qtModules =
+            project.QtModules
+            .Select(module => QtModuleInfoRepository.GetQtModuleInfo(module, qtVersion!.Value))
+            .OrderBy(m => m.CMakeTargetName);
+
+        var qtComponents = qtModules.Select(m => m.CMakeComponentName).ToArray();
+        FindPackages.Add(new CMakeFindPackage($"Qt{qtVersion}", Required: true, Components: qtComponents));
+
+        foreach (var module in qtModules)        
+            Libraries.AppendValue(Config.CommonConfig, module.CMakeTargetName);
+
+        if (project.RequiresQtMoc)
+            Properties.Add("AUTOMOC", "ON");
+        if (project.RequiresQtUic)
+            Properties.Add("AUTOUIC", "ON");
+        if (project.RequiresQtRcc)
+            Properties.Add("AUTORCC", "ON");
+    }
+
+    private void ApplyConanPackages(MSBuildProject project, ConanPackageInfoRepository conanPackageInfoRepository)
+    {
+        var conanPackages =
+            project.ConanPackages
+            .Select(packageName => conanPackageInfoRepository.GetConanPackageInfo(packageName!))
+            .OrderBy(p => p.CMakeTargetName);
+
+        foreach (var package in conanPackages)
+        {
+            FindPackages.Add(new CMakeFindPackage(package.CMakeConfigName, Required: true, Config: true));
+            Libraries.AppendValue(Config.CommonConfig, package.CMakeTargetName);
+        }
     }
 
     public ISet<CMakeProject> GetAllReferencedProjects(IEnumerable<CMakeProject> allProjects)
@@ -224,6 +374,16 @@ class CMakeProject
         return referencedProjects;
     }
 }
+
+enum CMakeTargetType
+{
+    Executable,
+    StaticLibrary,
+    SharedLibrary,
+    InterfaceLibrary
+}
+
+record CMakeFindPackage(string PackageName, bool Required = false, bool Config = false, string[]? Components = null);
 
 class CMakeProjectReference
 {

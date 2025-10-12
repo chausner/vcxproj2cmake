@@ -55,11 +55,11 @@ class CMakeGenerator
         var scriptObject = new ScriptObject();
         scriptObject.Import(model);
         scriptObject.Import(settings);
-        scriptObject.SetValue("all_projects", allProjects, true);
         scriptObject.Import("fail", new Action<string>(error => throw new CatastrophicFailureException(error)));
-        scriptObject.Import("translate_msbuild_macros", TranslateMSBuildMacros);
-        scriptObject.Import("normalize_path", NormalizePath);
-        scriptObject.Import("order_project_references_by_dependencies", OrderProjectReferencesByDependencies);
+        scriptObject.Import("literal", ToCMakeLiteral);
+        scriptObject.Import("unquoted_literal", (string s) => ToCMakeLiteral(s, unquoted: true));
+        scriptObject.Import("normalize_path", PathUtils.NormalizePath);
+        scriptObject.Import("order_project_references_by_dependencies", (IEnumerable<CMakeProjectReference> pr) => ProjectDependencyUtils.OrderProjectReferencesByDependencies(pr, allProjects, logger));
         scriptObject.Import("get_directory_name", new Func<string?, string?>(Path.GetDirectoryName));
         scriptObject.Import("get_relative_path", new Func<string, string, string?>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));
         scriptObject.Import("prepend_relative_paths_with_cmake_current_source_dir", PrependRelativePathsWithCMakeCurrentSourceDir);
@@ -120,37 +120,42 @@ class CMakeGenerator
         return Template.Parse(content);
     }
 
-    static string NormalizePath(string path)
+    static string ToCMakeLiteral(string value, bool unquoted = false)
     {
-        if (path == string.Empty)
-            return string.Empty;
+        bool NeedsQuoting(char c) =>
+            char.IsWhiteSpace(c) ||  // space, tab, newline …
+            c == ';' ||              // list separator inside variables
+            c == '#' ||              // comment introducer
+            c == '(' || c == ')' ||  // command delimiters
+            c == '"' || c == '\\' || // must be escaped inside quotes
+            c == '$';                // variable expansion
 
-        // In CMake, we should always use forward-slashes as directory separator, even on Windows
-        string normalizedPath = path.Replace(@"\", "/");
+        bool mustQuote = value.Length == 0 || value.Any(NeedsQuoting);
+        if (!mustQuote)
+            return value;
 
-        // Remove duplicated separators
-        normalizedPath = Regex.Replace(normalizedPath, @"//+", "/");
+        var sb = new StringBuilder(value.Length + 8);
 
-        // Remove ./ prefix(es)
-        while (normalizedPath.StartsWith("./"))
-            normalizedPath = normalizedPath[2..];
-        if (normalizedPath == string.Empty)
-            return ".";
+        if (!unquoted)
+            sb.Append('"');
 
-        // Remove /. suffix(es)
-        while (normalizedPath.EndsWith("/."))
-            normalizedPath = normalizedPath[..^2];
-        if (normalizedPath == string.Empty)
-            return "/";
+        foreach (char c in value)
+            sb.Append(c switch
+            {
+                '\\' => "\\\\", // backslash
+                '\"' => "\\\"", // quote
+                '\n' => "\\n",  // newline
+                '\r' => "\\r",  // carriage return
+                '\t' => "\\t",  // tab
+                // commented out for now since it conflicts with TranslateMSBuildMacros
+                //'$' => "\\$",   // prevent ${VAR} expansion
+                _ => c.ToString()
+            });  
 
-        // Remove unnecessary path components
-        normalizedPath = normalizedPath.Replace("/./", "/");
+        if (!unquoted)
+            sb.Append('"');
 
-        // Remove trailing separator
-        if (normalizedPath.EndsWith('/') && normalizedPath != "/")
-            normalizedPath = normalizedPath[..^1];
-
-        return normalizedPath;
+        return sb.ToString();
     }
 
     static string PrependRelativePathsWithCMakeCurrentSourceDir(string normalizedPath)
@@ -167,73 +172,6 @@ class CMakeGenerator
                 return "${CMAKE_CURRENT_SOURCE_DIR}/" + normalizedPath;
         else
             return normalizedPath;
-    }
-
-    string TranslateMSBuildMacros(string value)
-    {
-        string translatedValue = value;
-        translatedValue = Regex.Replace(translatedValue, @"\$\(Configuration(Name)?\)", "${CMAKE_BUILD_TYPE}/");
-        translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectDir\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/");
-        translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectName\)", "${PROJECT_NAME}");
-        translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/");
-        translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionName\)", "${CMAKE_PROJECT_NAME}");
-
-        if (Regex.IsMatch(translatedValue, @"\$\([A-Za-z0-9_]+\)"))
-        {
-            logger.LogWarning($"Value contains unsupported MSBuild macros/properties: {value}");
-        }
-
-        translatedValue = Regex.Replace(translatedValue, @"\$\(([A-Za-z0-9_]+)\)", "${$1}");
-
-        return translatedValue;
-    }
-
-    CMakeProject[] OrderProjectsByDependencies(IEnumerable<CMakeProject> projects)
-    {
-        List<CMakeProject> orderedProjects = [];
-        List<CMakeProject> unorderedProjects = projects.OrderBy(p => p.AbsoluteProjectPath).ToList();
-
-        while (unorderedProjects.Count > 0)
-        {
-            var projectWithAllDependenciesSatisfied = unorderedProjects
-                .FirstOrDefault(project => project.ProjectReferences.All(p => orderedProjects.Any(p2 => p2.AbsoluteProjectPath == p.Project!.AbsoluteProjectPath)));
-
-            if (projectWithAllDependenciesSatisfied != null)
-            {
-                orderedProjects.Add(projectWithAllDependenciesSatisfied);
-                unorderedProjects.Remove(projectWithAllDependenciesSatisfied);
-            }
-            else
-            {
-                StringBuilder sb = new StringBuilder();
-                sb.AppendLine("Could not determine project dependency tree");
-
-                foreach (var project in unorderedProjects)
-                {
-                    sb.AppendLine($"Project {project.ProjectName}");
-                    foreach (var missingReference in project.ProjectReferences.Where(pr =>
-                                 orderedProjects.All(p => p.AbsoluteProjectPath != pr.Project!.AbsoluteProjectPath)))
-                    {
-                        sb.AppendLine($"  missing dependency {missingReference.Path}");
-                    }
-                }
-
-                logger.LogError(sb.ToString());
-
-                throw new CatastrophicFailureException("Could not determine project dependency tree");
-            }
-        }
-
-        return orderedProjects.ToArray();
-    }
-
-    CMakeProjectReference[] OrderProjectReferencesByDependencies(IEnumerable<CMakeProjectReference> projectReferences, IEnumerable<CMakeProject>? allProjects = null)
-    {
-        var orderedProjects = OrderProjectsByDependencies(allProjects ?? projectReferences.Select(pr => pr.Project!));
-
-        return projectReferences
-            .OrderBy(pr => Array.FindIndex(orderedProjects, p => p.AbsoluteProjectPath == pr.Project!.AbsoluteProjectPath))
-            .ToArray();
     }
 }
 

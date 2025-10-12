@@ -22,8 +22,11 @@ public partial class ConverterTests
                         <Platform>Win32</Platform>
                     </ProjectConfiguration>
                 </ItemGroup>
-                <PropertyGroup>
-                    <ConfigurationType>Application</ConfigurationType>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
                 </PropertyGroup>
                 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
                     <ClCompile>
@@ -63,7 +66,12 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
 
             if (expected != null)
-                Assert.Contains($"target_compile_features(Project PUBLIC {expected})", cmake);
+                Assert.Contains($"""
+                    target_compile_features(Project
+                        PUBLIC
+                            {expected}
+                    )
+                    """, cmake);
             else
                 Assert.DoesNotContain("target_compile_features", cmake);
         }
@@ -89,7 +97,12 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
 
             if (expected != null)
-                Assert.Contains($"target_compile_features(Project PUBLIC {expected})", cmake);
+                Assert.Contains($"""
+                    target_compile_features(Project
+                        PUBLIC
+                            {expected}
+                    )
+                    """, cmake);
             else
                 Assert.DoesNotContain("target_compile_features", cmake);
         }
@@ -108,7 +121,13 @@ public partial class ConverterTests
                 projectFiles: [new(@"Project.vcxproj")]);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
-            Assert.Contains("target_compile_features(Project PUBLIC cxx_std_17 c_std_11)", cmake);
+            Assert.Contains("""
+                target_compile_features(Project
+                    PUBLIC
+                        cxx_std_17
+                        c_std_11
+                )
+                """, cmake);
         }
 
         [Fact]
@@ -172,7 +191,7 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
-            var ex = Assert.Throws<ScriptRuntimeException>(() =>
+            var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
                     projectFiles: [new(@"Project.vcxproj")]));
 
@@ -189,7 +208,7 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
-            var ex = Assert.Throws<ScriptRuntimeException>(() =>
+            var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
                     projectFiles: [new(@"Project.vcxproj")]));
 

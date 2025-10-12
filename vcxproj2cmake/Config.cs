@@ -10,19 +10,19 @@ record Config(Regex MSBuildProjectConfigPattern, string CMakeExpression)
     [
         new Config(new(@"^Debug\|"), "$<$<CONFIG:Debug>:{0}>"),
         new Config(new(@"^Release\|"), "$<$<CONFIG:Release>:{0}>"),
-        new Config(new(@"\|(Win32|x86)$"), "$<$<STREQUAL:$<CMAKE_CXX_COMPILER_ARCHITECTURE_ID>,X86>:{0}>"),
-        new Config(new(@"\|x64$"), "$<$<STREQUAL:$<CMAKE_CXX_COMPILER_ARCHITECTURE_ID>,x64>:{0}>"),
-        new Config(new(@"\|ARM32$"), "$<$<STREQUAL:$<CMAKE_CXX_COMPILER_ARCHITECTURE_ID>,ARM>:{0}>"),
-        new Config(new(@"\|ARM64$"), "$<$<STREQUAL:$<CMAKE_CXX_COMPILER_ARCHITECTURE_ID>,ARM64>:{0}>")
+        new Config(new(@"\|(Win32|x86)$"), "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:{0}>"),
+        new Config(new(@"\|x64$"), "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:{0}>"),
+        new Config(new(@"\|ARM32$"), "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},ARMV7>:{0}>"),
+        new Config(new(@"\|ARM64$"), "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},ARM64>:{0}>")
     ];
 
-    public bool MatchesProjectConfigName(string projectConfig)
+    public bool MatchesProjectConfig(MSBuildProjectConfig projectConfig)
     {
-        return MSBuildProjectConfigPattern.IsMatch(projectConfig);
+        return MSBuildProjectConfigPattern.IsMatch(projectConfig.Name);
     }
 
-    public static bool IsMSBuildProjectConfigNameSupported(string projectConfig)
+    public static bool IsMSBuildProjectConfigSupported(MSBuildProjectConfig projectConfig)
     {
-        return Regex.IsMatch(projectConfig, @"^(Debug|Release)\|(Win32|x86|x64|ARM32|ARM64)$");
+        return Regex.IsMatch(projectConfig.Name, @"^(Debug|Release)\|(Win32|x86|x64|ARM32|ARM64)$");
     }
 }

@@ -8,9 +8,16 @@ record CMakeConfigDependentSetting
     public string SettingName { get; }
     public string DefaultValue { get; }
 
+    public CMakeConfigDependentSetting(string settingName, string defaultValue)
+    {
+        Values = [];
+        SettingName = settingName;
+        DefaultValue = defaultValue;
+    }
+
     public CMakeConfigDependentSetting(
         MSBuildConfigDependentSetting<string> settings,
-        IEnumerable<string> projectConfigurations,
+        IEnumerable<MSBuildProjectConfig> projectConfigurations,
         ILogger logger)
     {
         if (settings.Values.Count == 0)
@@ -21,7 +28,7 @@ record CMakeConfigDependentSetting
             return;
         }
 
-        var effectiveSettings = new Dictionary<string, string>(settings.Values);
+        var effectiveSettings = new Dictionary<MSBuildProjectConfig, string>(settings.Values);
         foreach (var config in projectConfigurations)
             if (!effectiveSettings.ContainsKey(config))
                 effectiveSettings[config] = settings.DefaultValue;
@@ -33,7 +40,7 @@ record CMakeConfigDependentSetting
         string? FilterByConfig(Config config)
         {
             return allSettingValues
-                .Where(s => effectiveSettings.All(kvp => config.MatchesProjectConfigName(kvp.Key) == (kvp.Value == s)))
+                .Where(s => effectiveSettings.All(kvp => config.MatchesProjectConfig(kvp.Key) == (kvp.Value == s)))
                 .FirstOrDefault(s => s != commonSettingValue);
         }
 
@@ -60,12 +67,17 @@ record CMakeConfigDependentSetting
             logger.LogWarning($"The following values for setting {settings.SettingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings)}");
     }
 
-    public string? GetValue(string projectConfig)
+    public string? GetValue(MSBuildProjectConfig projectConfig)
     {
-        var config = Config.Configs.SingleOrDefault(config => config.MatchesProjectConfigName(projectConfig) && Values.ContainsKey(config));
+        var config = Config.Configs.SingleOrDefault(config => config.MatchesProjectConfig(projectConfig) && Values.ContainsKey(config));
         if (config != null)
             return Values[config];        
         return Values.GetValueOrDefault(Config.CommonConfig);
+    }
+
+    public string ToCMakeExpression()
+    {
+        return string.Join(string.Empty, Values.Select(kvp => kvp.Key.CMakeExpression.Replace("{0}", kvp.Value)));
     }
 
     public bool IsEmpty => Values.Count == 0;
@@ -77,9 +89,16 @@ record CMakeConfigDependentMultiSetting
     public string SettingName { get; }
     public string[] DefaultValue { get; }
 
+    public CMakeConfigDependentMultiSetting(string settingName, string[] defaultValue)
+    {
+        Values = [];
+        SettingName = settingName;
+        DefaultValue = defaultValue;
+    }
+
     public CMakeConfigDependentMultiSetting(
         MSBuildConfigDependentSetting<string[]> settings,
-        IEnumerable<string> projectConfigurations,
+        IEnumerable<MSBuildProjectConfig> projectConfigurations,
         ILogger logger)
     {
         if (settings.Values.Count == 0)
@@ -90,7 +109,7 @@ record CMakeConfigDependentMultiSetting
             return;
         }
 
-        var effectiveSettings = new Dictionary<string, string[]>(settings.Values);
+        var effectiveSettings = new Dictionary<MSBuildProjectConfig, string[]>(settings.Values);
         foreach (var config in projectConfigurations)
             if (!effectiveSettings.ContainsKey(config))
                 effectiveSettings[config] = settings.DefaultValue;
@@ -102,7 +121,7 @@ record CMakeConfigDependentMultiSetting
         string[] FilterByConfig(Config config)
         {
             return allSettingValues
-                .Where(s => effectiveSettings.All(kvp => config.MatchesProjectConfigName(kvp.Key) == kvp.Value.Contains(s)))
+                .Where(s => effectiveSettings.All(kvp => config.MatchesProjectConfig(kvp.Key) == kvp.Value.Contains(s)))
                 .Except(commonSettingValues)
                 .ToArray();
         }
@@ -131,13 +150,26 @@ record CMakeConfigDependentMultiSetting
             logger.LogWarning($"The following values for setting {settings.SettingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings)}");
     }
 
-    public string[] GetValue(string projectConfig)
+    public void AppendValue(Config config, string value)
+    {
+        if (!Values.ContainsKey(config))
+            Values[config] = [value];
+        else
+            Values[config] = [.. Values[config], value];
+    }
+
+    public string[] GetValue(MSBuildProjectConfig projectConfig)
     {
         return new[] { Config.CommonConfig }
             .Concat(Config.Configs)
-            .Where(config => config.MatchesProjectConfigName(projectConfig) && Values.ContainsKey(config))
+            .Where(config => config.MatchesProjectConfig(projectConfig) && Values.ContainsKey(config))
             .SelectMany(config => Values[config])
             .ToArray();
+    }
+
+    public string ToCMakeExpression()
+    {
+        return string.Join(' ', Values.SelectMany(kvp => kvp.Value.Select(value => kvp.Key.CMakeExpression.Replace("{0}", value))));
     }
 
     public bool IsEmpty => Values.Count == 0;

@@ -29,6 +29,12 @@ public partial class ConverterTests
                             <Platform>Win32</Platform>
                         </ProjectConfiguration>
                     </ItemGroup>
+                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                        <UseDebugLibraries>true</UseDebugLibraries>
+                    </PropertyGroup>
+                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                        <UseDebugLibraries>false</UseDebugLibraries>
+                    </PropertyGroup>
                     <PropertyGroup>
                         <ConfigurationType>{configurationType}</ConfigurationType>
                     </PropertyGroup>
@@ -62,7 +68,7 @@ public partial class ConverterTests
             converter.Convert(solutionFile: new("Solution.sln"));
 
             AssertEx.FileHasContent("CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.24)
                 project(Solution)
 
                 add_subdirectory(LibC)
@@ -99,7 +105,7 @@ public partial class ConverterTests
             converter.Convert(solutionFile: new("Branching.sln"));
 
             AssertEx.FileHasContent("CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.24)
                 project(Branching)
 
                 add_subdirectory(LibC)

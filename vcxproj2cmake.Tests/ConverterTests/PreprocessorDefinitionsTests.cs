@@ -22,11 +22,15 @@ public partial class ConverterTests
                     </ProjectConfiguration>
                 </ItemGroup>
                 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <ConfigurationType>Application</ConfigurationType>
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
                     <CharacterSet>NotSet</CharacterSet>
                 </PropertyGroup>
                 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <ConfigurationType>Application</ConfigurationType>
                     <CharacterSet>NotSet</CharacterSet>
                 </PropertyGroup>
                 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -56,11 +60,15 @@ public partial class ConverterTests
                     </ProjectConfiguration>
                 </ItemGroup>
                 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <ConfigurationType>Application</ConfigurationType>
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
                     <CharacterSet>MultiByte</CharacterSet>
                 </PropertyGroup>
                 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <ConfigurationType>Application</ConfigurationType>
                     <CharacterSet>MultiByte</CharacterSet>
                 </PropertyGroup>
                 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -90,11 +98,15 @@ public partial class ConverterTests
                     </ProjectConfiguration>
                 </ItemGroup>
                 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <ConfigurationType>Application</ConfigurationType>
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
                     <CharacterSet>InvalidCharSet</CharacterSet>
                 </PropertyGroup>
                 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <ConfigurationType>Application</ConfigurationType>
                     <CharacterSet>InvalidCharSet</CharacterSet>
                 </PropertyGroup>
             </Project>
@@ -114,10 +126,10 @@ public partial class ConverterTests
                     </ProjectConfiguration>
                 </ItemGroup>
                 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <ConfigurationType>Application</ConfigurationType>
+                    <UseDebugLibraries>true</UseDebugLibraries>
                 </PropertyGroup>
                 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-                    <ConfigurationType>Application</ConfigurationType>
+                    <UseDebugLibraries>true</UseDebugLibraries>
                 </PropertyGroup>
                 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
                     <ClCompile>
@@ -146,7 +158,7 @@ public partial class ConverterTests
                 projectFiles: [new(@"Project.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.24)
                 project(Project)
 
 
@@ -178,7 +190,7 @@ public partial class ConverterTests
                 projectFiles: [new(@"ProjectMBCS.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.24)
                 project(ProjectMBCS)
 
 
@@ -225,17 +237,21 @@ public partial class ConverterTests
                 projectFiles: [new(@"ProjectArch.vcxproj")]);
 
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.13)
+                cmake_minimum_required(VERSION 3.24)
                 project(ProjectArch)
 
 
                 add_executable(ProjectArch
                 )
 
+                set_target_properties(ProjectArch PROPERTIES
+                    MSVC_RUNTIME_LIBRARY MultiThreadedDebugDLL
+                )
+
                 target_compile_definitions(ProjectArch
                     PUBLIC
-                        $<$<STREQUAL:$<CMAKE_CXX_COMPILER_ARCHITECTURE_ID>,X86>:X86_DEF>
-                        $<$<STREQUAL:$<CMAKE_CXX_COMPILER_ARCHITECTURE_ID>,x64>:X64_DEF>
+                        $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:X86_DEF>
+                        $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:X64_DEF>
                 )
                 """);
         }

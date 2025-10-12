@@ -16,25 +16,25 @@ internal class TestData
             </ProjectConfiguration>
             </ItemGroup>
             <PropertyGroup Label="Globals">
-            <VCProjectVersion>17.0</VCProjectVersion>
-            <Keyword>Win32Proj</Keyword>
-            <ProjectGuid>{620c346a-996a-4c2b-8485-4a872433008b}</ProjectGuid>
-            <RootNamespace>EmptyProject</RootNamespace>
-            <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+                <VCProjectVersion>17.0</VCProjectVersion>
+                <Keyword>Win32Proj</Keyword>
+                <ProjectGuid>{620c346a-996a-4c2b-8485-4a872433008b}</ProjectGuid>
+                <RootNamespace>EmptyProject</RootNamespace>
+                <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
             </PropertyGroup>
             <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
             <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-            <ConfigurationType>Application</ConfigurationType>
-            <UseDebugLibraries>true</UseDebugLibraries>
-            <PlatformToolset>v143</PlatformToolset>
-            <CharacterSet>Unicode</CharacterSet>
+                <ConfigurationType>Application</ConfigurationType>
+                <UseDebugLibraries>true</UseDebugLibraries>
+                <PlatformToolset>v143</PlatformToolset>
+                <CharacterSet>Unicode</CharacterSet>
             </PropertyGroup>
             <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-            <ConfigurationType>Application</ConfigurationType>
-            <UseDebugLibraries>false</UseDebugLibraries>
-            <PlatformToolset>v143</PlatformToolset>
-            <WholeProgramOptimization>true</WholeProgramOptimization>
-            <CharacterSet>Unicode</CharacterSet>
+                <ConfigurationType>Application</ConfigurationType>
+                <UseDebugLibraries>false</UseDebugLibraries>
+                <PlatformToolset>v143</PlatformToolset>
+                <WholeProgramOptimization>true</WholeProgramOptimization>
+                <CharacterSet>Unicode</CharacterSet>
             </PropertyGroup>
             <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
             <ImportGroup Label="ExtensionSettings">
@@ -49,30 +49,30 @@ internal class TestData
             </ImportGroup>
             <PropertyGroup Label="UserMacros" />
             <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-            <ClCompile>
-                <WarningLevel>Level3</WarningLevel>
-                <SDLCheck>true</SDLCheck>
-                <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-                <ConformanceMode>true</ConformanceMode>
-            </ClCompile>
-            <Link>
-                <SubSystem>Console</SubSystem>
-                <GenerateDebugInformation>true</GenerateDebugInformation>
-            </Link>
+                <ClCompile>
+                    <WarningLevel>Level3</WarningLevel>
+                    <SDLCheck>true</SDLCheck>
+                    <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+                    <ConformanceMode>true</ConformanceMode>
+                </ClCompile>
+                <Link>
+                    <SubSystem>Console</SubSystem>
+                    <GenerateDebugInformation>true</GenerateDebugInformation>
+                </Link>
             </ItemDefinitionGroup>
             <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-            <ClCompile>
-                <WarningLevel>Level3</WarningLevel>
-                <FunctionLevelLinking>true</FunctionLevelLinking>
-                <IntrinsicFunctions>true</IntrinsicFunctions>
-                <SDLCheck>true</SDLCheck>
-                <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-                <ConformanceMode>true</ConformanceMode>
-            </ClCompile>
-            <Link>
-                <SubSystem>Console</SubSystem>
-                <GenerateDebugInformation>true</GenerateDebugInformation>
-            </Link>
+                <ClCompile>
+                    <WarningLevel>Level3</WarningLevel>
+                    <FunctionLevelLinking>true</FunctionLevelLinking>
+                    <IntrinsicFunctions>true</IntrinsicFunctions>
+                    <SDLCheck>true</SDLCheck>
+                    <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+                    <ConformanceMode>true</ConformanceMode>
+                </ClCompile>
+                <Link>
+                    <SubSystem>Console</SubSystem>
+                    <GenerateDebugInformation>true</GenerateDebugInformation>
+                </Link>
             </ItemDefinitionGroup>
             <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
             <ImportGroup Label="ExtensionTargets">
@@ -80,7 +80,7 @@ internal class TestData
         </Project>
         """;
 
-    public static string CreateProject(string projectName, string configurationType = "Application", string? projectReference = null) => $"""
+    public static string CreateProject(string projectName, string configurationType = "Application", string? projectReference = null, string? targetName = null) => $"""
         <?xml version="1.0" encoding="utf-8"?>
         <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
             <ItemGroup Label="ProjectConfigurations">
@@ -93,8 +93,17 @@ internal class TestData
                     <Platform>Win32</Platform>
                 </ProjectConfiguration>
             </ItemGroup>
+            <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                <UseDebugLibraries>true</UseDebugLibraries>
+            </PropertyGroup>
+            <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                <UseDebugLibraries>false</UseDebugLibraries>
+            </PropertyGroup>
             <PropertyGroup>
                 <ConfigurationType>{configurationType}</ConfigurationType>
+            {(targetName != null ? $"""
+                <TargetName>{targetName}</TargetName>
+            """ : string.Empty)}
             </PropertyGroup>
             {(projectReference != null ? $"""
             <ItemGroup>

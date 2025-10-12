@@ -21,8 +21,11 @@ public partial class ConverterTests
                         <Platform>Win32</Platform>
                     </ProjectConfiguration>
                 </ItemGroup>
-                <PropertyGroup>
-                    <ConfigurationType>Application</ConfigurationType>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
                 </PropertyGroup>
                 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
                     <ClCompile>
@@ -100,27 +103,6 @@ public partial class ConverterTests
                     PUBLIC
                         /we4800
                         /we4801
-                )
-                """.TrimEnd(), cmake);
-        }
-
-        [Fact]
-        public void Given_TreatWarningAsError_When_Converted_Then_WxOptionIsWritten()
-        {
-            var fileSystem = new MockFileSystem();
-            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
-
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("TreatWarningAsError", "true", "true")));
-
-            var converter = new Converter(fileSystem, NullLogger.Instance);
-            converter.Convert(
-                projectFiles: [new(@"Project.vcxproj")]);
-
-            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
-            Assert.Contains("""
-                target_compile_options(Project
-                    PUBLIC
-                        /WX
                 )
                 """.TrimEnd(), cmake);
         }

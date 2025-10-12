@@ -1,10 +1,10 @@
-﻿cmake_minimum_required(VERSION 3.13)
-project({{ solution_name }})
+﻿cmake_minimum_required(VERSION 3.24)
+project({{ solution_name | literal }})
 
 {{~ for project_ref in projects | order_project_references_by_dependencies ~}}
-add_subdirectory({{ project_ref.path | get_directory_name | normalize_path }}
+add_subdirectory({{ project_ref.path | get_directory_name | normalize_path | literal }}
 {{- if !solution_is_top_level ~}}
- "${CMAKE_BINARY_DIR}/{{ project_ref.project.project_name }}"
+ "${CMAKE_BINARY_DIR}/{{ project_ref.project.project_name | unquoted_literal }}"
 {{- end -}}
 )
 {{~ end ~}}

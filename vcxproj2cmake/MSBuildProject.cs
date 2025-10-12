@@ -10,12 +10,13 @@ class MSBuildProject
 {
     public required string AbsoluteProjectPath { get; init; }
     public required string ProjectName { get; init; }
-    public required string[] ProjectConfigurations { get; init; }
+    public required MSBuildProjectConfig[] ProjectConfigurations { get; init; }
     public required string ConfigurationType { get; init; }
     public required string LanguageStandard { get; init; }
     public required string LanguageStandardC { get; init; }
     public required string[] SourceFiles { get; init; }
     public required string[] HeaderFiles { get; init; }
+    public required MSBuildConfigDependentSetting<string> TargetName { get; init; }
     public required MSBuildConfigDependentSetting<string[]> AdditionalIncludeDirectories { get; init; }
     public required MSBuildConfigDependentSetting<string[]> PublicIncludeDirectories { get; init; }
     public required MSBuildConfigDependentSetting<string[]> AdditionalLibraryDirectories { get; init; }
@@ -23,6 +24,7 @@ class MSBuildProject
     public required MSBuildConfigDependentSetting<string[]> PreprocessorDefinitions { get; init; }
     public required MSBuildConfigDependentSetting<string[]> AdditionalOptions { get; init; }
     public required MSBuildConfigDependentSetting<string> CharacterSet { get; init; }
+    public required MSBuildConfigDependentSetting<string> RuntimeLibrary { get; init; }
     public required MSBuildConfigDependentSetting<string[]> DisableSpecificWarnings { get; init; }
     public required MSBuildConfigDependentSetting<string[]> TreatSpecificWarningsAsErrors { get; init; }
     public required MSBuildConfigDependentSetting<string> TreatWarningAsError { get; init; }
@@ -60,16 +62,8 @@ class MSBuildProject
             projectElement.ItemGroups
                 .SelectMany(g => g.Items.Where(i => i.ItemType == "ProjectConfiguration"))
                 .Select(i => PathUtils.NormalizePathSeparators(i.Include.Trim()))
+                .Select(config => new MSBuildProjectConfig(config))
                 .ToList();
-
-        var configurationType =
-            projectElement.PropertyGroups
-                .SelectMany(g => g.Properties.Where(p => p.Name == "ConfigurationType"))
-                .Select(p => p.Value.Trim())
-                .Distinct()
-                .SingleWithException(() =>
-                    throw new CatastrophicFailureException(
-                        "Configuration type is absent or inconsistent between configurations"));
 
         var sourceFiles =
             projectElement.ItemGroups
@@ -135,9 +129,9 @@ class MSBuildProject
             .SelectMany(g => g.Items)
             .Any(i => i.ItemType == "QtRcc");
 
-        Dictionary<string, Dictionary<string, string>> compilerSettings = [];
-        Dictionary<string, Dictionary<string, string>> linkerSettings = [];
-        Dictionary<string, Dictionary<string, string>> otherSettings = [];
+        Dictionary<string, Dictionary<MSBuildProjectConfig, string>> compilerSettings = [];
+        Dictionary<string, Dictionary<MSBuildProjectConfig, string>> linkerSettings = [];
+        Dictionary<string, Dictionary<MSBuildProjectConfig, string>> otherSettings = [];
 
         foreach (var projectConfig in projectConfigurations)
         {
@@ -145,14 +139,14 @@ class MSBuildProject
                 projectElement.ItemDefinitionGroups
                     .Where(group => string.IsNullOrEmpty(group.Condition) ||
                                     Regex.IsMatch(group.Condition!,
-                                        $@"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'{Regex.Escape(projectConfig)}'"))
+                                        $@"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'{Regex.Escape(projectConfig.Name)}'"))
                     .ToList();
 
             var propertyGroups =
                 projectElement.PropertyGroups
                     .Where(group => string.IsNullOrEmpty(group.Condition) ||
                                     Regex.IsMatch(group.Condition!,
-                                        $@"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'{Regex.Escape(projectConfig)}'"))
+                                        $@"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'{Regex.Escape(projectConfig.Name)}'"))
                     .ToList();
 
             var projectConfigCompilerSettings =
@@ -191,9 +185,11 @@ class MSBuildProject
             }
         }
 
+        var configurationType = GetCommonSetting("ConfigurationType", otherSettings) ?? "Application";
         var languageStandard = GetCommonSetting("LanguageStandard", compilerSettings) ?? "Default";
         var languageStandardC = GetCommonSetting("LanguageStandard_C", compilerSettings) ?? "Default";
 
+        var targetName = ParseSetting("TargetName", otherSettings, Path.GetFileNameWithoutExtension(projectPath));
         var additionalIncludeDirectories = ParseMultiSetting("AdditionalIncludeDirectories", ';', compilerSettings, []);
         var publicIncludeDirectories = ParseMultiSetting("PublicIncludeDirectories", ';', otherSettings, []);
         var additionalLibraryDirectories = ParseMultiSetting("AdditionalLibraryDirectories", ';', linkerSettings, []);
@@ -201,6 +197,13 @@ class MSBuildProject
         var preprocessorDefinitions = ParseMultiSetting("PreprocessorDefinitions", ';', compilerSettings, []);
         var additionalOptions = ParseMultiSetting("AdditionalOptions", ' ', compilerSettings, []);
         var characterSet = ParseSetting("CharacterSet", otherSettings, "NotSet");
+        var useDebugLibraries = ParseSetting("UseDebugLibraries", otherSettings, "false");
+        var runtimeLibrary = ParseSettingWithConfigSpecificDefault("RuntimeLibrary", compilerSettings, new(projectConfig => {
+            if (useDebugLibraries.GetEffectiveValue(projectConfig) == "true")
+                return "MultiThreadedDebugDLL";
+            else
+                return "MultiThreadedDLL";
+        }));
         var disableSpecificWarnings = ParseMultiSetting("DisableSpecificWarnings", ';', compilerSettings, []);
         var treatSpecificWarningsAsErrors = ParseMultiSetting("TreatSpecificWarningsAsErrors", ';', compilerSettings, []);
         var treatWarningAsError = ParseSetting("TreatWarningAsError", compilerSettings, "false");
@@ -234,6 +237,7 @@ class MSBuildProject
             LanguageStandardC = languageStandardC,
             SourceFiles = sourceFiles.ToArray(),
             HeaderFiles = headerFiles.ToArray(),
+            TargetName = targetName,
             AdditionalIncludeDirectories = additionalIncludeDirectories,
             PublicIncludeDirectories = publicIncludeDirectories,
             AdditionalLibraryDirectories = additionalLibraryDirectories,
@@ -241,6 +245,7 @@ class MSBuildProject
             PreprocessorDefinitions = preprocessorDefinitions,
             AdditionalOptions = additionalOptions,
             CharacterSet = characterSet,
+            RuntimeLibrary = runtimeLibrary,
             DisableSpecificWarnings = disableSpecificWarnings,
             TreatSpecificWarningsAsErrors = treatSpecificWarningsAsErrors,
             TreatWarningAsError = treatWarningAsError,
@@ -261,7 +266,7 @@ class MSBuildProject
             ConanPackages = conanPackages!
         };
 
-        string? GetCommonSetting(string property, Dictionary<string, Dictionary<string, string>> settings)
+        string? GetCommonSetting(string property, Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings)
         {
             return settings.GetValueOrDefault(property)?.Values
                 .Distinct()
@@ -270,16 +275,30 @@ class MSBuildProject
 
         MSBuildConfigDependentSetting<string> ParseSetting(
             string property,
-            Dictionary<string, Dictionary<string, string>> settings,
+            Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings,
             string defaultValue)
         {
             return new(property, defaultValue, settings.GetValueOrDefault(property, []), value => value);
         }
 
+        MSBuildConfigDependentSetting<string> ParseSettingWithConfigSpecificDefault(
+            string property,
+            Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings,
+            Func<MSBuildProjectConfig, string> defaultValueForConfig)
+        {
+            var settingsForProperty = settings.GetValueOrDefault(property, []).ToDictionary();
+
+            foreach (var projectConfig in projectConfigurations)            
+                if (!settingsForProperty.ContainsKey(projectConfig))                
+                    settingsForProperty[projectConfig] = defaultValueForConfig(projectConfig);
+
+            return new(property, string.Empty, settingsForProperty, value => value);
+        }
+
         MSBuildConfigDependentSetting<string[]> ParseMultiSetting(
             string property,
             char separator,
-            Dictionary<string, Dictionary<string, string>> settings,
+            Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings,
             string[] defaultValue)
         {
             var parser = (string value) =>
