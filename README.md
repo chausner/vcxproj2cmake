@@ -14,7 +14,7 @@
 
 ## Features
 
-* Accepts either a list of `.vcxproj` project files or a `.sln` solution file as input.
+* Accepts either a list of `.vcxproj` project files or Visual Studio solution files (`.sln`/`.slnx`) as input.
 * Supports console, Win32, Dynamic-Link Library (DLL), and Static Library project types.
   Includes detection of header-only libraries.
 * Leverages CMake generator expressions for property values that are specific to certain build configurations (Debug, Release, Win32, x64).
@@ -77,14 +77,14 @@ This will generate a `CMakeLists.txt` file for each specified project in their r
 
 #### Solution File
 
-If you have a `.sln` solution file, you can convert all projects in the solution by running:
+If you have a Visual Studio solution file (`.sln` or `.slnx`), you can convert all projects in the solution by running:
 
 ```
 .\vcxproj2cmake --solution MySolution.sln
 ```
 
 This will generate a `CMakeLists.txt` file for each project next to the `.vcxproj` file,
-as well as a top-level `CMakeLists.txt` file in the same directory as the `.sln` file.
+as well as a top-level `CMakeLists.txt` file in the same directory as the solution file.
 
 ### Customizing Output
 

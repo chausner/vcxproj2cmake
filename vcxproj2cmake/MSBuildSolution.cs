@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.VisualStudio.SolutionPersistence.Serializer;
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 
@@ -15,20 +16,30 @@ class MSBuildSolution
         logger.LogInformation($"Parsing {solutionPath}");
 
         var projectPaths = new List<string>();
-        var regex = new Regex(@"Project\(.*?\) = .*?, ""(.*?)""");
+        var extension = Path.GetExtension(solutionPath);
 
-        foreach (var line in fileSystem.File.ReadLines(solutionPath))
+        if (extension.Equals(".sln", StringComparison.OrdinalIgnoreCase))
         {
-            var match = regex.Match(line);
-            if (!match.Success)
-                continue;
+            var regex = new Regex(@"Project\(.*?\) = .*?, ""(.*?)""");
 
-            var projectFilePath = PathUtils.NormalizePathSeparators(match.Groups[1].Value);
-            if (projectFilePath.EndsWith(".vcxproj", StringComparison.OrdinalIgnoreCase))
-                projectPaths.Add(projectFilePath);
-            else
-                logger.LogWarning($"Ignoring non-vcxproj project: {projectFilePath}");
+            foreach (var line in fileSystem.File.ReadLines(solutionPath))
+            {
+                var match = regex.Match(line);
+                if (!match.Success)
+                    continue;
+
+                AddProject(match.Groups[1].Value);
+            }
         }
+        else if (extension.Equals(".slnx", StringComparison.OrdinalIgnoreCase))
+        {
+            using var stream = fileSystem.File.OpenRead(solutionPath);
+            var solutionModel = SolutionSerializers.SlnXml.OpenAsync(stream, CancellationToken.None).GetAwaiter().GetResult();
+            foreach (var project in solutionModel.SolutionProjects)
+                AddProject(project.FilePath);
+        }
+        else
+            throw new CatastrophicFailureException($"Unsupported solution file format: {extension}. Only .sln or .slnx are supported.");
 
         return new MSBuildSolution
         {
@@ -36,5 +47,14 @@ class MSBuildSolution
             SolutionName = Path.GetFileNameWithoutExtension(solutionPath),
             Projects = projectPaths.ToArray()
         };
+
+        void AddProject(string projectFilePath)
+        {
+            var normalizedPath = PathUtils.NormalizePathSeparators(projectFilePath);
+            if (normalizedPath.EndsWith(".vcxproj", StringComparison.OrdinalIgnoreCase))
+                projectPaths.Add(normalizedPath);
+            else
+                logger.LogWarning($"Ignoring non-vcxproj project: {normalizedPath}");
+        }
     }
 }
