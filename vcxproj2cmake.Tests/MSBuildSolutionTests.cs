@@ -8,7 +8,7 @@ public class MSBuildSolutionTests
     public class ParseSolutionFileTests
     {
         [Fact]
-        public void GivenEmptySolution_ThenParsesSolutionCorrectly()
+        public void GivenEmptySlnSolution_ThenParsesSolutionCorrectly()
         {
             // Arrange
             var fileSystem = new MockFileSystem();
@@ -27,7 +27,7 @@ public class MSBuildSolutionTests
         }
 
         [Fact]
-        public void GivenNonEmptySolution_ThenParsesSolutionCorrectly()
+        public void GivenSlnSolutionWithProjects_ThenParsesSolutionCorrectly()
         {
             // Arrange
             var fileSystem = new MockFileSystem();
@@ -52,7 +52,7 @@ public class MSBuildSolutionTests
         }
 
         [Fact]
-        public void GivenSolutionWithNonVcxprojProject_ThenIgnoresItAndLogsWarning()
+        public void GivenSlnSolutionWithNonVcxprojProject_ThenIgnoresItAndLogsWarning()
         {
             // Arrange
             var fileSystem = new MockFileSystem();
@@ -67,6 +67,75 @@ public class MSBuildSolutionTests
 
             // Act
             var solution = MSBuildSolution.ParseSolutionFile("Test.sln", fileSystem, logger);
+
+            // Assert
+            Assert.Single(solution.Projects);
+            Assert.Equal(Path.Combine("Project1", "Project1.vcxproj"), solution.Projects[0]);
+            Assert.Contains($"Ignoring non-vcxproj project: {Path.Combine("CSharpProject", "CSharpProject.csproj")}", logger.Messages);
+        }
+
+        [Fact]
+        public void GivenEmptySlnxSolution_ThenParsesSolutionCorrectly()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            var logger = new InMemoryLogger();
+            fileSystem.AddFile(@"Empty.slnx", new("""
+                <Solution />
+                """));
+
+            // Act
+            var solution = MSBuildSolution.ParseSolutionFile("Empty.slnx", fileSystem, logger);
+
+            // Assert
+            Assert.Equal(Path.GetFullPath("Empty.slnx"), solution.AbsoluteSolutionPath);
+            Assert.Equal("Empty", solution.SolutionName);
+            Assert.Empty(solution.Projects);
+        }
+
+        [Fact]
+        public void GivenSlnxSolutionWithProjects_ThenParsesSolutionCorrectly()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            var logger = new InMemoryLogger();
+            fileSystem.AddFile(@"Test.slnx", new("""
+                <Solution>
+                  <Folder Name="/Projects/">
+                    <Project Path="Project1\Project1.vcxproj" />
+                    <Project Path="Project2\Project2.vcxproj" />
+                  </Folder>
+                </Solution>
+                """));
+
+            // Act
+            var solution = MSBuildSolution.ParseSolutionFile("Test.slnx", fileSystem, logger);
+
+            // Assert
+            Assert.Equal(Path.GetFullPath("Test.slnx"), solution.AbsoluteSolutionPath);
+            Assert.Equal("Test", solution.SolutionName);
+            Assert.Equal(2, solution.Projects.Length);
+            Assert.Equal(Path.Combine("Project1", "Project1.vcxproj"), solution.Projects[0]);
+            Assert.Equal(Path.Combine("Project2", "Project2.vcxproj"), solution.Projects[1]);
+        }
+
+        [Fact]
+        public void GivenSlnxSolutionWithNonVcxprojProject_ThenIgnoresItAndLogsWarning()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            var logger = new InMemoryLogger();
+            fileSystem.AddFile(@"Test.slnx", new("""
+                <Solution>
+                  <Folder Name="/Projects/">
+                    <Project Path="Project1\Project1.vcxproj" />
+                    <Project Path="CSharpProject\CSharpProject.csproj" />
+                  </Folder>
+                </Solution>
+                """));
+
+            // Act
+            var solution = MSBuildSolution.ParseSolutionFile("Test.slnx", fileSystem, logger);
 
             // Assert
             Assert.Single(solution.Projects);
