@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="vcxproj2cmake/vcxproj2cmake.csproj" />
+  <Project Path="vcxproj2cmake.Tests/vcxproj2cmake.Tests.csproj" />
+</Solution>
