@@ -20,7 +20,9 @@ record CMakeConfigDependentSetting
         IEnumerable<MSBuildProjectConfig> projectConfigurations,
         ILogger logger)
     {
-        if (settings.Values.Count == 0)
+        var filteredSettingValues = settings.Values.Where(kvp => projectConfigurations.Contains(kvp.Key)).ToArray();
+
+        if (filteredSettingValues.Length == 0)
         {
             Values = [];
             SettingName = settings.SettingName;
@@ -28,7 +30,7 @@ record CMakeConfigDependentSetting
             return;
         }
 
-        var effectiveSettings = new Dictionary<MSBuildProjectConfig, string>(settings.Values);
+        var effectiveSettings = new Dictionary<MSBuildProjectConfig, string>(filteredSettingValues);
         foreach (var config in projectConfigurations)
             if (!effectiveSettings.ContainsKey(config))
                 effectiveSettings[config] = settings.DefaultValue;
@@ -60,7 +62,7 @@ record CMakeConfigDependentSetting
         SettingName = settings.SettingName;
         DefaultValue = settings.DefaultValue;
 
-        var skippedSettings = settings.Values.Values
+        var skippedSettings = filteredSettingValues.Select(kvp => kvp.Value)
             .Except(values.Values)
             .ToArray();
         if (skippedSettings.Length > 0)
@@ -101,7 +103,9 @@ record CMakeConfigDependentMultiSetting
         IEnumerable<MSBuildProjectConfig> projectConfigurations,
         ILogger logger)
     {
-        if (settings.Values.Count == 0)
+        var filteredSettingValues = settings.Values.Where(kvp => projectConfigurations.Contains(kvp.Key)).ToArray();
+
+        if (filteredSettingValues.Length == 0)
         {
             Values = [];
             SettingName = settings.SettingName;
@@ -109,7 +113,7 @@ record CMakeConfigDependentMultiSetting
             return;
         }
 
-        var effectiveSettings = new Dictionary<MSBuildProjectConfig, string[]>(settings.Values);
+        var effectiveSettings = new Dictionary<MSBuildProjectConfig, string[]>(filteredSettingValues);
         foreach (var config in projectConfigurations)
             if (!effectiveSettings.ContainsKey(config))
                 effectiveSettings[config] = settings.DefaultValue;
@@ -142,7 +146,7 @@ record CMakeConfigDependentMultiSetting
         SettingName = settings.SettingName;
         DefaultValue = settings.DefaultValue;
 
-        var skippedSettings = settings.Values.Values
+        var skippedSettings = filteredSettingValues.Select(kvp => kvp.Value)
             .SelectMany(s => s)
             .Except(values.Values.SelectMany(s => s))
             .ToArray();
