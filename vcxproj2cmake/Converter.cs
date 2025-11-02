@@ -79,7 +79,7 @@ public class Converter
         {
             try
             {
-                cmakeProjects.Add(new CMakeProject(project, qtVersion, conanPackageInfoRepository, fileSystem, logger));
+                cmakeProjects.Add(new CMakeProject(project, qtVersion, conanPackageInfoRepository, logger));
             }
             catch (Exception ex) when (continueOnError)
             {

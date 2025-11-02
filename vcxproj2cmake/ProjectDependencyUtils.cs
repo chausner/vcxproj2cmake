@@ -24,19 +24,19 @@ static class ProjectDependencyUtils
             {
                 if (logger != null)
                 {
-                    StringBuilder sb = new StringBuilder();
-                    sb.AppendLine("Could not determine project dependency tree");
+                    StringBuilder errorMessage = new();
+                    errorMessage.AppendLine("Could not determine project dependency tree");
 
                     foreach (var project in unorderedProjects)
                     {
-                        sb.AppendLine($"Project {project.ProjectName}");
+                        errorMessage.AppendLine($"Project {project.ProjectName}");
                         foreach (var missingReference in project.ProjectReferences.Where(pr => orderedProjects.All(p => p.AbsoluteProjectPath != pr.Project!.AbsoluteProjectPath)))
                         {
-                            sb.AppendLine($"  missing dependency {missingReference.Path}");
+                            errorMessage.AppendLine($"  missing dependency {missingReference.Path}");
                         }
                     }
 
-                    logger.LogError(sb.ToString());
+                    logger.LogError(errorMessage.ToString());
                 }
 
                 throw new CatastrophicFailureException("Could not determine project dependency tree");

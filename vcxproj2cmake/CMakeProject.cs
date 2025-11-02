@@ -27,7 +27,7 @@ class CMakeProject
     public bool IsWin32Executable { get; set; }
     public CMakeConfigDependentSetting PrecompiledHeaderFile { get; set; }
 
-    public CMakeProject(MSBuildProject project, int? qtVersion, ConanPackageInfoRepository conanPackageInfoRepository, IFileSystem fileSystem, ILogger logger)
+    public CMakeProject(MSBuildProject project, int? qtVersion, ConanPackageInfoRepository conanPackageInfoRepository, ILogger logger)
     {
         logger.LogInformation($"Processing project {project.AbsoluteProjectPath}");
 

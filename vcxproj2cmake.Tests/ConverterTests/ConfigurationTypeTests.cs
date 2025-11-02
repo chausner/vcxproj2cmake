@@ -15,7 +15,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"App.vcxproj", new(TestData.CreateProject("App", "Application")));
+            fileSystem.AddFile(@"App.vcxproj", new(TestData.CreateProject("Application")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -39,7 +39,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Lib.vcxproj", new(TestData.CreateProject("Lib", "StaticLibrary")));
+            fileSystem.AddFile(@"Lib.vcxproj", new(TestData.CreateProject("StaticLibrary")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -62,7 +62,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Dll.vcxproj", new(TestData.CreateProject("Dll", "DynamicLibrary")));
+            fileSystem.AddFile(@"Dll.vcxproj", new(TestData.CreateProject("DynamicLibrary")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -134,7 +134,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Bad.vcxproj", new(TestData.CreateProject("Bad", "Makefile")));
+            fileSystem.AddFile(@"Bad.vcxproj", new(TestData.CreateProject("Makefile")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 

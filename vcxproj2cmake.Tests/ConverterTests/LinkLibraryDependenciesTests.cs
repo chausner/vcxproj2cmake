@@ -14,8 +14,8 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("Dll", "Dll.vcxproj"), new(TestData.CreateProject("Dll", "DynamicLibrary")));
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("App", "Application", "..\\Dll\\Dll.vcxproj")));
+            fileSystem.AddFile(Path.Combine("Dll", "Dll.vcxproj"), new(TestData.CreateProject("DynamicLibrary")));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", "..\\Dll\\Dll.vcxproj")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -52,8 +52,8 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("Dll", "Dll.vcxproj"), new(TestData.CreateProject("Dll", "StaticLibrary")));
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("App", "Application", "..\\Dll\\Dll.vcxproj")));
+            fileSystem.AddFile(Path.Combine("Dll", "Dll.vcxproj"), new(TestData.CreateProject("StaticLibrary")));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", "..\\Dll\\Dll.vcxproj")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -117,7 +117,7 @@ public partial class ConverterTests
                     </ItemGroup>
                 </Project>
                 """));
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("App", "Application", "..\\HeaderOnly\\HeaderOnly.vcxproj")));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", "..\\HeaderOnly\\HeaderOnly.vcxproj")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -134,8 +134,8 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("Exe", "Exe.vcxproj"), new(TestData.CreateProject("Exe", "Application")));
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("App", "Application", "..\\Exe\\Exe.vcxproj")));
+            fileSystem.AddFile(Path.Combine("Exe", "Exe.vcxproj"), new(TestData.CreateProject("Application")));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", "..\\Exe\\Exe.vcxproj")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 

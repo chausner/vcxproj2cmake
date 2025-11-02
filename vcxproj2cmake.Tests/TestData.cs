@@ -80,7 +80,7 @@ internal class TestData
         </Project>
         """;
 
-    public static string CreateProject(string projectName, string configurationType = "Application", string? projectReference = null, string? targetName = null) => $"""
+    public static string CreateProject(string configurationType = "Application", string? projectReference = null, string? targetName = null) => $"""
         <?xml version="1.0" encoding="utf-8"?>
         <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
             <ItemGroup Label="ProjectConfigurations">
