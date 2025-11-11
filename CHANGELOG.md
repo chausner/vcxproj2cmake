@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Add support for .slnx solution format.
 
+### Changed
+
+- Retarget project to .NET 10.0.
+
 ### Fixed
 
 - Fix incorrect handling of settings when project configurations are skipped.
