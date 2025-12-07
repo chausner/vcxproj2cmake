@@ -47,7 +47,7 @@
 
 ## Installation
 
-1. Make sure you have the [.NET 9 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/9.0) installed.
+1. Make sure you have the [.NET 10 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0/runtime) installed.
 2. Download the latest release from the [releases page](https://github.com/chausner/vcxproj2cmake/releases) and unzip it to a directory of your choice.
 
 ## Usage
