@@ -15,7 +15,7 @@
     <AssemblyVersion>1.2.0.0</AssemblyVersion>
     <FileVersion>1.2.0.0</FileVersion>
     <Authors>Christoph Hausner</Authors>
-    <Copyright>Copyright © Christoph Hausner 2025</Copyright>
+    <Copyright>Copyright © Christoph Hausner 2025-2026</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
