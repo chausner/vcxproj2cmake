@@ -74,6 +74,9 @@ class MSBuildProject
 
         var projectElement = doc.Element(projectXName)!;
 
+        IncludeDirectoryBuildImport(projectElement, projectPath, fileSystem, @"$(VCTargetsPath)\Microsoft.Cpp.props", "Directory.Build.props");
+        IncludeDirectoryBuildImport(projectElement, projectPath, fileSystem, @"$(VCTargetsPath)\Microsoft.Cpp.targets", "Directory.Build.targets");
+
         var projectConfigurations =
             projectElement
                 .Elements(itemGroupXName)
@@ -342,6 +345,77 @@ class MSBuildProject
                 .ToArray();
 
             return new(property, defaultValue, settings.GetValueOrDefault(property, []), parser);
+        }
+    }
+
+    static void IncludeDirectoryBuildImport(XElement projectElement, string projectPath, IFileSystem fileSystem, string importedFileName, string directoryBuildFileName)
+    {
+        var msbuildNamespace = "http://schemas.microsoft.com/developer/msbuild/2003";
+        var importXName = XName.Get("Import", msbuildNamespace);
+        var importGroupXName = XName.Get("ImportGroup", msbuildNamespace);
+        var projectXName = XName.Get("Project", msbuildNamespace);
+
+        var importElement =
+            projectElement
+                .Descendants(importXName)
+                .FirstOrDefault(element => IsImportForFile(element, importedFileName));
+        if (importElement == null)
+            return;
+
+        var directoryBuildPath = FindNearestDirectoryBuildFile(projectPath, directoryBuildFileName);
+        if (directoryBuildPath == null)
+            return;
+
+        XDocument directoryBuildDoc;
+        using (var fileStream = fileSystem.FileStream.New(directoryBuildPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            directoryBuildDoc = XDocument.Load(fileStream);
+
+        var directoryBuildRoot = directoryBuildDoc.Element(projectXName) ?? directoryBuildDoc.Root;
+        if (directoryBuildRoot == null)
+            return;
+
+        var elementsToInsert = directoryBuildRoot.Elements().Select(element => new XElement(element)).ToList();
+        if (elementsToInsert.Count == 0)
+            return;
+
+        XElement anchor;
+        if (importElement.Parent == projectElement)
+            anchor = importElement; // If the import is directly under the project, we want to insert the imported elements right after the import
+        else if (importElement.Parent is XElement parent && parent.Name == importGroupXName && parent.Parent == projectElement)
+            anchor = parent; // If the import is under an ImportGroup, we want to insert the imported elements after the entire group
+        else
+            return; // Unexpected location for the import element, do not attempt to insert
+
+        anchor.AddAfterSelf(elementsToInsert);
+
+        bool IsImportForFile(XElement element, string fileName)
+        {
+            var projectAttribute = element.Attribute("Project");
+            if (projectAttribute == null)
+                return false;
+
+            return projectAttribute.Value.Equals(fileName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        string? FindNearestDirectoryBuildFile(string projectPath, string fileName)
+        {
+            var projectFullPath = fileSystem.Path.GetFullPath(projectPath);
+            var directory = fileSystem.Path.GetDirectoryName(projectFullPath);
+
+            while (!string.IsNullOrEmpty(directory))
+            {
+                var candidate = fileSystem.Path.Combine(directory, fileName);
+                if (fileSystem.File.Exists(candidate))
+                    return candidate;
+
+                var parent = fileSystem.Path.GetDirectoryName(directory);
+                if (string.IsNullOrEmpty(parent) || string.Equals(parent, directory, StringComparison.OrdinalIgnoreCase))
+                    return null;
+
+                directory = parent;
+            }
+
+            return null;
         }
     }
 }
