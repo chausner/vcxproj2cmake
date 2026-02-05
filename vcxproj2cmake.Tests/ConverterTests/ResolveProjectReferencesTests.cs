@@ -15,7 +15,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("App", "Application", "..\\Missing\\Missing.vcxproj")));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", "..\\Missing\\Missing.vcxproj")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -33,8 +33,8 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("Lib", "Lib.vcxproj"), new(TestData.CreateProject("Lib", "StaticLibrary"))); 
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("App", "Application", "..\\Lib\\Lib.vcxproj")));
+            fileSystem.AddFile(Path.Combine("Lib", "Lib.vcxproj"), new(TestData.CreateProject("StaticLibrary"))); 
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", "..\\Lib\\Lib.vcxproj")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -75,8 +75,8 @@ public partial class ConverterTests
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
             var absoluteLibPath = Path.GetFullPath(Path.Combine("Lib", "Lib.vcxproj"));
-            fileSystem.AddFile(Path.Combine("Lib", "Lib.vcxproj"), new(TestData.CreateProject("Lib", "StaticLibrary")));
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("App", "Application", absoluteLibPath)));
+            fileSystem.AddFile(Path.Combine("Lib", "Lib.vcxproj"), new(TestData.CreateProject("StaticLibrary")));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", absoluteLibPath)));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 

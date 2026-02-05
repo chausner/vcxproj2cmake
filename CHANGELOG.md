@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix incorrect version number reported by --version command-line option.
+
+## [1.2.0] - 2025-12-07
+
+### Added
+
+- Add support for .slnx solution format.
+
+### Changed
+
+- Retarget project to .NET 10.0.
+
+### Fixed
+
+- Fix incorrect handling of settings when project configurations are skipped.
+
 ## [1.1.0] - 2025-10-12
 
 ### Added
@@ -32,6 +50,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 First stable release.
 
-[unreleased]: https://github.com/chausner/vcxproj2cmake/compare/v1.1.0...HEAD
+[unreleased]: https://github.com/chausner/vcxproj2cmake/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/chausner/vcxproj2cmake/releases/tag/v1.0.0

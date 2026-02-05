@@ -15,8 +15,8 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Lib/Lib.vcxproj", new(TestData.CreateProject("Lib", "StaticLibrary")));
-            fileSystem.AddFile(@"App/App.vcxproj", new(TestData.CreateProject("App", "Application", "..\\Lib\\Lib.vcxproj")));
+            fileSystem.AddFile(@"Lib/Lib.vcxproj", new(TestData.CreateProject("StaticLibrary")));
+            fileSystem.AddFile(@"App/App.vcxproj", new(TestData.CreateProject("Application", "..\\Lib\\Lib.vcxproj")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 

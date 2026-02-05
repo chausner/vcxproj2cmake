@@ -128,6 +128,50 @@ public partial class ConverterTests
             </Project>
             """;
 
+        static string CreateProjectWithUnsupportedConfigurationSpecificLibraryDirs() => """
+            <?xml version="1.0" encoding="utf-8"?>
+            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                <ItemGroup Label="ProjectConfigurations">
+                    <ProjectConfiguration Include="Debug|Win32">
+                        <Configuration>Debug</Configuration>
+                        <Platform>Win32</Platform>
+                    </ProjectConfiguration>
+                    <ProjectConfiguration Include="Release|Win32">
+                        <Configuration>Release</Configuration>
+                        <Platform>Win32</Platform>
+                    </ProjectConfiguration>
+                    <ProjectConfiguration Include="MinSizeRel|Win32">
+                        <Configuration>MinSizeRel</Configuration>
+                        <Platform>Win32</Platform>
+                    </ProjectConfiguration>
+                </ItemGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
+                </PropertyGroup>
+                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+                    <Link>
+                        <AdditionalLibraryDirectories>SupportedLib</AdditionalLibraryDirectories>
+                    </Link>
+                </ItemDefinitionGroup>
+                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+                    <Link>
+                        <AdditionalLibraryDirectories>SupportedLib</AdditionalLibraryDirectories>
+                    </Link>
+                </ItemDefinitionGroup>
+                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">
+                    <Link>
+                        <AdditionalLibraryDirectories>UnsupportedLib</AdditionalLibraryDirectories>
+                    </Link>
+                </ItemDefinitionGroup>
+            </Project>
+            """;
+
         static string CreateProjectWithUnconditionalLibraryDirs(string dirs) => $"""
             <?xml version="1.0" encoding="utf-8"?>
             <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -244,6 +288,32 @@ public partial class ConverterTests
                         C:/Lib
                 )
                 """.Trim(), cmake);
+        }
+
+        [Fact]
+        public void Given_LinkerPathsWithUnsupportedConfigSpecificValues_When_Converted_Then_UnsupportedConfigurationIgnored()
+        {
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithUnsupportedConfigurationSpecificLibraryDirs()));
+
+            var logger = new InMemoryLogger();
+            var converter = new Converter(fileSystem, logger);
+
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+            Assert.Contains("""
+                target_link_directories(Project
+                    PUBLIC
+                        SupportedLib
+                )
+                """.Trim(), cmake);
+            Assert.DoesNotContain("$<$<CONFIG:Debug>:", cmake);
+            Assert.DoesNotContain("$<$<CONFIG:Release>:", cmake);
+            Assert.Contains("Skipping unsupported project configuration: MinSizeRel|Win32", logger.AllMessageText);
         }
 
         [Fact]

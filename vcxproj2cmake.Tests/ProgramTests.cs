@@ -99,7 +99,7 @@ public class ProgramTests
 
         while (!string.IsNullOrEmpty(dir))
         {
-            if (File.Exists(Path.Combine(dir, "vcxproj2cmake.sln")))
+            if (File.Exists(Path.Combine(dir, "vcxproj2cmake.slnx")))
                 return dir;
 
             dir = Directory.GetParent(dir)?.FullName;

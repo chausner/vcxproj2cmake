@@ -8,7 +8,7 @@ public class CustomConsoleFormatter : ConsoleFormatter
 {
     public CustomConsoleFormatter() : base(nameof(CustomConsoleFormatter)) { }
 
-    bool colorsEnabled = !Console.IsOutputRedirected && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("NO_COLOR"));
+    readonly bool colorsEnabled = !Console.IsOutputRedirected && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("NO_COLOR"));
 
     public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider? scopeProvider, TextWriter textWriter)
     {

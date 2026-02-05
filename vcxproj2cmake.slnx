@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="vcxproj2cmake/vcxproj2cmake.csproj" />
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Project Path="vcxproj2cmake.Tests/vcxproj2cmake.Tests.csproj" />
+</Solution>
