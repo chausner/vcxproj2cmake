@@ -55,6 +55,7 @@ class QtModuleInfoRepository
         { "nfc",                "Nfc" },
         { "opcua",              "OpcUa" },
         { "opengl",             "OpenGL" },
+        { "openglwidgets",      "OpenGLWidgets" },
         { "pdf",                "Pdf" },
         { "platformheaders",    "PlatformHeaders" },
         { "positioning",        "Positioning" },
