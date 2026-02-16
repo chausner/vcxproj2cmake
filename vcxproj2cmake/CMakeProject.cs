@@ -41,7 +41,11 @@ class CMakeProject
         TargetType = DetermineTargetType(project); 
         FindPackages = [];
         CompileFeatures = new("CompileFeatures", []);
-        SourceFiles = project.SourceFiles.Select(value => TranslateAndNormalize(value, "SourceFiles", logger)).ToArray();
+        var srcFiles = project.SourceFiles.Select(value => TranslateAndNormalize(value, "SourceFiles", logger)).ToArray();
+        var hdrFiles = project.HeaderFiles.Select(value => TranslateAndNormalize(value, "SourceFiles", logger)).ToArray();
+        SourceFiles = new string[srcFiles.Length + hdrFiles.Length];
+        srcFiles.CopyTo(SourceFiles, 0);
+        hdrFiles.CopyTo(SourceFiles, srcFiles.Length);
         OutputName = project.ProjectName;  // may get overridden in ApplyTargetName
         IncludePaths = new CMakeConfigDependentMultiSetting(project.AdditionalIncludeDirectories, supportedProjectConfigurations, logger)
             .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalIncludeDirectories", logger)).ToArray(), supportedProjectConfigurations, logger);
