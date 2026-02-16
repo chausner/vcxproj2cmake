@@ -65,6 +65,8 @@ class CMakeGenerator
         scriptObject.Import("prepend_relative_paths_with_cmake_current_source_dir", PrependRelativePathsWithCMakeCurrentSourceDir);
 
         var context = new TemplateContext();
+        context.LoopLimit = 0;
+        context.RecursiveLimit = 0;
         context.PushGlobal(scriptObject);
         var result = cmakeListsTemplate.Render(context);
 
