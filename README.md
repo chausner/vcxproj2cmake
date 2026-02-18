@@ -190,8 +190,11 @@ Generating ../ExampleSolution/CMakeLists.txt
 cmake_minimum_required(VERSION 3.13)
 project(MathLib LANGUAGES CXX)
 
-add_library(MathLib STATIC
-    MathLib.cpp
+add_library(MathLib STATIC)
+
+target_sources(MathLib
+    PRIVATE
+        MathLib.cpp
 )
 
 target_compile_features(MathLib PUBLIC cxx_std_17)
@@ -214,8 +217,11 @@ target_compile_definitions(MathLib
 cmake_minimum_required(VERSION 3.13)
 project(App LANGUAGES CXX)
 
-add_executable(App
-    main.cpp
+add_executable(App)
+
+target_sources(App
+    PRIVATE
+        main.cpp
 )
 
 target_compile_features(App PUBLIC cxx_std_17)
