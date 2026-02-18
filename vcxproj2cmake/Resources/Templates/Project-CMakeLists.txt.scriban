@@ -38,7 +38,7 @@ add_library({{ project_name | literal }} INTERFACE)
 
 {{~ if source_files | array.size > 0 ~}}
 target_sources({{ project_name | literal }}
-    PRIVATE
+    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
         {{~ for file in source_files | array.sort ~}}
         {{ file | literal }}
         {{~ end ~}}
