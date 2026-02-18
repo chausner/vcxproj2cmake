@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Fix incorrect version number reported by --version command-line option.
 - Fix crash for projects with a lot (> 1000) of source files or property values.
+- Some additional Qt5 and Qt6 modules are now supported that were previously not recognized.
 
 ## [1.2.0] - 2025-12-07
 
