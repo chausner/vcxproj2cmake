@@ -93,9 +93,12 @@ public partial class ConverterTests
 
             find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
-            add_executable(QtProject
-                form.ui
-                res.qrc
+            add_executable(QtProject)
+
+            target_sources(QtProject
+                PRIVATE
+                    form.ui
+                    res.qrc
             )
 
             set_target_properties(QtProject PROPERTIES

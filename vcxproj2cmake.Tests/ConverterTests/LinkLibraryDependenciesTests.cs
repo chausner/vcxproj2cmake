@@ -27,8 +27,7 @@ public partial class ConverterTests
                 project(Dll)
 
 
-                add_library(Dll SHARED
-                )
+                add_library(Dll SHARED)
                 """);
 
             AssertEx.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
@@ -36,8 +35,7 @@ public partial class ConverterTests
                 project(App)
 
 
-                add_executable(App
-                )
+                add_executable(App)
 
                 target_link_libraries(App
                     PUBLIC
@@ -65,8 +63,7 @@ public partial class ConverterTests
                 project(Dll)
 
 
-                add_library(Dll STATIC
-                )
+                add_library(Dll STATIC)
                 """);
 
             AssertEx.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
@@ -74,8 +71,7 @@ public partial class ConverterTests
                 project(App)
 
 
-                add_executable(App
-                )
+                add_executable(App)
 
                 target_link_libraries(App
                     PUBLIC

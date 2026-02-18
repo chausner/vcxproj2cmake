@@ -31,8 +31,7 @@ public partial class ConverterTests
                 project(EmptyProject)
 
 
-                add_executable(EmptyProject
-                )
+                add_executable(EmptyProject)
 
                 target_compile_definitions(EmptyProject
                 {"\t"}PUBLIC
@@ -73,8 +72,7 @@ public partial class ConverterTests
                 project(EmptyProject)
 
 
-                add_executable(EmptyProject
-                )
+                add_executable(EmptyProject)
 
                 target_compile_definitions(EmptyProject
                   PUBLIC

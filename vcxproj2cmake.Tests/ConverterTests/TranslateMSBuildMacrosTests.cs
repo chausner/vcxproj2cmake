@@ -60,13 +60,14 @@ public partial class ConverterTests
             // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
-                add_executable(Project
-                    "${CMAKE_BUILD_TYPE}.cpp"
-                    "${CMAKE_BUILD_TYPE}.cpp"
-                    "${CMAKE_CURRENT_SOURCE_DIR}/SomeFile.cpp"
-                    "${CMAKE_PROJECT_NAME}.cpp"
-                    "${CMAKE_SOURCE_DIR}/SomeFile.cpp"
-                    "${PROJECT_NAME}.cpp"
+                target_sources(Project
+                    PRIVATE
+                        "${CMAKE_BUILD_TYPE}.cpp"
+                        "${CMAKE_BUILD_TYPE}.cpp"
+                        "${CMAKE_CURRENT_SOURCE_DIR}/SomeFile.cpp"
+                        "${CMAKE_PROJECT_NAME}.cpp"
+                        "${CMAKE_SOURCE_DIR}/SomeFile.cpp"
+                        "${PROJECT_NAME}.cpp"
                 )
                 """, cmake);
         }

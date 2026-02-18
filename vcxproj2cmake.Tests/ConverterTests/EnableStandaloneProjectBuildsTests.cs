@@ -35,8 +35,7 @@ public partial class ConverterTests
                 endif()
 
 
-                add_executable(App
-                )
+                add_executable(App)
 
                 target_link_libraries(App
                     PUBLIC

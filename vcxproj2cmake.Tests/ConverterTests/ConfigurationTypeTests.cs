@@ -27,8 +27,7 @@ public partial class ConverterTests
                 project(App)
 
 
-                add_executable(App
-                )
+                add_executable(App)
 
                 """);
         }
@@ -51,8 +50,7 @@ public partial class ConverterTests
                 project(Lib)
 
 
-                add_library(Lib STATIC
-                )
+                add_library(Lib STATIC)
                 """);
         }
 
@@ -74,8 +72,7 @@ public partial class ConverterTests
                 project(Dll)
 
 
-                add_library(Dll SHARED
-                )
+                add_library(Dll SHARED)
                 """);
         }
 
@@ -123,8 +120,7 @@ public partial class ConverterTests
                 project(HeaderOnly)
 
 
-                add_library(HeaderOnly INTERFACE
-                )
+                add_library(HeaderOnly INTERFACE)
                 """);
         }
 

@@ -63,8 +63,7 @@ public partial class ConverterTests
                 project(App)
 
 
-                add_executable(App
-                )
+                add_executable(App)
 
                 target_link_libraries(App
                     PUBLIC
@@ -96,8 +95,7 @@ public partial class ConverterTests
                 project(App)
 
 
-                add_executable(App
-                )
+                add_executable(App)
 
                 target_link_libraries(App
                     PUBLIC
@@ -133,8 +131,7 @@ public partial class ConverterTests
                 project(App)
 
 
-                add_executable(App
-                )
+                add_executable(App)
 
                 target_link_libraries(App
                     PUBLIC

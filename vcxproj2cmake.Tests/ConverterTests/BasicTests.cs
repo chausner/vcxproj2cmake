@@ -29,8 +29,7 @@ public partial class ConverterTests
                 project(EmptyProject)
 
 
-                add_executable(EmptyProject
-                )
+                add_executable(EmptyProject)
 
                 target_compile_definitions(EmptyProject
                     PUBLIC
@@ -111,8 +110,7 @@ public partial class ConverterTests
                 project(EmptyProject1)
 
 
-                add_executable(EmptyProject1
-                )
+                add_executable(EmptyProject1)
 
                 target_compile_definitions(EmptyProject1
                     PUBLIC
@@ -135,8 +133,7 @@ public partial class ConverterTests
                 project(EmptyProject2)
 
 
-                add_executable(EmptyProject2
-                )
+                add_executable(EmptyProject2)
 
                 target_compile_definitions(EmptyProject2
                     PUBLIC

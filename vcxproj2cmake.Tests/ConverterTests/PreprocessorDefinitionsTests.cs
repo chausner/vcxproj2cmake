@@ -162,8 +162,7 @@ public partial class ConverterTests
                 project(Project)
 
 
-                add_executable(Project
-                )
+                add_executable(Project)
 
                 target_compile_definitions(Project
                     PUBLIC
@@ -194,8 +193,7 @@ public partial class ConverterTests
                 project(ProjectMBCS)
 
 
-                add_executable(ProjectMBCS
-                )
+                add_executable(ProjectMBCS)
 
                 target_compile_definitions(ProjectMBCS
                     PUBLIC
@@ -241,8 +239,7 @@ public partial class ConverterTests
                 project(ProjectArch)
 
 
-                add_executable(ProjectArch
-                )
+                add_executable(ProjectArch)
 
                 set_target_properties(ProjectArch PROPERTIES
                     MSVC_RUNTIME_LIBRARY MultiThreadedDebugDLL

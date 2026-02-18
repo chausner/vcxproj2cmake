@@ -29,8 +29,7 @@ public partial class ConverterTests
                 project("Project with $pecial c#aracters")
 
 
-                add_executable("Project with $pecial c#aracters"
-                )
+                add_executable("Project with $pecial c#aracters")
 
                 target_compile_definitions("Project with $pecial c#aracters"
                     PUBLIC
