@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Add option --include-headers to include header files in the list of sources set via target_sources commands.
+
 ### Changed
 
 - Generated CMake files now use the target_sources command instead of passing sources to add_executable/add_library.

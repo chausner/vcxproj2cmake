@@ -88,6 +88,8 @@ as well as a top-level `CMakeLists.txt` file in the same directory as the soluti
 
 ### Customizing Output
 
+* Specify the `--include-headers` option to include header files in the list of CMake target sources set via `target_sources` command.
+  This allows IDEs to recognize header files as part of the project and e.g. show them in the project tree.
 * Specify the `--enable-standalone-project-builds` option to include additional CMake commands in the generated project `CMakeLists.txt` files
   to allow configuring the projects directly instead of as part of the top-level solution `CMakeLists.txt`.
 * If any of your projects use Qt, you must specify the `--qt-version` option to indicate the Qt version (5 or 6) used in the project.

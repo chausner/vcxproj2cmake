@@ -36,6 +36,11 @@ public static class Program
             Description = "Set Qt version (required for Qt projects)" 
         }.AcceptOnlyFromAmong("5", "6");
 
+        var includeHeadersOption = new Option<bool>("--include-headers")
+        {
+            Description = "Include header files in target_sources(...)"
+        };
+
         var enableStandaloneProjectBuildsOption = new Option<bool>("--enable-standalone-project-builds")
         {
             Description = "Generate necessary code to allow projects to be built standalone (not through the root CMakeLists.txt)"
@@ -75,6 +80,7 @@ public static class Program
         rootCommand.Options.Add(projectsOption);
         rootCommand.Options.Add(solutionOption);
         rootCommand.Options.Add(qtVersionOption);
+        rootCommand.Options.Add(includeHeadersOption);
         rootCommand.Options.Add(enableStandaloneProjectBuildsOption);
         rootCommand.Options.Add(indentStyleOption);
         rootCommand.Options.Add(indentSizeOption);
@@ -96,13 +102,14 @@ public static class Program
                 var projects = parseResult.GetValue(projectsOption);
                 var solution = parseResult.GetValue(solutionOption);
                 var qtVersion = parseResult.GetValue(qtVersionOption);
+                var includeHeaders = parseResult.GetValue(includeHeadersOption);
                 var enableStandaloneProjectBuilds = parseResult.GetValue(enableStandaloneProjectBuildsOption);
                 var indentStyle = parseResult.GetValue(indentStyleOption);
                 var indentSize = parseResult.GetValue(indentSizeOption);
                 var dryRun = parseResult.GetValue(dryRunOption);
                 var continueOnError = parseResult.GetValue(continueOnErrorOption);
                 var logLevel = parseResult.GetValue(logLevelOption);
-                Run(projects, solution, qtVersion, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError, logLevel);
+                Run(projects, solution, qtVersion, includeHeaders, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError, logLevel);
             });
 
         try
@@ -123,6 +130,7 @@ public static class Program
         List<FileInfo>? projects, 
         FileInfo? solution, 
         int? qtVersion, 
+        bool includeHeaders,
         bool enableStandaloneProjectBuilds, 
         IndentStyle indentStyle, 
         int indentSize, 
@@ -133,7 +141,7 @@ public static class Program
         logger = CreateLogger(logLevel);
 
         var converter = new Converter(new FileSystem(), logger);
-        converter.Convert(projects, solution, qtVersion, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError);
+        converter.Convert(projects, solution, qtVersion, includeHeaders, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError);
     }
 
     static ILogger CreateLogger(LogLevel logLevel)

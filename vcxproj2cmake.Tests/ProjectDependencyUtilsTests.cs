@@ -23,8 +23,8 @@ public class ProjectDependencyUtilsTests
         var msbuildLib = MSBuildProject.ParseProjectFile(Path.GetFullPath(libProjectPath), fileSystem, NullLogger.Instance);
 
         var conanRepository = new ConanPackageInfoRepository();
-        var cmakeApp = new CMakeProject(msbuildApp, qtVersion: null, conanRepository, NullLogger.Instance);
-        var cmakeLib = new CMakeProject(msbuildLib, qtVersion: null, conanRepository, NullLogger.Instance);
+        var cmakeApp = new CMakeProject(msbuildApp, qtVersion: null, includeHeaders: false, conanRepository, NullLogger.Instance);
+        var cmakeLib = new CMakeProject(msbuildLib, qtVersion: null, includeHeaders: false, conanRepository, NullLogger.Instance);
 
         // simulate that Lib exists on disk but is not part of the solution conversion
         cmakeApp.ProjectReferences[0].Project = cmakeLib;

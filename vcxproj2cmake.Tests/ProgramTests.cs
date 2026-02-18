@@ -24,6 +24,7 @@ public class ProgramTests
         var (_, _, exitCode) = RunProgramMainWithCapturedConsole(
             "--projects", appProj, mathLibProj,
             "--qt-version", "6",
+            "--include-headers",
             "--enable-standalone-project-builds",
             "--indent-style", "Tabs",
             "--indent-size", "2",
@@ -42,6 +43,7 @@ public class ProgramTests
         var (_, _, exitCode) = RunProgramMainWithCapturedConsole(
             "--solution", sln,
             "--qt-version", "5",
+            "--include-headers",
             "--enable-standalone-project-builds",
             "--indent-style", "Spaces",
             "--indent-size", "4",

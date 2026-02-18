@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+﻿﻿using Microsoft.Extensions.Logging;
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 
@@ -27,7 +27,7 @@ class CMakeProject
     public bool IsWin32Executable { get; set; }
     public CMakeConfigDependentSetting PrecompiledHeaderFile { get; set; }
 
-    public CMakeProject(MSBuildProject project, int? qtVersion, ConanPackageInfoRepository conanPackageInfoRepository, ILogger logger)
+    public CMakeProject(MSBuildProject project, int? qtVersion, bool includeHeaders, ConanPackageInfoRepository conanPackageInfoRepository, ILogger logger)
     {
         logger.LogInformation($"Processing project {project.AbsoluteProjectPath}");
 
@@ -41,7 +41,11 @@ class CMakeProject
         TargetType = DetermineTargetType(project); 
         FindPackages = [];
         CompileFeatures = new("CompileFeatures", []);
-        SourceFiles = project.SourceFiles.Select(value => TranslateAndNormalize(value, "SourceFiles", logger)).ToArray();
+
+        var normalizedSourceFiles = project.SourceFiles.Select(value => TranslateAndNormalize(value, "SourceFiles", logger));
+        var normalizedHeaderFiles = project.HeaderFiles.Select(value => TranslateAndNormalize(value, "HeaderFiles", logger));
+        SourceFiles = normalizedSourceFiles.Concat(includeHeaders ? normalizedHeaderFiles : []).ToArray();
+
         OutputName = project.ProjectName;  // may get overridden in ApplyTargetName
         IncludePaths = new CMakeConfigDependentMultiSetting(project.AdditionalIncludeDirectories, supportedProjectConfigurations, logger)
             .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalIncludeDirectories", logger)).ToArray(), supportedProjectConfigurations, logger);
