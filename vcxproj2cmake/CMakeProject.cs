@@ -91,12 +91,14 @@ class CMakeProject
         translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/");
         translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionName\)", "${CMAKE_PROJECT_NAME}");
 
-        if (Regex.IsMatch(translatedValue, @"\$\([A-Za-z0-9_]+\)"))
+        var unsupportedMacros = Regex.Matches(translatedValue, @"\$\(([A-Za-z0-9_]+)\)");
+        if (unsupportedMacros.Count > 0)
         {
-            logger.LogWarning($"Setting {settingName} contains unsupported MSBuild macros/properties: {value}.");
-        }
+            var unsupportedMacroNames = unsupportedMacros.Select(match => match.Groups[1].Value);
+            logger.LogWarning($"Setting {settingName} with value \"{value}\" contains unsupported MSBuild macros/properties: {string.Join(", ", unsupportedMacroNames)}");
 
-        translatedValue = Regex.Replace(translatedValue, @"\$\(([A-Za-z0-9_]+)\)", "${$1}");
+            translatedValue = Regex.Replace(translatedValue, @"\$\(([A-Za-z0-9_]+)\)", "${$1}");
+        }
 
         return translatedValue;
     }
