@@ -55,15 +55,17 @@ class CMakeProject
             .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalLibraryDirectories", logger)).ToArray(), supportedProjectConfigurations, logger);
         Libraries = new CMakeConfigDependentMultiSetting(project.AdditionalDependencies, supportedProjectConfigurations, logger)
             .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalDependencies", logger)).ToArray(), supportedProjectConfigurations, logger);
-        Defines = new(project.PreprocessorDefinitions, supportedProjectConfigurations, logger);
-        Options = new(project.AdditionalOptions, supportedProjectConfigurations, logger);
+        Defines = new CMakeConfigDependentMultiSetting(project.PreprocessorDefinitions, supportedProjectConfigurations, logger)
+            .Map(values => values.Select(value => TranslateMSBuildMacros(value, "PreprocessorDefinitions", logger)).ToArray(), supportedProjectConfigurations, logger);
+        Options = new CMakeConfigDependentMultiSetting(project.AdditionalOptions, supportedProjectConfigurations, logger)
+            .Map(values => values.Select(value => TranslateMSBuildMacros(value, "AdditionalOptions", logger)).ToArray(), supportedProjectConfigurations, logger);
         ProjectReferences = project.ProjectReferences.Select(path => new CMakeProjectReference { Path = path }).ToArray();
         IsWin32Executable = project.LinkerSubsystem == "Windows";
         PrecompiledHeaderFile = new CMakeConfigDependentSetting(project.PrecompiledHeaderFile, supportedProjectConfigurations, logger)
             .Map((file, mode) => mode == "Use" && file != null ? TranslateAndNormalize(file, "PrecompiledHeaderFile", logger) : null, project.PrecompiledHeader, supportedProjectConfigurations, logger);
         Properties = [];
 
-        ApplyTargetName(project);
+        ApplyTargetName(project, logger);
         ApplyLanguageStandards(project);
         ApplyAllProjectIncludesArePublic(project, logger);
         ApplyRuntimeLibrary(project, logger);
@@ -149,7 +151,7 @@ class CMakeProject
         return result.ToArray();
     }
 
-    void ApplyTargetName(MSBuildProject project)
+    void ApplyTargetName(MSBuildProject project, ILogger logger)
     {
         if (project.TargetName.Values.Count == 0)
             return;
@@ -160,6 +162,8 @@ class CMakeProject
             .SingleWithException(() =>
                 throw new CatastrophicFailureException(
                     "TargetName property is inconsistent between configurations"));
+        
+        targetName = TranslateMSBuildMacros(targetName, "TargetName", logger);
 
         if (targetName != project.ProjectName)
         {

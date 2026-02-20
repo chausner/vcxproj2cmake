@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Generated CMake files now use the target_sources command instead of passing sources to add_executable/add_library.
+- MSBuild macros in properties PreprocessorDefinitions, AdditionalOptions and TargetName are now translated.
 - Updated list of Conan package metadata.
 
 ### Fixed
