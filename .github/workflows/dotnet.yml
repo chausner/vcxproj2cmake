@@ -35,3 +35,29 @@ jobs:
       with:
         name: vcxproj2cmake-win-x64
         path: .\vcxproj2cmake\bin\Release\net10.0\win-x64\publish
+
+  e2e-test:
+    runs-on: windows-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - name: minhook-detours
+          repo: https://github.com/m417z/minhook-detours.git
+          ref: v1.0.6
+          sln: minhook-detours.sln
+
+    steps:
+    - name: Download vcxproj2cmake artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: vcxproj2cmake-win-x64
+    - name: Clone ${{ matrix.name }}
+      run: git clone --branch ${{ matrix.ref }} --depth 1 ${{ matrix.repo }} e2e-test/${{ matrix.name }}
+    - name: Convert solution
+      run: .\vcxproj2cmake.exe --solution e2e-test/${{ matrix.name }}/${{ matrix.sln }}
+    - name: CMake configure
+      run: cmake -S e2e-test/${{ matrix.name }} -B e2e-test/${{ matrix.name }}/build -A x64
+    - name: CMake build
+      run: cmake --build e2e-test/${{ matrix.name }}/build --config Release
