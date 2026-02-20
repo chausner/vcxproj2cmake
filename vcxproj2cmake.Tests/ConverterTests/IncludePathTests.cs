@@ -12,7 +12,9 @@ public partial class ConverterTests
             string debugIncludes,
             string releaseIncludes,
             string? publicIncludes = null,
-            string? allPublic = null) => $"""
+            string? allPublic = null,
+            string? debugIncludePath = null,
+            string? releaseIncludePath = null) => $"""
         <?xml version="1.0" encoding="utf-8"?>
         <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
             <ItemGroup Label="ProjectConfigurations">
@@ -27,9 +29,11 @@ public partial class ConverterTests
             </ItemGroup>
             <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
                 <UseDebugLibraries>true</UseDebugLibraries>
+                {(debugIncludePath != null ? $"<IncludePath>{debugIncludePath}</IncludePath>" : string.Empty)}
             </PropertyGroup>
             <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
                 <UseDebugLibraries>false</UseDebugLibraries>
+                {(releaseIncludePath != null ? $"<IncludePath>{releaseIncludePath}</IncludePath>" : string.Empty)}
             </PropertyGroup>
             <PropertyGroup>
                 <ConfigurationType>StaticLibrary</ConfigurationType>
@@ -91,6 +95,35 @@ public partial class ConverterTests
                     PUBLIC
                         $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/debug>
                         $<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/release>
+                )
+                """, cmake);
+        }
+
+        [Fact]
+        public void Given_ProjectWithAdditionalIncludeDirectoriesAndIncludePath_When_Converted_Then_MergedPathsAreWritten()
+        {
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject(
+                debugIncludes: "shared;additionaldebug;%(AdditionalIncludeDirectories)",
+                releaseIncludes: "shared;%(AdditionalIncludeDirectories)",
+                debugIncludePath: "debuginc;$(IncludePath)",
+                releaseIncludePath: "releaseinc;$(IncludePath)")));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+            Assert.Contains("""
+                target_include_directories(Project
+                    PUBLIC
+                        ${CMAKE_CURRENT_SOURCE_DIR}/shared
+                        $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/additionaldebug>
+                        $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/debuginc>
+                        $<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/releaseinc>
                 )
                 """, cmake);
         }

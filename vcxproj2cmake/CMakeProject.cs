@@ -47,8 +47,9 @@ class CMakeProject
         SourceFiles = normalizedSourceFiles.Concat(includeHeaders ? normalizedHeaderFiles : []).ToArray();
 
         OutputName = project.ProjectName;  // may get overridden in ApplyTargetName
-        IncludePaths = new CMakeConfigDependentMultiSetting(project.AdditionalIncludeDirectories, supportedProjectConfigurations, logger)
-            .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalIncludeDirectories", logger)).ToArray(), supportedProjectConfigurations, logger);
+        var mergedIncludeDirectories = MergeIncludeDirectories(project, supportedProjectConfigurations);
+        IncludePaths = new CMakeConfigDependentMultiSetting(mergedIncludeDirectories, supportedProjectConfigurations, logger)
+            .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalIncludeDirectories+IncludePath", logger)).ToArray(), supportedProjectConfigurations, logger);
         PublicIncludePaths = new CMakeConfigDependentMultiSetting(project.PublicIncludeDirectories, supportedProjectConfigurations, logger)
             .Map(values => values.Select(value => TranslateAndNormalize(value, "PublicIncludeDirectories", logger)).ToArray(), supportedProjectConfigurations, logger);
         LinkerPaths = new CMakeConfigDependentMultiSetting(project.AdditionalLibraryDirectories, supportedProjectConfigurations, logger)
@@ -170,6 +171,25 @@ class CMakeProject
             Properties["OUTPUT_NAME"] = targetName;
             OutputName = targetName;
         }
+    }
+
+    static MSBuildConfigDependentSetting<string[]> MergeIncludeDirectories(
+        MSBuildProject project,
+        IEnumerable<MSBuildProjectConfig> projectConfigurations)
+    {
+        var defaultValue = project.AdditionalIncludeDirectories.DefaultValue
+            .Concat(project.IncludePath.DefaultValue)
+            .Distinct()
+            .ToArray();
+
+        Dictionary<MSBuildProjectConfig, string[]> values = [];
+        foreach (var projectConfig in projectConfigurations)        
+            values[projectConfig] = project.AdditionalIncludeDirectories.GetEffectiveValue(projectConfig)
+                .Concat(project.IncludePath.GetEffectiveValue(projectConfig))
+                .Distinct()
+                .ToArray();        
+
+        return new("AdditionalIncludeDirectories+IncludePath", defaultValue, values);
     }
 
     void ApplyLanguageStandards(MSBuildProject project)

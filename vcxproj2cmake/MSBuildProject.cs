@@ -17,6 +17,7 @@ class MSBuildProject
     public required string[] HeaderFiles { get; init; }
     public required MSBuildConfigDependentSetting<string> TargetName { get; init; }
     public required MSBuildConfigDependentSetting<string[]> AdditionalIncludeDirectories { get; init; }
+    public required MSBuildConfigDependentSetting<string[]> IncludePath { get; init; }
     public required MSBuildConfigDependentSetting<string[]> PublicIncludeDirectories { get; init; }
     public required MSBuildConfigDependentSetting<string[]> AdditionalLibraryDirectories { get; init; }
     public required MSBuildConfigDependentSetting<string[]> AdditionalDependencies { get; init; }
@@ -224,6 +225,7 @@ class MSBuildProject
 
         var targetName = ParseSetting("TargetName", otherSettings, Path.GetFileNameWithoutExtension(projectPath));
         var additionalIncludeDirectories = ParseMultiSetting("AdditionalIncludeDirectories", ';', compilerSettings, []);
+        var includePath = ParseMultiSetting("IncludePath", ';', otherSettings, []);
         var publicIncludeDirectories = ParseMultiSetting("PublicIncludeDirectories", ';', otherSettings, []);
         var additionalLibraryDirectories = ParseMultiSetting("AdditionalLibraryDirectories", ';', linkerSettings, []);
         var additionalDependencies = ParseMultiSetting("AdditionalDependencies", ';', linkerSettings, []);
@@ -272,6 +274,7 @@ class MSBuildProject
             HeaderFiles = headerFiles.ToArray(),
             TargetName = targetName,
             AdditionalIncludeDirectories = additionalIncludeDirectories,
+            IncludePath = includePath,
             PublicIncludeDirectories = publicIncludeDirectories,
             AdditionalLibraryDirectories = additionalLibraryDirectories,
             AdditionalDependencies = additionalDependencies,
@@ -337,11 +340,12 @@ class MSBuildProject
             var parser = (string value) =>
                 value
                 .Split(separator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Except([$"%({property})"])
+                .Except([$"%({property})", $"$({property})"], StringComparer.OrdinalIgnoreCase)
                 .Distinct()
                 .ToArray();
 
             return new(property, defaultValue, settings.GetValueOrDefault(property, []), parser);
         }
+
     }
 }

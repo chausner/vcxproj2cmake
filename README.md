@@ -28,6 +28,7 @@
   `CharacterSet`
   `DisableSpecificWarnings`
   `ExternalWarningLevel`
+  `IncludePath`
   `LanguageStandard`
   `LanguageStandard_C`
   `LinkLibraryDependencies`

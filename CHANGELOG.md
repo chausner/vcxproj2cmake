@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Add option --include-headers to include header files in the list of sources set via target_sources commands.
+- Add support for MSBuild property IncludePath.
 
 ### Changed
 
