@@ -31,6 +31,7 @@
   `IncludePath`
   `LanguageStandard`
   `LanguageStandard_C`
+  `LibraryPath`
   `LinkLibraryDependencies`
   `OpenMPSupport`
   `PrecompiledHeaderFile`

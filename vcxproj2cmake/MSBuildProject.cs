@@ -20,6 +20,7 @@ class MSBuildProject
     public required MSBuildConfigDependentSetting<string[]> IncludePath { get; init; }
     public required MSBuildConfigDependentSetting<string[]> PublicIncludeDirectories { get; init; }
     public required MSBuildConfigDependentSetting<string[]> AdditionalLibraryDirectories { get; init; }
+    public required MSBuildConfigDependentSetting<string[]> LibraryPath { get; init; }
     public required MSBuildConfigDependentSetting<string[]> AdditionalDependencies { get; init; }
     public required MSBuildConfigDependentSetting<string[]> PreprocessorDefinitions { get; init; }
     public required MSBuildConfigDependentSetting<string[]> AdditionalOptions { get; init; }
@@ -228,6 +229,7 @@ class MSBuildProject
         var includePath = ParseMultiSetting("IncludePath", ';', otherSettings, []);
         var publicIncludeDirectories = ParseMultiSetting("PublicIncludeDirectories", ';', otherSettings, []);
         var additionalLibraryDirectories = ParseMultiSetting("AdditionalLibraryDirectories", ';', linkerSettings, []);
+        var libraryPath = ParseMultiSetting("LibraryPath", ';', otherSettings, []);
         var additionalDependencies = ParseMultiSetting("AdditionalDependencies", ';', linkerSettings, []);
         var preprocessorDefinitions = ParseMultiSetting("PreprocessorDefinitions", ';', compilerSettings, []);
         var additionalOptions = ParseMultiSetting("AdditionalOptions", ' ', compilerSettings, []);
@@ -277,6 +279,7 @@ class MSBuildProject
             IncludePath = includePath,
             PublicIncludeDirectories = publicIncludeDirectories,
             AdditionalLibraryDirectories = additionalLibraryDirectories,
+            LibraryPath = libraryPath,
             AdditionalDependencies = additionalDependencies,
             PreprocessorDefinitions = preprocessorDefinitions,
             AdditionalOptions = additionalOptions,

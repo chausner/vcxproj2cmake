@@ -52,8 +52,9 @@ class CMakeProject
             .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalIncludeDirectories+IncludePath", logger)).ToArray(), supportedProjectConfigurations, logger);
         PublicIncludePaths = new CMakeConfigDependentMultiSetting(project.PublicIncludeDirectories, supportedProjectConfigurations, logger)
             .Map(values => values.Select(value => TranslateAndNormalize(value, "PublicIncludeDirectories", logger)).ToArray(), supportedProjectConfigurations, logger);
-        LinkerPaths = new CMakeConfigDependentMultiSetting(project.AdditionalLibraryDirectories, supportedProjectConfigurations, logger)
-            .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalLibraryDirectories", logger)).ToArray(), supportedProjectConfigurations, logger);
+        var mergedLibraryDirectories = MergeLibraryDirectories(project, supportedProjectConfigurations);
+        LinkerPaths = new CMakeConfigDependentMultiSetting(mergedLibraryDirectories, supportedProjectConfigurations, logger)
+            .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalLibraryDirectories+LibraryPath", logger)).ToArray(), supportedProjectConfigurations, logger);
         Libraries = new CMakeConfigDependentMultiSetting(project.AdditionalDependencies, supportedProjectConfigurations, logger)
             .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalDependencies", logger)).ToArray(), supportedProjectConfigurations, logger);
         Defines = new CMakeConfigDependentMultiSetting(project.PreprocessorDefinitions, supportedProjectConfigurations, logger)
@@ -192,6 +193,25 @@ class CMakeProject
                 .ToArray();        
 
         return new("AdditionalIncludeDirectories+IncludePath", defaultValue, values);
+    }
+
+    static MSBuildConfigDependentSetting<string[]> MergeLibraryDirectories(
+        MSBuildProject project,
+        IEnumerable<MSBuildProjectConfig> projectConfigurations)
+    {
+        var defaultValue = project.AdditionalLibraryDirectories.DefaultValue
+            .Concat(project.LibraryPath.DefaultValue)
+            .Distinct()
+            .ToArray();
+
+        Dictionary<MSBuildProjectConfig, string[]> values = [];
+        foreach (var projectConfig in projectConfigurations)        
+            values[projectConfig] = project.AdditionalLibraryDirectories.GetEffectiveValue(projectConfig)
+                .Concat(project.LibraryPath.GetEffectiveValue(projectConfig))
+                .Distinct()
+                .ToArray();
+
+        return new("AdditionalLibraryDirectories+LibraryPath", defaultValue, values);
     }
 
     void ApplyLanguageStandards(MSBuildProject project)

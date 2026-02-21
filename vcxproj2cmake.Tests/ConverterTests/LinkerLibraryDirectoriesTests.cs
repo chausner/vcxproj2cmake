@@ -8,7 +8,11 @@ public partial class ConverterTests
 {
     public class LinkerLibraryDirectoriesTests
     {
-        static string CreateProjectWithLibraryDirs(string debugDirs, string releaseDirs) => $"""
+        static string CreateProjectWithLibraryDirs(
+            string debugDirs,
+            string releaseDirs,
+            string? debugLibraryPath = null,
+            string? releaseLibraryPath = null) => $"""
             <?xml version="1.0" encoding="utf-8"?>
             <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
                 <ItemGroup Label="ProjectConfigurations">
@@ -23,9 +27,11 @@ public partial class ConverterTests
                 </ItemGroup>
                 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
                     <UseDebugLibraries>true</UseDebugLibraries>
+                    {(debugLibraryPath != null ? $"<LibraryPath>{debugLibraryPath}</LibraryPath>" : string.Empty)}
                 </PropertyGroup>
                 <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
                     <UseDebugLibraries>false</UseDebugLibraries>
+                    {(releaseLibraryPath != null ? $"<LibraryPath>{releaseLibraryPath}</LibraryPath>" : string.Empty)}
                 </PropertyGroup>
                 <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
                     <Link>
@@ -106,6 +112,35 @@ public partial class ConverterTests
                         ${CMAKE_BUILD_TYPE}
                 )
                 """.Trim(), cmake);
+        }
+
+        [Fact]
+        public void Given_ProjectWithAdditionalLibraryDirectoriesAndLibraryPath_When_Converted_Then_MergedPathsAreWritten()
+        {
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithLibraryDirs(
+                debugDirs: "shared;additionaldebug;%(AdditionalLibraryDirectories)",
+                releaseDirs: "shared;%(AdditionalLibraryDirectories)",
+                debugLibraryPath: "debuglib;$(LibraryPath)",
+                releaseLibraryPath: "releaselib;$(LibraryPath)")));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+            Assert.Contains("""
+                target_link_directories(Project
+                    PUBLIC
+                        shared
+                        $<$<CONFIG:Debug>:additionaldebug>
+                        $<$<CONFIG:Debug>:debuglib>
+                        $<$<CONFIG:Release>:releaselib>
+                )
+                """, cmake);
         }
     }
 }
