@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-02-22
+
 ### Added
 
 - Add option --include-headers to include header files in the list of sources set via target_sources commands.
@@ -64,7 +66,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 First stable release.
 
-[unreleased]: https://github.com/chausner/vcxproj2cmake/compare/v1.2.0...HEAD
+[unreleased]: https://github.com/chausner/vcxproj2cmake/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/chausner/vcxproj2cmake/releases/tag/v1.0.0
