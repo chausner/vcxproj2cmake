@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix option --include-headers not including header files processed with Qt MOC.
+
 ## [1.3.0] - 2026-02-22
 
 ### Added

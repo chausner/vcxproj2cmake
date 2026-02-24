@@ -101,6 +101,14 @@ class MSBuildProject
                 .Select(element => PathUtils.NormalizePathSeparators(element.Attribute("Include")!.Value.Trim()))
                 .ToList();
 
+        var qtMocHeaderFiles =
+            projectElement
+                .Elements(itemGroupXName)
+                .SelectMany(group => group.Elements(qtMocXName))
+                .Select(element => PathUtils.NormalizePathSeparators(element.Attribute("Include")!.Value.Trim()))
+                .Where(path => Path.GetExtension(path).ToLowerInvariant() is ".h" or ".hpp" or ".hxx" or ".h++" or ".hh")
+                .ToList();
+
         var qtModules =
             projectElement
                 .Elements(propertyGroupXName)
@@ -273,7 +281,7 @@ class MSBuildProject
             LanguageStandard = languageStandard,
             LanguageStandardC = languageStandardC,
             SourceFiles = sourceFiles.ToArray(),
-            HeaderFiles = headerFiles.ToArray(),
+            HeaderFiles = headerFiles.Concat(qtMocHeaderFiles).ToArray(),
             TargetName = targetName,
             AdditionalIncludeDirectories = additionalIncludeDirectories,
             IncludePath = includePath,
