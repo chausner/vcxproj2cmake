@@ -264,7 +264,7 @@ class MSBuildProject
             imports
                 .Select(import =>
                 {
-                    var match = Regex.Match(import, @"conan_([A-Za-z0-9-_]+)\.props");
+                    var match = Regex.Match(import, @"conan_([A-Za-z0-9-_]+)\.props", RegexOptions.IgnoreCase);
                     return match.Success ? match.Groups[1].Value : null;
                 })
                 .Where(packageName => packageName != null)

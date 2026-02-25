@@ -61,12 +61,12 @@ public partial class ConverterTests
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
             fileSystem.AddFile(@"Project.vcxproj", new(CreateProject(
-                "$(Configuration).cpp",
-                "$(ConfigurationName).cpp",
-                "$(ProjectDir)SomeFile.cpp",
-                "$(ProjectName).cpp",
-                "$(SolutionDir)SomeFile.cpp",
-                "$(SolutionName).cpp")));
+                "$(ConFIGuration).cpp",
+                "$(ConFIGurationName).cpp",
+                "$(ProJECtDir)SomeFile.cpp",
+                "$(ProJECtName).cpp",
+                "$(SolUTIonDir)SomeFile.cpp",
+                "$(SolUTIonName).cpp")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
