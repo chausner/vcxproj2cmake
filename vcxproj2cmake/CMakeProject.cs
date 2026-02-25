@@ -160,14 +160,9 @@ class CMakeProject
         if (project.TargetName.Values.Count == 0)
             return;
 
-        var targetName =
-            project.TargetName.Values.Values
-            .Distinct()
-            .SingleWithException(() =>
-                throw new CatastrophicFailureException(
-                    "TargetName property is inconsistent between configurations"));
-        
-        targetName = TranslateMSBuildMacros(targetName, "TargetName", logger);
+        var targetName = new CMakeConfigDependentSetting(project.TargetName, ProjectConfigurations, logger)
+            .Map(value => value != null ? TranslateMSBuildMacros(value, "TargetName", logger) : null, ProjectConfigurations, logger)
+            .ToCMakeExpression();
 
         if (targetName != project.ProjectName)
         {
