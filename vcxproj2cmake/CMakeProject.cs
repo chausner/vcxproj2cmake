@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+﻿﻿using Microsoft.Extensions.Logging;
 using System.IO.Abstractions;
 using System.Text.RegularExpressions;
 
@@ -146,7 +146,7 @@ class CMakeProject
 
         if (sourceFiles.Any(file => file.EndsWith(".c", StringComparison.OrdinalIgnoreCase)))
             result.Add("C");
-        if (sourceFiles.Any(file => Regex.IsMatch(file, @"\.(cpp|cxx|c\+\+|cc|hpp)$", RegexOptions.IgnoreCase)))
+        if (sourceFiles.Any(file => Regex.IsMatch(file, @"\.(cpp|cxx|c\+\+|cc)$", RegexOptions.IgnoreCase)))
             result.Add("CXX");
 
         if (result.Count == 0)
