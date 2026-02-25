@@ -9,7 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Add support for Win32 .rc resource files.
-- Support configuration-specific values for MSBuild property TargetName.
+- Support configuration-specific values for MSBuild property `TargetName`.
 
 ### Changed
 
@@ -17,25 +17,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- Fix option --include-headers not including header files processed with Qt MOC.
+- Fix option `--include-headers` not including header files processed with Qt MOC.
 
 ## [1.3.0] - 2026-02-22
 
 ### Added
 
-- Add option --include-headers to include header files in the list of sources set via target_sources commands.
-- Add support for MSBuild properties IncludePath and LibraryPath.
+- Add option `--include-headers` to include header files in the list of sources set via `target_sources` commands.
+- Add support for MSBuild properties `IncludePath` and `LibraryPath`.
 
 ### Changed
 
-- Generated CMake files now use the target_sources command instead of passing sources to add_executable/add_library.
-- MSBuild macros in properties PreprocessorDefinitions, AdditionalOptions and TargetName are now translated.
+- Generated CMake files now use the `target_sources` command instead of passing sources to `add_executable`/`add_library`.
+- MSBuild macros in properties `PreprocessorDefinitions`, `AdditionalOptions` and `TargetName` are now translated.
 - Update list of Conan package metadata.
 - Improve warnings about unsupported MSBuild macros/properties.
 
 ### Fixed
 
-- Fix incorrect version number reported by --version command-line option.
+- Fix incorrect version number reported by `--version` command-line option.
 - Fix crash for projects with a lot (> 1000) of source files or property values.
 - Some additional Qt5 and Qt6 modules are now supported that were previously not recognized.
 
@@ -60,19 +60,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The `TargetName` MSBuild property is now respected and converted to CMake target property `OUTPUT_NAME`.
 - Allow ConfigurationType property to be unset and have its default value ("Application").
 - Add support for `RuntimeLibrary` MSBuild property.
-- Add CLI option --continue-on-error.
+- Add CLI option `--continue-on-error`.
 
 ### Fixed
 
 - Improve handling of identifiers that require escaping in CMake.
-- Fix translation of $(Configuration) MSBuild macro.
+- Fix translation of `$(Configuration)` MSBuild macro.
 - Fix CMake generator expressions for target architecture detection.
 - Fix some parts of the CLI help were not displayed in English, depending on the system language setting.
 
 ### Changed
 
 - MSBuild property `TreatWarningAsError` is now converted to compiler-independent CMake target property `COMPILE_WARNING_AS_ERROR`.
-- When LinkLibraryDependencies is enabled and a project references a header-only library project, no library is linked anymore.
+- When `LinkLibraryDependencies` is enabled and a project references a header-only library project, no library is linked anymore.
 - Improve warning message about unsupported MSBuild macros/properties.
 
 ## [1.0.0] - 2025-07-10
