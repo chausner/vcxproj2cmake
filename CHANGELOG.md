@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Add support for Win32 .rc resource files.
+
 ### Changed
 
 - Use case-insensitive matching for MSBuild properties and macros to improve robustness and correctness.

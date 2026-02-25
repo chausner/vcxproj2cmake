@@ -67,6 +67,7 @@ class MSBuildProject
         var qtModulesXName = XName.Get("QtModules", msbuildNamespace);
         var qtRccXName = XName.Get("QtRcc", msbuildNamespace);
         var qtUicXName = XName.Get("QtUic", msbuildNamespace);
+        var resourceCompileXName = XName.Get("ResourceCompile", msbuildNamespace);
 
         XDocument doc;
         projectPath = PathUtils.NormalizePathSeparators(projectPath);
@@ -89,6 +90,7 @@ class MSBuildProject
                 .Elements(itemGroupXName)
                 .SelectMany(group =>
                     group.Elements(clCompileXName)
+                    .Concat(group.Elements(resourceCompileXName))
                     .Concat(group.Elements(qtUicXName))
                     .Concat(group.Elements(qtRccXName)))
                 .Select(element => PathUtils.NormalizePathSeparators(element.Attribute("Include")!.Value.Trim()))
