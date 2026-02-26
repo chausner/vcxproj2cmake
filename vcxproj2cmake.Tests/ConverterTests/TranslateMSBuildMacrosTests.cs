@@ -8,34 +8,6 @@ public partial class ConverterTests
 {
     public class TranslateMSBuildMacrosTests
     {
-        static string CreateProject(params string[] sources)
-            => $"""
-        <?xml version="1.0" encoding="utf-8"?>
-        <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-            <ItemGroup Label="ProjectConfigurations">
-                <ProjectConfiguration Include="Debug|Win32">
-                    <Configuration>Debug</Configuration>
-                    <Platform>Win32</Platform>
-                </ProjectConfiguration>
-                <ProjectConfiguration Include="Release|Win32">
-                    <Configuration>Release</Configuration>
-                    <Platform>Win32</Platform>
-                </ProjectConfiguration>
-            </ItemGroup>
-            <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                <UseDebugLibraries>true</UseDebugLibraries>
-            </PropertyGroup>
-            <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                <UseDebugLibraries>false</UseDebugLibraries>
-            </PropertyGroup>
-            {(sources.Length > 0 ? $"""
-            <ItemGroup>
-                {string.Join(Environment.NewLine, sources.Select(s => $"                <ClCompile Include=\"{s}\" />"))}
-            </ItemGroup>
-            """ : string.Empty)}
-        </Project>
-        """;
-
         static string CreateProjectWithUnsupportedMacroDefinitions() => $"""
             <?xml version="1.0" encoding="utf-8"?>
             <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -60,7 +32,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject(
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithSources(
                 "$(ConFIGuration).cpp",
                 "$(ConFIGurationName).cpp",
                 "$(ProJECtDir)SomeFile.cpp",

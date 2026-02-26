@@ -8,45 +8,13 @@ public partial class ConverterTests
 {
     public class RuntimeLibraryTests
     {
-        static string CreateProject(string debugValue, string releaseValue) => $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Debug|Win32">
-                        <Configuration>Debug</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Release|Win32">
-                        <Configuration>Release</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                </PropertyGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                    <ClCompile>
-                        <RuntimeLibrary>{debugValue}</RuntimeLibrary>
-                    </ClCompile>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                    <ClCompile>
-                        <RuntimeLibrary>{releaseValue}</RuntimeLibrary>
-                    </ClCompile>
-                </ItemDefinitionGroup>
-            </Project>
-            """;
-
         [Fact]
         public void Given_RuntimeLibrarySetToDefaultsInAllConfigs_When_Converted_Then_NoSetTargetPropertiesMsvcRuntimeLibraryAdded()
         {
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("MultiThreadedDebugDLL", "MultiThreadedDLL")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("RuntimeLibrary", "MultiThreadedDebugDLL", "MultiThreadedDLL")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -63,7 +31,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("MultiThreaded", "MultiThreaded")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("RuntimeLibrary", "MultiThreaded", "MultiThreaded")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -86,7 +54,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("MultiThreadedDebug", "MultiThreadedDLL")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("RuntimeLibrary", "MultiThreadedDebug", "MultiThreadedDLL")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -109,7 +77,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("MultiThreadedDebug", "MultiThreaded")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("RuntimeLibrary", "MultiThreadedDebug", "MultiThreaded")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 

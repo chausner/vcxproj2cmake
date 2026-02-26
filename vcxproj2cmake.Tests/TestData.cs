@@ -1,4 +1,6 @@
-﻿namespace vcxproj2cmake.Tests;
+﻿using System.Text;
+
+namespace vcxproj2cmake.Tests;
 
 internal class TestData
 {
@@ -80,7 +82,54 @@ internal class TestData
         </Project>
         """;
 
-    public static string CreateProject(string configurationType = "Application", string? projectReference = null, string? targetName = null) => $"""
+    public static string CreateProject(string configurationType = "Application", string? projectReference = null, string? targetName = null)
+        => CreateProjectWithProjectReferences(
+            configurationType: configurationType,
+            targetName: targetName,
+            projectReferences: projectReference is null ? [] : [projectReference]);
+
+    public static string CreateProjectWithProjectReferences(string configurationType = "Application", string? targetName = null, params string[] projectReferences)
+    {
+        var references = new StringBuilder();
+        if (projectReferences.Length > 0)
+        {
+            references.AppendLine("            <ItemGroup>");
+            foreach (var projectReference in projectReferences)
+                references.AppendLine($"                <ProjectReference Include=\"{projectReference}\" />");
+            references.Append("            </ItemGroup>");
+        }
+
+        return $"""
+            <?xml version="1.0" encoding="utf-8"?>
+            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                <ItemGroup Label="ProjectConfigurations">
+                    <ProjectConfiguration Include="Debug|Win32">
+                        <Configuration>Debug</Configuration>
+                        <Platform>Win32</Platform>
+                    </ProjectConfiguration>
+                    <ProjectConfiguration Include="Release|Win32">
+                        <Configuration>Release</Configuration>
+                        <Platform>Win32</Platform>
+                    </ProjectConfiguration>
+                </ItemGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup>
+                    <ConfigurationType>{configurationType}</ConfigurationType>
+                {(targetName != null ? $"""
+                    <TargetName>{targetName}</TargetName>
+                """ : string.Empty)}
+                </PropertyGroup>
+                {references}
+            </Project>
+            """;
+    }
+
+    public static string CreateProjectWithClCompileProperty(string property, string debugValue, string releaseValue) => $"""
         <?xml version="1.0" encoding="utf-8"?>
         <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
             <ItemGroup Label="ProjectConfigurations">
@@ -99,17 +148,70 @@ internal class TestData
             <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
                 <UseDebugLibraries>false</UseDebugLibraries>
             </PropertyGroup>
-            <PropertyGroup>
-                <ConfigurationType>{configurationType}</ConfigurationType>
-            {(targetName != null ? $"""
-                <TargetName>{targetName}</TargetName>
-            """ : string.Empty)}
-            </PropertyGroup>
-            {(projectReference != null ? $"""
-            <ItemGroup>
-                <ProjectReference Include="{projectReference}" />
+            <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+                <ClCompile>
+                    <{property}>{debugValue}</{property}>
+                </ClCompile>
+            </ItemDefinitionGroup>
+            <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+                <ClCompile>
+                    <{property}>{releaseValue}</{property}>
+                </ClCompile>
+            </ItemDefinitionGroup>
+        </Project>
+        """;
+
+    public static string CreateProjectWithSources(params string[] sources)
+    {
+        var clCompileItems = new StringBuilder();
+        foreach (var source in sources)
+            clCompileItems.AppendLine($"                <ClCompile Include=\"{source}\" />");
+
+        var itemGroup = sources.Length == 0
+            ? string.Empty
+            : $"""
+                <ItemGroup>
+            {clCompileItems.ToString().TrimEnd()}
+                </ItemGroup>
+            """;
+
+        return $"""
+            <?xml version="1.0" encoding="utf-8"?>
+            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+                <ItemGroup Label="ProjectConfigurations">
+                    <ProjectConfiguration Include="Debug|Win32">
+                        <Configuration>Debug</Configuration>
+                        <Platform>Win32</Platform>
+                    </ProjectConfiguration>
+                    <ProjectConfiguration Include="Release|Win32">
+                        <Configuration>Release</Configuration>
+                        <Platform>Win32</Platform>
+                    </ProjectConfiguration>
+                </ItemGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                    <UseDebugLibraries>true</UseDebugLibraries>
+                </PropertyGroup>
+                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+                    <UseDebugLibraries>false</UseDebugLibraries>
+                </PropertyGroup>
+                {itemGroup}
+            </Project>
+            """;
+    }
+
+    public static string CreateProjectWithItemGroups(string itemGroupsXml) => $"""
+        <?xml version="1.0" encoding="utf-8"?>
+        <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+            <ItemGroup Label="ProjectConfigurations">
+                <ProjectConfiguration Include="Debug|Win32">
+                    <Configuration>Debug</Configuration>
+                    <Platform>Win32</Platform>
+                </ProjectConfiguration>
             </ItemGroup>
-            """ : string.Empty)}
+            <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+                <UseDebugLibraries>true</UseDebugLibraries>
+            </PropertyGroup>
+            {itemGroupsXml}
         </Project>
         """;
 

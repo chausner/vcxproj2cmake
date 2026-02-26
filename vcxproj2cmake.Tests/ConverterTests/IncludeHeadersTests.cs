@@ -7,30 +7,13 @@ public partial class ConverterTests
 {
     public class IncludeHeadersTests
     {
-        static string CreateProject(string itemGroupsXml)
-            => $"""
-                <?xml version="1.0" encoding="utf-8"?>
-                <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                    <ItemGroup Label="ProjectConfigurations">
-                        <ProjectConfiguration Include="Debug|Win32">
-                            <Configuration>Debug</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                    </ItemGroup>
-                    <PropertyGroup>
-                        <ConfigurationType>Application</ConfigurationType>
-                    </PropertyGroup>
-                    {itemGroupsXml}
-                </Project>
-                """;
-
         [Fact]
         public void Given_ProjectWithSourcesAndHeaders_When_IncludeHeadersIsFalse_Then_TargetSourcesDoesNotListHeaders()
         {
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("""
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithItemGroups("""
                 <ItemGroup>
                     <ClCompile Include="src\main.cpp" />
                 </ItemGroup>
@@ -58,7 +41,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("""
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithItemGroups("""
                 <ItemGroup>
                     <ClCompile Include="src\main.cpp" />
                 </ItemGroup>
@@ -86,7 +69,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("""
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithItemGroups("""
                 <ItemGroup>
                     <ClCompile Include="src\main.cpp" />
                 </ItemGroup>
@@ -122,7 +105,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("""
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithItemGroups("""
                 <ItemGroup>
                     <ClCompile Include="src\main.cpp" />
                     <QtMoc Include="src\moc.cpp" />
