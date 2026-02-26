@@ -117,7 +117,7 @@ public partial class ConverterTests
         }
 
         [Fact]
-        public void Given_ProjectWithQtMocSourceFiles_When_IncludeHeadersIsTrue_Then_TargetSourcesDoesNOtListQtMocSources()
+        public void Given_ProjectWithQtMocSourceFiles_When_IncludeHeadersIsTrue_Then_TargetSourcesDoesNotListQtMocSources()
         {
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);

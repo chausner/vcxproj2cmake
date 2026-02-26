@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
-using Scriban.Syntax;
 using Xunit;
 
 namespace vcxproj2cmake.Tests;

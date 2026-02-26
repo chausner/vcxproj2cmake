@@ -88,7 +88,7 @@ public partial class ConverterTests
         }
 
         [Fact]
-        public void Given_ProjectWithCandCppFiles_When_Converted_Then_LanguagesAreCandCxx()
+        public void Given_ProjectWithCAndCppFiles_When_Converted_Then_LanguagesAreCAndCxx()
         {
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
