@@ -5,7 +5,7 @@ namespace vcxproj2cmake.Tests;
 public class CMakeSolutionTests
 {
     [Fact]
-    public void WhenProjectCountsDoNotMatch_ThenCtorThrowsArgumentException()
+    public void When_ProjectCountsDoNotMatch_Then_CtorThrowsArgumentException()
     {
         // Arrange
         var msBuildSolution = new MSBuildSolution
@@ -27,7 +27,7 @@ public class CMakeSolutionTests
     public class SolutionIsTopLevelTests
     {
         [Fact]
-        public void GivenSolutionWithAllProjectsInSolutionDir_ThenReturnsTrue()
+        public void Given_SolutionWithAllProjectsInSolutionDir_Then_ReturnsTrue()
         {
             // Arrange
             var msBuildSolution = new MSBuildSolution()
@@ -47,7 +47,7 @@ public class CMakeSolutionTests
         }
 
         [Fact]
-        public void GivenSolutionWithProjectOutsideSolutionDirAndRelativeReference_ThenReturnsFalse()
+        public void Given_SolutionWithProjectOutsideSolutionDirAndRelativeReference_Then_ReturnsFalse()
         {
             // Arrange
             var msBuildSolution = new MSBuildSolution
@@ -66,7 +66,7 @@ public class CMakeSolutionTests
         }
 
         [Fact]
-        public void GivenSolutionWithProjectOutsideSolutionDirAndAbsoluteReference_ThenReturnsFalse()
+        public void Given_SolutionWithProjectOutsideSolutionDirAndAbsoluteReference_Then_ReturnsFalse()
         {
             // Arrange
             var msBuildSolution = new MSBuildSolution

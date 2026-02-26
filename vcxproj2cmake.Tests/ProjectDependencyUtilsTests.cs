@@ -7,7 +7,7 @@ namespace vcxproj2cmake.Tests;
 public class ProjectDependencyUtilsTests
 {
     [Fact]
-    public void GivenReferencedProjectMissingFromSolution_WhenOrderingProjects_ThenLogsErrorAndThrows()
+    public void Given_ReferencedProjectMissingFromSolution_When_OrderingProjects_Then_LogsErrorAndThrows()
     {
         // Arrange
         var fileSystem = new MockFileSystem();
