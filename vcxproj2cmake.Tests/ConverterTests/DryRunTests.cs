@@ -36,14 +36,13 @@ public partial class ConverterTests
                 dryRun: true);
 
             // Assert
-            var logs = string.Join(Environment.NewLine, logger.Messages);
-            Assert.Contains($"Generated output for {Path.GetFullPath(Path.Combine("EmptyProject1", "CMakeLists.txt"))}", logs);
-            Assert.Contains("    add_executable(EmptyProject1", logs);
-            Assert.Contains($"Generated output for {Path.GetFullPath(Path.Combine("EmptyProject2", "CMakeLists.txt"))}", logs);
-            Assert.Contains("    add_executable(EmptyProject2", logs);
-            Assert.Contains($"Generated output for {Path.GetFullPath("CMakeLists.txt")}", logs);
-            Assert.Contains("    add_subdirectory(EmptyProject1)", logs);
-            Assert.Contains("    add_subdirectory(EmptyProject2)", logs);
+            Assert.Contains($"Generated output for {Path.GetFullPath(Path.Combine("EmptyProject1", "CMakeLists.txt"))}", logger.AllMessageText);
+            Assert.Contains("    add_executable(EmptyProject1", logger.AllMessageText);
+            Assert.Contains($"Generated output for {Path.GetFullPath(Path.Combine("EmptyProject2", "CMakeLists.txt"))}", logger.AllMessageText);
+            Assert.Contains("    add_executable(EmptyProject2", logger.AllMessageText);
+            Assert.Contains($"Generated output for {Path.GetFullPath("CMakeLists.txt")}", logger.AllMessageText);
+            Assert.Contains("    add_subdirectory(EmptyProject1)", logger.AllMessageText);
+            Assert.Contains("    add_subdirectory(EmptyProject2)", logger.AllMessageText);
 
             // Ensure no files were written to disk
             Assert.False(fileSystem.FileExists("CMakeLists.txt"));
