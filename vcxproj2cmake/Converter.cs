@@ -34,7 +34,7 @@ public class Converter
         List<MSBuildProject> projects = [];
         List<string> failedProjectPaths = [];
 
-        if (projectFiles != null && projectFiles.Any())
+        if (projectFiles != null && projectFiles.Count != 0)
         {
             foreach (var project in projectFiles!)
             {
@@ -169,7 +169,7 @@ public class Converter
             if (!project.MSBuildProject.LinkLibraryDependenciesEnabled)
                 continue;
 
-            var dependencyTargets = project.GetAllReferencedProjects(projects)
+            var dependencyTargets = project.GetAllReferencedProjects()
                 .Where(project => project.TargetType is CMakeTargetType.StaticLibrary or CMakeTargetType.SharedLibrary)
                 .Select(project => project.OutputName + ".lib")
                 .ToArray();

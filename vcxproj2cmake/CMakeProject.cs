@@ -1,5 +1,4 @@
-﻿﻿using Microsoft.Extensions.Logging;
-using System.IO.Abstractions;
+﻿using Microsoft.Extensions.Logging;
 using System.Text.RegularExpressions;
 
 namespace vcxproj2cmake;
@@ -403,7 +402,7 @@ class CMakeProject
         }
     }
 
-    public ISet<CMakeProject> GetAllReferencedProjects(IEnumerable<CMakeProject> allProjects)
+    public ISet<CMakeProject> GetAllReferencedProjects()
     {
         var referencedProjects = new HashSet<CMakeProject>();
 
