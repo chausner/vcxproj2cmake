@@ -85,7 +85,7 @@ class CMakeGenerator
         }
     }
 
-    private static string ApplyIndentation(string text, IndentStyle indentStyle, int indentSize)
+    static string ApplyIndentation(string text, IndentStyle indentStyle, int indentSize)
     {
         return Regex.Replace(text, @"^((    )+)", match =>
         {

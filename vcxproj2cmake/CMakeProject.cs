@@ -361,7 +361,7 @@ class CMakeProject
         }
     }
 
-    private void ApplyQt(MSBuildProject project, int? qtVersion)
+    void ApplyQt(MSBuildProject project, int? qtVersion)
     {
         if (project.QtModules.Length == 0)
             return;
@@ -388,7 +388,7 @@ class CMakeProject
             Properties.Add("AUTORCC", "ON");
     }
 
-    private void ApplyConanPackages(MSBuildProject project, ConanPackageInfoRepository conanPackageInfoRepository)
+    void ApplyConanPackages(MSBuildProject project, ConanPackageInfoRepository conanPackageInfoRepository)
     {
         var conanPackages =
             project.ConanPackages

@@ -4,8 +4,8 @@ namespace vcxproj2cmake.Tests;
 
 public class TextWriterExtensionsTests
 {
-    private const string ResetForeground = "\x1B[39m\x1B[22m";
-    private const string ResetBackground = "\x1B[49m";
+    const string ResetForeground = "\x1B[39m\x1B[22m";
+    const string ResetBackground = "\x1B[49m";
 
     [Fact]
     public void When_WriteColoredCalledWithNoColors_Then_WritesMessageOnly()

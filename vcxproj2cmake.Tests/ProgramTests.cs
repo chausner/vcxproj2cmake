@@ -68,7 +68,7 @@ public class ProgramTests
         Assert.Contains("Specify either --projects or --solution, but not both.", stderr);
     }
 
-    private static (string stdout, string stderr, int exitCode) RunProgramMainWithCapturedConsole(params string[] args)
+    static (string stdout, string stderr, int exitCode) RunProgramMainWithCapturedConsole(params string[] args)
     {
         var originalOut = Console.Out;
         var originalError = Console.Error;
@@ -95,7 +95,7 @@ public class ProgramTests
         }
     }
 
-    private static string FindRepoRoot()
+    static string FindRepoRoot()
     {
         var dir = AppContext.BaseDirectory;
 

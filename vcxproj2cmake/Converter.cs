@@ -184,7 +184,7 @@ public class Converter
         }
     }
 
-    private static void AddLibrariesFromProjectReferences(IEnumerable<CMakeProject> cmakeProjects)
+    static void AddLibrariesFromProjectReferences(IEnumerable<CMakeProject> cmakeProjects)
     {
         foreach (var project in cmakeProjects)
         {
