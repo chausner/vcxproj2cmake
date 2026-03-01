@@ -15,9 +15,9 @@ jobs:
         os: [windows-latest, ubuntu-latest]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 10.0.x
     - name: Restore dependencies
@@ -31,7 +31,7 @@ jobs:
       run: dotnet publish vcxproj2cmake\vcxproj2cmake.csproj --no-build --configuration Release --runtime win-x64
     - name: Upload published output
       if: runner.os == 'Windows'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: vcxproj2cmake-win-x64
         path: .\vcxproj2cmake\bin\Release\net10.0\win-x64\publish
@@ -50,7 +50,7 @@ jobs:
 
     steps:
     - name: Download vcxproj2cmake artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: vcxproj2cmake-win-x64
     - name: Clone ${{ matrix.name }}
