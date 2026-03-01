@@ -25,6 +25,7 @@ class MSBuildProject
     public required MSBuildConfigDependentSetting<string[]> PreprocessorDefinitions { get; init; }
     public required MSBuildConfigDependentSetting<string[]> AdditionalOptions { get; init; }
     public required MSBuildConfigDependentSetting<string> CharacterSet { get; init; }
+    public required MSBuildConfigDependentSetting<string> UseOfMfc { get; init; }
     public required MSBuildConfigDependentSetting<string> RuntimeLibrary { get; init; }
     public required MSBuildConfigDependentSetting<string[]> DisableSpecificWarnings { get; init; }
     public required MSBuildConfigDependentSetting<string[]> TreatSpecificWarningsAsErrors { get; init; }
@@ -244,6 +245,7 @@ class MSBuildProject
         var preprocessorDefinitions = ParseMultiSetting("PreprocessorDefinitions", ';', compilerSettings, []);
         var additionalOptions = ParseMultiSetting("AdditionalOptions", ' ', compilerSettings, []);
         var characterSet = ParseSetting("CharacterSet", otherSettings, "NotSet");
+        var useOfMfc = ParseSetting("UseOfMfc", otherSettings, "false");
         var useDebugLibraries = ParseSetting("UseDebugLibraries", otherSettings, "false");
         var runtimeLibrary = ParseSettingWithConfigSpecificDefault("RuntimeLibrary", compilerSettings, new(projectConfig => {
             if (useDebugLibraries.GetEffectiveValue(projectConfig) == "true")
@@ -294,6 +296,7 @@ class MSBuildProject
             PreprocessorDefinitions = preprocessorDefinitions,
             AdditionalOptions = additionalOptions,
             CharacterSet = characterSet,
+            UseOfMfc = useOfMfc,
             RuntimeLibrary = runtimeLibrary,
             DisableSpecificWarnings = disableSpecificWarnings,
             TreatSpecificWarningsAsErrors = treatSpecificWarningsAsErrors,

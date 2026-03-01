@@ -70,6 +70,7 @@ class CMakeProject
         ApplyLanguageStandards(project);
         ApplyAllProjectIncludesArePublic(project, logger);
         ApplyRuntimeLibrary(project, logger);
+        ApplyMfcSupport(project, logger);
         ApplyCharacterSetSetting(project, logger);
         ApplyDisableSpecificWarnings(project, logger);
         ApplyTreatSpecificWarningsAsErrors(project, logger);
@@ -258,11 +259,42 @@ class CMakeProject
     {
         Defines = Defines.Map((defines, charSet) => charSet switch
         {
-            "Unicode" => [.. defines, "UNICODE", "_UNICODE"],
-            "MultiByte" => [.. defines, "_MBCS"],
+            "Unicode" => AppendDefineIfNotPresent(defines, "UNICODE", "_UNICODE"),
+            "MultiByte" => AppendDefineIfNotPresent(defines, "_MBCS"),
             "NotSet" or "" or null => defines,
             _ => throw new CatastrophicFailureException($"Invalid value for CharacterSet: {charSet}")
         }, project.CharacterSet, ProjectConfigurations, logger);
+    }
+
+    void ApplyMfcSupport(MSBuildProject project, ILogger logger)
+    {
+        static string TranslateMfcFlag(string? useOfMfc) => 
+            useOfMfc?.ToLowerInvariant() switch
+            {
+                "false" or "" or null => "0",
+                "static" => "1",
+                "dynamic" => "2",
+                _ => throw new CatastrophicFailureException($"Invalid value for UseOfMfc: {useOfMfc}")
+            };        
+
+        var mfcFlag = new CMakeConfigDependentSetting(project.UseOfMfc, ProjectConfigurations, logger)
+            .Map(value => TranslateMfcFlag(value), ProjectConfigurations, logger)
+            .ToCMakeExpression();
+
+        if (mfcFlag == "0")
+            return;
+
+        FindPackages.Add(new CMakeFindPackage("MFC", Required: true));
+
+        Properties["CMAKE_MFC_FLAG"] = mfcFlag;
+
+        Defines = Defines.Map((defines, useOfMfc) =>
+        {
+            if (TranslateMfcFlag(useOfMfc) != "0")
+                return AppendDefineIfNotPresent(defines, "_AFXDLL");
+            else
+                return defines;
+        }, project.UseOfMfc, ProjectConfigurations, logger);
     }
 
     void ApplyDisableSpecificWarnings(MSBuildProject project, ILogger logger)
@@ -400,6 +432,10 @@ class CMakeProject
             FindPackages.Add(new CMakeFindPackage(package.CMakeConfigName, Required: true, Config: true));
             Libraries.AppendValue(Config.CommonConfig, package.CMakeTargetName);
         }
+    }
+    static string[] AppendDefineIfNotPresent(string[] defines, params string[] additionalDefines)
+    {
+        return [.. defines, .. additionalDefines.Except(defines)];
     }
 
     public ISet<CMakeProject> GetAllReferencedProjects()

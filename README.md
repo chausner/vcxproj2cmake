@@ -43,6 +43,7 @@
   `TreatAngleIncludeAsExternal`
   `TreatSpecificWarningsAsErrors`
   `TreatWarningAsError`
+  `UseOfMfc`
   `WarningLevel`
 * For projects referencing Qt 5 or 6 via Qt/MsBuild, a corresponding `find_package(Qt... REQUIRED COMPONENTS ...)` command is generated and `AUTOMOC`/`AUTOUIC`/`AUTORCC` are enabled.
 * For projects referencing Conan packages via the MSBuildDeps generator, corresponding `find_package` commands are generated, intended to be used with the `CMakeDeps` generator.
