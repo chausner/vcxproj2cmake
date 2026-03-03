@@ -191,7 +191,7 @@ Generating ../ExampleSolution/CMakeLists.txt
 `ExampleSolution/MathLib/CMakeLists.txt`:
 
 ```cmake
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.24)
 project(MathLib LANGUAGES CXX)
 
 add_library(MathLib STATIC)
@@ -218,7 +218,7 @@ target_compile_definitions(MathLib
 `ExampleSolution/App/CMakeLists.txt`:
 
 ```cmake
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.24)
 project(App LANGUAGES CXX)
 
 add_executable(App)
@@ -257,7 +257,7 @@ target_compile_options(App
 `ExampleSolution/CMakeLists.txt`:
 
 ```cmake
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.24)
 project(ExampleSolution)
 
 add_subdirectory(MathLib)
