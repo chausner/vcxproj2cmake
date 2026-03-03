@@ -436,6 +436,7 @@ class CMakeProject
             Libraries.AppendValue(Config.CommonConfig, package.CMakeTargetName);
         }
     }
+
     static string[] AppendDefineIfNotPresent(string[] defines, params string[] additionalDefines)
     {
         return [.. defines, .. additionalDefines.Except(defines)];
