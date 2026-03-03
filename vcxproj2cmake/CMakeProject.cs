@@ -22,6 +22,7 @@ class CMakeProject
     public CMakeConfigDependentMultiSetting Defines { get; set; }
     public CMakeConfigDependentMultiSetting Options { get; set; }
     public OrderedDictionary<string, string> Properties { get; set; }
+    public CMakeConfigDependentSetting ModuleDefinitionFile { get; set; }
     public CMakeProjectReference[] ProjectReferences { get; set; }
     public bool IsWin32Executable { get; set; }
     public CMakeConfigDependentSetting PrecompiledHeaderFile { get; set; }
@@ -60,6 +61,8 @@ class CMakeProject
             .Map(values => values.Select(value => TranslateMSBuildMacros(value, "PreprocessorDefinitions", logger)).ToArray(), supportedProjectConfigurations, logger);
         Options = new CMakeConfigDependentMultiSetting(project.AdditionalOptions, supportedProjectConfigurations, logger)
             .Map(values => values.Select(value => TranslateMSBuildMacros(value, "AdditionalOptions", logger)).ToArray(), supportedProjectConfigurations, logger);
+        ModuleDefinitionFile = new CMakeConfigDependentSetting(project.ModuleDefinitionFile, supportedProjectConfigurations, logger)
+            .Map(value => value != null ? TranslateAndNormalize(value, "ModuleDefinitionFile", logger) : null, supportedProjectConfigurations, logger);
         ProjectReferences = project.ProjectReferences.Select(path => new CMakeProjectReference { Path = path }).ToArray();
         IsWin32Executable = project.LinkerSubsystem == "Windows";
         PrecompiledHeaderFile = new CMakeConfigDependentSetting(project.PrecompiledHeaderFile, supportedProjectConfigurations, logger)

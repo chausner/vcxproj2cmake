@@ -24,6 +24,7 @@ class MSBuildProject
     public required MSBuildConfigDependentSetting<string[]> AdditionalDependencies { get; init; }
     public required MSBuildConfigDependentSetting<string[]> PreprocessorDefinitions { get; init; }
     public required MSBuildConfigDependentSetting<string[]> AdditionalOptions { get; init; }
+    public required MSBuildConfigDependentSetting<string> ModuleDefinitionFile { get; init; }
     public required MSBuildConfigDependentSetting<string> CharacterSet { get; init; }
     public required MSBuildConfigDependentSetting<string> UseOfMfc { get; init; }
     public required MSBuildConfigDependentSetting<string> RuntimeLibrary { get; init; }
@@ -244,6 +245,7 @@ class MSBuildProject
         var additionalDependencies = ParseMultiSetting("AdditionalDependencies", ';', linkerSettings, []);
         var preprocessorDefinitions = ParseMultiSetting("PreprocessorDefinitions", ';', compilerSettings, []);
         var additionalOptions = ParseMultiSetting("AdditionalOptions", ' ', compilerSettings, []);
+        var moduleDefinitionFile = ParseSetting("ModuleDefinitionFile", linkerSettings, string.Empty);
         var characterSet = ParseSetting("CharacterSet", otherSettings, "NotSet");
         var useOfMfc = ParseSetting("UseOfMfc", otherSettings, "false");
         var useDebugLibraries = ParseSetting("UseDebugLibraries", otherSettings, "false");
@@ -295,6 +297,7 @@ class MSBuildProject
             AdditionalDependencies = additionalDependencies,
             PreprocessorDefinitions = preprocessorDefinitions,
             AdditionalOptions = additionalOptions,
+            ModuleDefinitionFile = moduleDefinitionFile,
             CharacterSet = characterSet,
             UseOfMfc = useOfMfc,
             RuntimeLibrary = runtimeLibrary,

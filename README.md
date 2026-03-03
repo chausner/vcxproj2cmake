@@ -33,6 +33,7 @@
   `LanguageStandard_C`
   `LibraryPath`
   `LinkLibraryDependencies`
+  `ModuleDefinitionFile`
   `OpenMPSupport`
   `PrecompiledHeaderFile`
   `PreprocessorDefinitions`
