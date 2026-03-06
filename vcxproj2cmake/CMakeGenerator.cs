@@ -59,6 +59,7 @@ class CMakeGenerator
         scriptObject.Import("literal", ToCMakeLiteral);
         scriptObject.Import("unquoted_literal", (string s) => ToCMakeLiteral(s, unquoted: true));
         scriptObject.Import("normalize_path", PathUtils.NormalizePath);
+        scriptObject.Import("get_config_expression", new Func<Config, string, string>((config, value) => config.GetCMakeExpression(value)));
         scriptObject.Import("order_project_references_by_dependencies", (IEnumerable<CMakeProjectReference> pr) => ProjectDependencyUtils.OrderProjectReferencesByDependencies(pr, allProjects, logger));
         scriptObject.Import("get_directory_name", new Func<string?, string?>(Path.GetDirectoryName));
         scriptObject.Import("get_relative_path", new Func<string, string, string?>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));

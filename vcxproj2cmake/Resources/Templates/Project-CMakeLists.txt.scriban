@@ -44,7 +44,7 @@ target_sources({{ project_name | literal }}
         {{~ end ~}}
         {{~ for kvp in module_definition_file.values ~}}
         {{~ if kvp.value != "" ~}}
-        {{ string.replace kvp.key.cmake_expression "{0}" kvp.value }}
+        {{ get_config_expression kvp.key kvp.value }}
         {{~ end ~}}
         {{~ end ~}}
 )
@@ -65,7 +65,7 @@ target_compile_features({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in compile_features.values ~}}
         {{~ for feature in kvp.value ~}}
-        {{ string.replace kvp.key.cmake_expression "{0}" feature }}
+        {{ get_config_expression kvp.key feature }}
         {{~ end ~}}  
         {{~ end ~}}
 )
@@ -77,7 +77,7 @@ target_precompile_headers({{ project_name | literal }}
     PRIVATE
         {{~ for kvp in precompiled_header_file.values ~}}
         {{~ if kvp.value != "" ~}}
-        {{ string.replace kvp.key.cmake_expression "{0}" (kvp.value | prepend_relative_paths_with_cmake_current_source_dir) }}
+        {{ get_config_expression kvp.key (kvp.value | prepend_relative_paths_with_cmake_current_source_dir) }}
         {{~ end ~}}
         {{~ end ~}}
 )
@@ -90,7 +90,7 @@ target_include_directories({{ project_name | literal }}
     INTERFACE
         {{~ for kvp in public_include_paths.values ~}}
         {{~ for path in kvp.value ~}}
-        {{ string.replace kvp.key.cmake_expression "{0}" (path | prepend_relative_paths_with_cmake_current_source_dir) }}
+        {{ get_config_expression kvp.key (path | prepend_relative_paths_with_cmake_current_source_dir) }}
         {{~ end ~}}  
         {{~ end ~}}  
 {{~ end ~}}
@@ -98,7 +98,7 @@ target_include_directories({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in include_paths.values ~}}
         {{~ for path in kvp.value ~}}
-        {{ string.replace kvp.key.cmake_expression "{0}" (path | prepend_relative_paths_with_cmake_current_source_dir) }}
+        {{ get_config_expression kvp.key (path | prepend_relative_paths_with_cmake_current_source_dir) }}
         {{~ end ~}}  
         {{~ end ~}}  
 {{~ end ~}}
@@ -111,7 +111,7 @@ target_compile_definitions({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in defines.values ~}}
         {{~ for define in kvp.value ~}}
-        {{ string.replace kvp.key.cmake_expression "{0}" define }}
+        {{ get_config_expression kvp.key define }}
         {{~ end ~}}
         {{~ end ~}}     
 )
@@ -123,7 +123,7 @@ target_link_directories({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in linker_paths.values ~}}
         {{~ for path in kvp.value ~}}
-        {{ string.replace kvp.key.cmake_expression "{0}" path }}
+        {{ get_config_expression kvp.key path }}
         {{~ end ~}}  
         {{~ end ~}}      
 )
@@ -135,7 +135,7 @@ target_link_libraries({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in libraries.values ~}}
         {{~ for library in kvp.value ~}}
-        {{ string.replace kvp.key.cmake_expression "{0}" library }}
+        {{ get_config_expression kvp.key library }}
         {{~ end ~}}
         {{~ end ~}}
 )
@@ -147,7 +147,7 @@ target_compile_options({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in options.values ~}}
         {{~ for option in kvp.value ~}}
-        {{ string.replace kvp.key.cmake_expression "{0}" option }}
+        {{ get_config_expression kvp.key option }}
         {{~ end ~}}
         {{~ end ~}}     
 )
