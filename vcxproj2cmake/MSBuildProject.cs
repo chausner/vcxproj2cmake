@@ -90,6 +90,9 @@ class MSBuildProject
                 .Select(config => new MSBuildProjectConfig(config))
                 .ToList();
 
+        WarnAboutIgnoredConditions();
+        WarnAboutIgnoredConfigurationScopedElements(projectConfigurations);
+
         var sourceFiles =
             projectElement
                 .Elements(itemGroupXName)
@@ -382,6 +385,38 @@ class MSBuildProject
             return new(property, defaultValue, settings.GetValueOrDefault(property, []), parser);
         }
 
+        void WarnAboutIgnoredConditions()
+        {
+            foreach (var element in projectElement.Descendants())
+            {
+                var condition = element.Attribute("Condition")?.Value;
+                if (condition == null)
+                    continue;
+
+                var isConditionSupported =
+                    element.Parent == projectElement &&
+                    (element.Name == itemDefinitionGroupXName || element.Name == propertyGroupXName);
+
+                if (!isConditionSupported)                
+                    logger.LogWarning($"Condition on element {element.Name.LocalName} is ignored: {condition}");                
+            }
+        }
+
+        void WarnAboutIgnoredConfigurationScopedElements(List<MSBuildProjectConfig> supportedConfigurations)
+        {
+            foreach (var element in projectElement.Elements().Where(element => element.Name == itemDefinitionGroupXName || element.Name == propertyGroupXName))
+            {
+                var condition = element.Attribute("Condition")?.Value;
+                if (condition == null)
+                    continue;
+
+                var match = Regex.Match(condition, @"^'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'(?<config>[^']+)'$");
+                var isConditionSupported = match.Success && supportedConfigurations.Any(config => config.Name == match.Groups["config"].Value);
+
+                if (!isConditionSupported)
+                    logger.LogWarning($"Ignoring element {element.Name.LocalName} because its Condition has an unexpected format: {condition}");
+            }
+        }
     }
 
     static string UnescapeMSBuildValue(string value)
