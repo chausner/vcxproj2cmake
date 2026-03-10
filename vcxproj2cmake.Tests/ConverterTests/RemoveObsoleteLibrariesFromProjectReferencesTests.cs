@@ -62,7 +62,6 @@ public partial class ConverterTests
                 cmake_minimum_required(VERSION 3.24)
                 project(App)
 
-
                 add_executable(App)
 
                 target_link_libraries(App
@@ -93,7 +92,6 @@ public partial class ConverterTests
             AssertEx.FileHasContent(@"App/CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(App)
-
 
                 add_executable(App)
 
@@ -129,7 +127,6 @@ public partial class ConverterTests
             AssertEx.FileHasContent(@"App/CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(App)
-
 
                 add_executable(App)
 

@@ -28,7 +28,6 @@ public partial class ConverterTests
                 cmake_minimum_required(VERSION 3.24)
                 project("Project with $pecial c#aracters")
 
-
                 add_executable("Project with $pecial c#aracters")
 
                 target_compile_definitions("Project with $pecial c#aracters"

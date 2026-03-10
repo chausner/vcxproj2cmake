@@ -30,7 +30,6 @@ public partial class ConverterTests
                 cmake_minimum_required(VERSION 3.24)
                 project(EmptyProject)
 
-
                 add_executable(EmptyProject)
 
                 target_compile_definitions(EmptyProject
@@ -70,7 +69,6 @@ public partial class ConverterTests
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """            
                 cmake_minimum_required(VERSION 3.24)
                 project(EmptyProject)
-
 
                 add_executable(EmptyProject)
 

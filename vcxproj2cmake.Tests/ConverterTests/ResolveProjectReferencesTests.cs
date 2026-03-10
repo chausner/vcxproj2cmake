@@ -47,14 +47,12 @@ public partial class ConverterTests
                 cmake_minimum_required(VERSION 3.24)
                 project(Lib)
 
-
                 add_library(Lib STATIC)
                 """);
 
             AssertEx.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(App)
-
 
                 add_executable(App)
 
@@ -87,14 +85,12 @@ public partial class ConverterTests
                 cmake_minimum_required(VERSION 3.24)
                 project(Lib)
 
-
                 add_library(Lib STATIC)
                 """);
 
             AssertEx.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(App)
-
 
                 add_executable(App)
 

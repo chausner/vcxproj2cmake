@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Add support for linker property `ModuleDefinitionFile`.
 
+### Changed
+
+- Remove extra blank line after `project()` CMake command in generated CMake files.
+
 ### Fixed
 
 - Percent-escaped characters in MSBuild values are now properly handled.

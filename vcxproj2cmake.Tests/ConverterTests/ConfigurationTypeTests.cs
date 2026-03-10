@@ -25,7 +25,6 @@ public partial class ConverterTests
                 cmake_minimum_required(VERSION 3.24)
                 project(App)
 
-
                 add_executable(App)
 
                 """);
@@ -48,7 +47,6 @@ public partial class ConverterTests
                 cmake_minimum_required(VERSION 3.24)
                 project(Lib)
 
-
                 add_library(Lib STATIC)
                 """);
         }
@@ -69,7 +67,6 @@ public partial class ConverterTests
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(Dll)
-
 
                 add_library(Dll SHARED)
                 """);
@@ -117,7 +114,6 @@ public partial class ConverterTests
             AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(HeaderOnly)
-
 
                 add_library(HeaderOnly INTERFACE)
                 """);

@@ -34,7 +34,6 @@ public partial class ConverterTests
                     add_subdirectory(../Lib "${CMAKE_BINARY_DIR}/Lib")
                 endif()
 
-
                 add_executable(App)
 
                 target_link_libraries(App

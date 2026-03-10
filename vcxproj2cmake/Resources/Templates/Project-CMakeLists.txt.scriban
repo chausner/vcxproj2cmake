@@ -22,7 +22,8 @@ find_package({{ find_package.package_name | literal }}
  COMPONENTS {{ find_package.components | array.sort | array.each @literal | array.join " " }}
 {{- end -}}
 )
-{{~ end ~}}
+
+{{~ end -}}
 
 {{~ if target_type == "Executable" ~}}
 add_executable({{ project_name | literal }}{{ if is_win32_executable }} WIN32{{ end }})
