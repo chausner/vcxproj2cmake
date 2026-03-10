@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Add support for linker property `ModuleDefinitionFile`.
 
+### Fixed
+
+- Percent-escaped characters in MSBuild values are now properly handled.
+
 ## [1.4.0] - 2026-03-01
 
 ### Added

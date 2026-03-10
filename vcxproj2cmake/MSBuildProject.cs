@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
+using System.Globalization;
 using System.IO.Abstractions;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
@@ -83,7 +85,7 @@ class MSBuildProject
             projectElement
                 .Elements(itemGroupXName)
                 .SelectMany(group => group.Elements(projectConfigurationXName))
-                .Select(element => PathUtils.NormalizePathSeparators(element.Attribute("Include")!.Value.Trim()))
+                .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
                 .Select(config => new MSBuildProjectConfig(config))
                 .ToList();
 
@@ -95,21 +97,21 @@ class MSBuildProject
                     .Concat(group.Elements(resourceCompileXName))
                     .Concat(group.Elements(qtUicXName))
                     .Concat(group.Elements(qtRccXName)))
-                .Select(element => PathUtils.NormalizePathSeparators(element.Attribute("Include")!.Value.Trim()))
+                .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
                 .ToList();
 
         var headerFiles =
             projectElement
                 .Elements(itemGroupXName)
                 .SelectMany(group => group.Elements(clIncludeXName))
-                .Select(element => PathUtils.NormalizePathSeparators(element.Attribute("Include")!.Value.Trim()))
+                .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
                 .ToList();
 
         var qtMocHeaderFiles =
             projectElement
                 .Elements(itemGroupXName)
                 .SelectMany(group => group.Elements(qtMocXName))
-                .Select(element => PathUtils.NormalizePathSeparators(element.Attribute("Include")!.Value.Trim()))
+                .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
                 .Where(path => Path.GetExtension(path).ToLowerInvariant() is ".h" or ".hpp" or ".hxx" or ".h++" or ".hh")
                 .ToList();
 
@@ -121,20 +123,22 @@ class MSBuildProject
                 .Distinct()
                 .SingleOrDefaultWithException(string.Empty,
                     () => throw new CatastrophicFailureException("Qt modules are inconsistent between configurations"))
-                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(UnescapeMSBuildValue)
+                .ToArray();
 
         var imports =
             projectElement
                 .Elements(importXName)
                 .Concat(projectElement.Elements(importGroupXName).SelectMany(group => group.Elements(importXName)))
-                .Select(import => PathUtils.NormalizePathSeparators(import.Attribute("Project")!.Value.Trim()))
+                .Select(import => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(import.Attribute("Project")!.Value.Trim())))
                 .ToList();
 
         var projectReferences =
             projectElement
                 .Elements(itemGroupXName)
                 .SelectMany(group => group.Elements(projectReferenceXName))
-                .Select(element => PathUtils.NormalizePathSeparators(element.Attribute("Include")!.Value.Trim()))
+                .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
                 .Distinct()
                 .ToList();
 
@@ -143,12 +147,13 @@ class MSBuildProject
                 .Elements(itemDefinitionGroupXName)
                 .SelectMany(group => group.Elements(projectReferenceXName))
                 .SelectMany(element => element.Elements(linkLibraryDependenciesXName))
-                .Select(element => element.Value.Trim() switch
+                .Select(element => UnescapeMSBuildValue(element.Value.Trim()))
+                .Select(value => value switch
                 {
                     "true" => true,
                     "false" => false,
                     _ => throw new CatastrophicFailureException(
-                        $"Invalid value for LinkLibraryDependencies: {element.Value}")
+                        $"Invalid value for LinkLibraryDependencies: {value}")
                 })
                 .Distinct()
                 .SingleOrDefaultWithException(true,
@@ -324,6 +329,7 @@ class MSBuildProject
         string? GetCommonSetting(string property, Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings)
         {
             return settings.GetValueOrDefault(property)?.Values
+                .Select(UnescapeMSBuildValue)
                 .Distinct()
                 .SingleOrDefaultWithException(null, () => throw new CatastrophicFailureException($"{property} property is inconsistent between configurations"));
         }
@@ -333,7 +339,7 @@ class MSBuildProject
             Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings,
             string defaultValue)
         {
-            return new(property, defaultValue, settings.GetValueOrDefault(property, []), value => value);
+            return new(property, defaultValue, settings.GetValueOrDefault(property, []), UnescapeMSBuildValue);
         }
 
         MSBuildConfigDependentSetting<string> ParseSettingWithConfigSpecificDefault(
@@ -343,11 +349,11 @@ class MSBuildProject
         {
             var settingsForProperty = settings.GetValueOrDefault(property, []).ToDictionary();
 
-            foreach (var projectConfig in projectConfigurations)            
-                if (!settingsForProperty.ContainsKey(projectConfig))                
+            foreach (var projectConfig in projectConfigurations)
+                if (!settingsForProperty.ContainsKey(projectConfig))
                     settingsForProperty[projectConfig] = defaultValueForConfig(projectConfig);
 
-            return new(property, string.Empty, settingsForProperty, value => value);
+            return new(property, string.Empty, settingsForProperty, UnescapeMSBuildValue);
         }
 
         MSBuildConfigDependentSetting<string[]> ParseMultiSetting(
@@ -360,11 +366,35 @@ class MSBuildProject
                 value
                 .Split(separator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .Except([$"%({property})", $"$({property})"], StringComparer.OrdinalIgnoreCase)
+                .Select(UnescapeMSBuildValue)
                 .Distinct()
                 .ToArray();
 
             return new(property, defaultValue, settings.GetValueOrDefault(property, []), parser);
         }
 
+        static string UnescapeMSBuildValue(string value)
+        {
+            if (string.IsNullOrEmpty(value) || !value.Contains('%'))
+                return value;
+
+            var builder = new StringBuilder(value.Length);
+
+            for (var i = 0; i < value.Length; i++)
+            {
+                if (value[i] == '%' &&
+                    i + 2 < value.Length &&
+                    byte.TryParse(value.AsSpan(i + 1, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var escapedByte))
+                {
+                    builder.Append((char)escapedByte);
+                    i += 2;
+                    continue;
+                }
+
+                builder.Append(value[i]);
+            }
+
+            return builder.ToString();
+        }
     }
 }
