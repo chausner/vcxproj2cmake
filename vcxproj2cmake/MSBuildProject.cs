@@ -187,17 +187,13 @@ class MSBuildProject
             var itemDefinitionGroups =
                 projectElement
                     .Elements(itemDefinitionGroupXName)
-                    .Where(group => group.Attribute("Condition") == null ||
-                                    Regex.IsMatch(group.Attribute("Condition")!.Value,
-                                        $@"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'{Regex.Escape(projectConfig.Name)}'"))
+                    .Where(group => DoesConfigPlatformConditionApply(group, projectConfig))
                     .ToList();
 
             var propertyGroups =
                 projectElement
                     .Elements(propertyGroupXName)
-                    .Where(group => group.Attribute("Condition") == null ||
-                                    Regex.IsMatch(group.Attribute("Condition")!.Value,
-                                        $@"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'{Regex.Escape(projectConfig.Name)}'"))
+                    .Where(group => DoesConfigPlatformConditionApply(group, projectConfig))
                     .ToList();
 
             var projectConfigCompilerSettings =
@@ -326,7 +322,14 @@ class MSBuildProject
             ConanPackages = conanPackages!
         };
 
-        string? GetCommonSetting(string property, Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings)
+        static bool DoesConfigPlatformConditionApply(XElement element, MSBuildProjectConfig projectConfig)
+        {
+            var condition = element.Attribute("Condition")?.Value;
+            return condition == null ||
+                Regex.IsMatch(condition, $@"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'{Regex.Escape(projectConfig.Name)}'");
+        }
+
+        static string? GetCommonSetting(string property, Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings)
         {
             return settings.GetValueOrDefault(property)?.Values
                 .Select(UnescapeMSBuildValue)
@@ -334,7 +337,7 @@ class MSBuildProject
                 .SingleOrDefaultWithException(null, () => throw new CatastrophicFailureException($"{property} property is inconsistent between configurations"));
         }
 
-        MSBuildConfigDependentSetting<string> ParseSetting(
+        static MSBuildConfigDependentSetting<string> ParseSetting(
             string property,
             Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings,
             string defaultValue)
@@ -356,7 +359,7 @@ class MSBuildProject
             return new(property, string.Empty, settingsForProperty, UnescapeMSBuildValue);
         }
 
-        MSBuildConfigDependentSetting<string[]> ParseMultiSetting(
+        static MSBuildConfigDependentSetting<string[]> ParseMultiSetting(
             string property,
             char separator,
             Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings,
