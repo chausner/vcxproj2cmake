@@ -85,8 +85,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_link_directories(Project
                     PUBLIC
-                        $<$<CONFIG:Debug>:DebugLibs>
-                        $<$<CONFIG:Release>:ReleaseLibs>
+                        "$<$<CONFIG:Debug>:DebugLibs>"
+                        "$<$<CONFIG:Release>:ReleaseLibs>"
                 )
                 """.Trim(), cmake);
         }
@@ -108,8 +108,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_link_directories(Project
                     PUBLIC
-                        ${CMAKE_CURRENT_SOURCE_DIR}/libs
-                        ${CMAKE_BUILD_TYPE}
+                        "${CMAKE_CURRENT_SOURCE_DIR}/libs"
+                        "${CMAKE_BUILD_TYPE}"
                 )
                 """.Trim(), cmake);
         }
@@ -136,9 +136,9 @@ public partial class ConverterTests
                 target_link_directories(Project
                     PUBLIC
                         shared
-                        $<$<CONFIG:Debug>:additionaldebug>
-                        $<$<CONFIG:Debug>:debuglib>
-                        $<$<CONFIG:Release>:releaselib>
+                        "$<$<CONFIG:Debug>:additionaldebug>"
+                        "$<$<CONFIG:Debug>:debuglib>"
+                        "$<$<CONFIG:Release>:releaselib>"
                 )
                 """, cmake);
         }

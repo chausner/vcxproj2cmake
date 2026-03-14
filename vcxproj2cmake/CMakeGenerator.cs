@@ -171,11 +171,11 @@ class CMakeGenerator
 
         if (!isAbsolutePath)
             if (path == ".")
-                return CMakeExpression.Expression("${CMAKE_CURRENT_SOURCE_DIR}", quoteVariablesWhenStandalone: true);
+                return CMakeExpression.Expression("${CMAKE_CURRENT_SOURCE_DIR}");
             else
-                return CMakeExpression.Expression("${CMAKE_CURRENT_SOURCE_DIR}/" + path, quoteVariablesWhenStandalone: true);
+                return CMakeExpression.Expression("${CMAKE_CURRENT_SOURCE_DIR}/") + normalizedPath;
         else
-            return normalizedPath.WithQuotedVariablesWhenStandalone();
+            return normalizedPath;
     }
 }
 

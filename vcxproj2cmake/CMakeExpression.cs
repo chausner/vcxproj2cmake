@@ -5,36 +5,25 @@ namespace vcxproj2cmake;
 class CMakeExpression : IComparable, IComparable<CMakeExpression>
 {
     public string Value { get; }
-    public bool QuoteVariablesWhenStandalone { get; }
 
-    private CMakeExpression(string value, bool quoteVariablesWhenStandalone)
+    private CMakeExpression(string value)
     {
         Value = value;
-        QuoteVariablesWhenStandalone = quoteVariablesWhenStandalone;
     }
 
-    public static CMakeExpression Literal(string literal, bool quoteVariablesWhenStandalone = false)
+    public static CMakeExpression Literal(string literal)
     {
-        return new CMakeExpression(Escape(literal), quoteVariablesWhenStandalone);
+        return new CMakeExpression(Escape(literal));
     }
 
-    public static CMakeExpression Expression(string expression, bool quoteVariablesWhenStandalone = false)
+    public static CMakeExpression Expression(string expression)
     {
-        return new CMakeExpression(expression, quoteVariablesWhenStandalone);
-    }
-
-    public CMakeExpression WithQuotedVariablesWhenStandalone()
-    {
-        return QuoteVariablesWhenStandalone
-            ? this
-            : new CMakeExpression(Value, quoteVariablesWhenStandalone: true);
+        return new CMakeExpression(expression);
     }
 
     public static CMakeExpression operator +(CMakeExpression expression1, CMakeExpression expression2)
     {
-        return new CMakeExpression(
-            expression1.Value + expression2.Value,
-            expression1.QuoteVariablesWhenStandalone || expression2.QuoteVariablesWhenStandalone);
+        return new CMakeExpression(expression1.Value + expression2.Value);
     }
 
     static string Escape(string value)
@@ -65,13 +54,13 @@ class CMakeExpression : IComparable, IComparable<CMakeExpression>
                 c == '#' ||              // comment introducer
                 c == '(' || c == ')' ||  // command delimiters
                 c == '"' || c == '\\' || // must be escaped inside quotes
-                (QuoteVariablesWhenStandalone && c == '$');
+                c == '$';
 
             return Value.Length == 0 || Value.Any(NeedsQuoting);
         }
     }
 
-    public string RenderStandalone()
+    public override string ToString()
     {
         if (NeedsQuoting)
             return $"\"{Value}\"";
@@ -79,21 +68,18 @@ class CMakeExpression : IComparable, IComparable<CMakeExpression>
             return Value;
     }
 
-    public override string ToString() => RenderStandalone();
-
     public override bool Equals(object? obj)
     {
         if (obj == null || GetType() != obj.GetType())        
             return false;        
 
         var expression = (CMakeExpression)obj;
-        return Value == expression.Value
-            && QuoteVariablesWhenStandalone == expression.QuoteVariablesWhenStandalone;
+        return Value == expression.Value;
     }
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(Value, QuoteVariablesWhenStandalone);
+        return Value.GetHashCode();
     }
 
     public int CompareTo(object? obj)
@@ -112,11 +98,7 @@ class CMakeExpression : IComparable, IComparable<CMakeExpression>
         if (other is null)
             return 1;
 
-        var valueComparison = StringComparer.Ordinal.Compare(Value, other.Value);
-        if (valueComparison != 0)
-            return valueComparison;
-
-        return QuoteVariablesWhenStandalone.CompareTo(other.QuoteVariablesWhenStandalone);
+        return StringComparer.Ordinal.Compare(Value, other.Value);
     }
 
     public static bool operator ==(CMakeExpression? expression1, CMakeExpression? expression2)
@@ -127,8 +109,7 @@ class CMakeExpression : IComparable, IComparable<CMakeExpression>
         if (expression1.GetType() != expression2.GetType())
             return false;
 
-        return expression1.Value == expression2.Value
-            && expression1.QuoteVariablesWhenStandalone == expression2.QuoteVariablesWhenStandalone;
+        return expression1.Value == expression2.Value;
     }
 
     public static bool operator !=(CMakeExpression? expression1, CMakeExpression? expression2)
