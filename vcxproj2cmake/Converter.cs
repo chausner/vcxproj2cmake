@@ -175,12 +175,14 @@ public class Converter
                 .ToArray();
 
             foreach (var dependencyTarget in dependencyTargets)
-                if (project.Libraries.Values.Values.SelectMany(s => s).Contains(dependencyTarget, StringComparer.OrdinalIgnoreCase))
+                if (project.Libraries.Values.Values.SelectMany(s => s).Any(expr => expr.Value.Equals(dependencyTarget, StringComparison.OrdinalIgnoreCase)))
                 {
                     logger!.LogInformation($"Removing explicit library dependency {dependencyTarget} from project {project.ProjectName} since LinkLibraryDependencies is enabled.");
                 }
 
-            project.Libraries = project.Libraries.Map(libraries => libraries.Except(dependencyTargets, StringComparer.OrdinalIgnoreCase).ToArray(), project.ProjectConfigurations, logger!);
+            project.Libraries = project.Libraries.Map(libraries =>
+                libraries.Where(lib => !dependencyTargets.Contains(lib.Value, StringComparer.OrdinalIgnoreCase)).ToArray(),
+                project.ProjectConfigurations, logger!);
         }
     }
 
@@ -193,7 +195,7 @@ public class Converter
 
             foreach (var projectRef in ProjectDependencyUtils.OrderProjectReferencesByDependencies(project.ProjectReferences, cmakeProjects))
                 if (projectRef.Project!.TargetType is CMakeTargetType.StaticLibrary or CMakeTargetType.SharedLibrary)
-                    project.Libraries.AppendValue(Config.CommonConfig, projectRef.Project.ProjectName);
+                    project.Libraries.AppendValue(Config.CommonConfig, CMakeExpression.Literal(projectRef.Project.ProjectName));
         }
     }
 }

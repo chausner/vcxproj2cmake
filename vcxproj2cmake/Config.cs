@@ -1,19 +1,19 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 
 namespace vcxproj2cmake;
 
-record Config(Regex MSBuildProjectConfigPattern, string CMakeExpression)
+record Config(Regex MSBuildProjectConfigPattern, string Prefix, string Suffix)
 {
-    public static readonly Config CommonConfig = new Config(new(@".*"), "{0}");
+    public static readonly Config CommonConfig = new Config(new(@".*"), string.Empty, string.Empty);
 
     public static readonly Config[] Configs =
     [
-        new Config(new(@"^Debug\|"), "$<$<CONFIG:Debug>:{0}>"),
-        new Config(new(@"^Release\|"), "$<$<CONFIG:Release>:{0}>"),
-        new Config(new(@"\|(Win32|x86)$"), "$<$<STREQUAL:${{CMAKE_CXX_COMPILER_ARCHITECTURE_ID}},X86>:{0}>"),
-        new Config(new(@"\|x64$"), "$<$<STREQUAL:${{CMAKE_CXX_COMPILER_ARCHITECTURE_ID}},x64>:{0}>"),
-        new Config(new(@"\|ARM32$"), "$<$<STREQUAL:${{CMAKE_CXX_COMPILER_ARCHITECTURE_ID}},ARMV7>:{0}>"),
-        new Config(new(@"\|ARM64$"), "$<$<STREQUAL:${{CMAKE_CXX_COMPILER_ARCHITECTURE_ID}},ARM64>:{0}>")
+        new Config(new(@"^Debug\|"), "$<$<CONFIG:Debug>:", ">"),
+        new Config(new(@"^Release\|"), "$<$<CONFIG:Release>:", ">"),
+        new Config(new(@"\|(Win32|x86)$"), "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:", ">"),
+        new Config(new(@"\|x64$"), "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:", ">"),
+        new Config(new(@"\|ARM32$"), "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},ARMV7>:", ">"),
+        new Config(new(@"\|ARM64$"), "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},ARM64>:", ">")
     ];
 
     public bool MatchesProjectConfig(MSBuildProjectConfig projectConfig)
@@ -21,9 +21,12 @@ record Config(Regex MSBuildProjectConfigPattern, string CMakeExpression)
         return MSBuildProjectConfigPattern.IsMatch(projectConfig.Name);
     }
 
-    public string GetCMakeExpression(string value)
+    public CMakeExpression Apply(CMakeExpression value)
     {
-        return string.Format(CMakeExpression, value);
+        if (this == CommonConfig)
+            return CMakeExpression.Expression(value.RenderStandalone());
+
+        return CMakeExpression.Expression(Prefix + value.Value + Suffix);
     }
 
     public static bool IsMSBuildProjectConfigSupported(MSBuildProjectConfig projectConfig)

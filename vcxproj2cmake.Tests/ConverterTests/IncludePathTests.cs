@@ -70,8 +70,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_include_directories(Project
                     PUBLIC
-                        ${CMAKE_CURRENT_SOURCE_DIR}/include
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../shared
+                        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+                        "${CMAKE_CURRENT_SOURCE_DIR}/../shared"
                 )
                 """, cmake);
         }
@@ -120,7 +120,7 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_include_directories(Project
                     PUBLIC
-                        ${CMAKE_CURRENT_SOURCE_DIR}/shared
+                        "${CMAKE_CURRENT_SOURCE_DIR}/shared"
                         $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/additionaldebug>
                         $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/debuginc>
                         $<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/releaseinc>
@@ -145,8 +145,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_include_directories(Project
                     INTERFACE
-                        ${CMAKE_CURRENT_SOURCE_DIR}/public
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../common
+                        "${CMAKE_CURRENT_SOURCE_DIR}/public"
+                        "${CMAKE_CURRENT_SOURCE_DIR}/../common"
                 )
                 """, cmake);
             Assert.DoesNotContain("PUBLIC\n", cmake); // only INTERFACE section expected
@@ -169,7 +169,7 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_include_directories(Project
                     INTERFACE
-                        ${CMAKE_CURRENT_SOURCE_DIR}
+                        "${CMAKE_CURRENT_SOURCE_DIR}"
                 )
                 """, cmake);
         }

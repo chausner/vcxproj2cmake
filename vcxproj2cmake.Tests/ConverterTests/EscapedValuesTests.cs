@@ -67,32 +67,29 @@ public partial class ConverterTests
                     OUTPUT_NAME "My Target#%"
                 """,
                 cmake);
-            // TODO: these values need to be quoted
             Assert.Contains(
                 """
                 target_include_directories(Project
                     PUBLIC
-                        ${CMAKE_CURRENT_SOURCE_DIR}/include;dir
-                        ${CMAKE_CURRENT_SOURCE_DIR}/folder name
+                        "${CMAKE_CURRENT_SOURCE_DIR}/include;dir"
+                        "${CMAKE_CURRENT_SOURCE_DIR}/folder name"
                 )
                 """,
                 cmake);
-            // TODO: VALUE=a;b needs to be quoted
             Assert.Contains(
                 """
                 target_compile_definitions(Project
                     PUBLIC
-                        VALUE=a;b
+                        "VALUE=a;b"
                         SECOND=100%
                 )
                 """,
                 cmake);
-            // TODO: /DNAME=foo bar needs to be quoted
             Assert.Contains(
                 """
                 target_compile_options(Project
                     PUBLIC
-                        /DNAME=foo bar
+                        "/DNAME=foo bar"
                         /DVALUE=100%
                 )
                 """,
@@ -135,13 +132,12 @@ public partial class ConverterTests
                 """,
                 cmake);
             Assert.Contains("find_package(my-pkg REQUIRED CONFIG)", cmake);
-            // TODO: My Lib needs to be quoted
             Assert.Contains(
                 """
                 target_link_libraries(Project
                     PUBLIC
                         my-pkg::my-pkg
-                        My Lib
+                        "My Lib"
                 )
                 """,
                 cmake);

@@ -64,7 +64,7 @@ public partial class ConverterTests
                 """
                 target_precompile_headers(Project
                     PRIVATE
-                        ${CMAKE_CURRENT_SOURCE_DIR}/pch.h
+                        "${CMAKE_CURRENT_SOURCE_DIR}/pch.h"
                 )
                 """,
                 cmake);
