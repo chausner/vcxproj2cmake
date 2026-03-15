@@ -374,7 +374,7 @@ class CMakeProject
     {
         PublicIncludePaths = PublicIncludePaths.Map((directories, allArePublic) => (allArePublic?.Value.ToLowerInvariant()) switch
         {
-            "true" => [.. directories, CMakeExpression.Literal("${CMAKE_CURRENT_SOURCE_DIR}")],
+            "true" => [.. directories, CMakeExpression.Expression("${CMAKE_CURRENT_SOURCE_DIR}")],
             "false" or "" or null => directories,
             _ => throw new CatastrophicFailureException($"Invalid value for AllProjectIncludesArePublic: {allArePublic}"),
         }, project.AllProjectIncludesArePublic, ProjectConfigurations, logger);
