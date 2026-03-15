@@ -407,10 +407,10 @@ class MSBuildProject
 
     static readonly string[] StandardVisualStudioImports =
     [
-        @"$(VCTargetsPath)\Microsoft.Cpp.Default.props",
-        @"$(VCTargetsPath)\Microsoft.Cpp.props",
-        @"$(VCTargetsPath)\Microsoft.Cpp.targets",
-        @"$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"
+        PathUtils.NormalizePathSeparators(@"$(VCTargetsPath)\Microsoft.Cpp.Default.props"),
+        PathUtils.NormalizePathSeparators(@"$(VCTargetsPath)\Microsoft.Cpp.props"),
+        PathUtils.NormalizePathSeparators(@"$(VCTargetsPath)\Microsoft.Cpp.targets"),
+        PathUtils.NormalizePathSeparators(@"$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props")
     ];
 
     static void LogWarningsForUnsupportedImports(IEnumerable<string> imports, ILogger logger)
