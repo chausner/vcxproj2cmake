@@ -52,6 +52,8 @@ class MSBuildProject
     public static MSBuildProject ParseProjectFile(string projectPath, IFileSystem fileSystem, ILogger logger)
     {
         logger.LogInformation($"Parsing {projectPath}");
+        projectPath = PathUtils.NormalizePathSeparators(projectPath);
+        var absoluteProjectPath = Path.GetFullPath(projectPath);
 
         var msbuildNamespace = "http://schemas.microsoft.com/developer/msbuild/2003";
         var clCompileXName = XName.Get("ClCompile", msbuildNamespace);
@@ -74,7 +76,6 @@ class MSBuildProject
         var resourceCompileXName = XName.Get("ResourceCompile", msbuildNamespace);
 
         XDocument doc;
-        projectPath = PathUtils.NormalizePathSeparators(projectPath);
 
         using (var fileStream = fileSystem.FileStream.New(projectPath, FileMode.Open, FileAccess.Read, FileShare.Read))
             doc = XDocument.Load(fileStream);
@@ -133,6 +134,9 @@ class MSBuildProject
                 .Concat(projectElement.Elements(importGroupXName).SelectMany(group => group.Elements(importXName)))
                 .Select(import => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(import.Attribute("Project")!.Value.Trim())))
                 .ToList();
+
+        LogWarningsForUnsupportedImports(imports, logger);
+        LogWarningsForDirectoryBuildFiles(absoluteProjectPath, fileSystem, logger);
 
         var projectReferences =
             projectElement
@@ -281,7 +285,7 @@ class MSBuildProject
 
         return new MSBuildProject
         {
-            AbsoluteProjectPath = Path.GetFullPath(projectPath),
+            AbsoluteProjectPath = absoluteProjectPath,
             ProjectName = Path.GetFileNameWithoutExtension(projectPath),
             ProjectConfigurations = projectConfigurations.ToArray(),
             ConfigurationType = configurationType,
@@ -398,6 +402,46 @@ class MSBuildProject
             }
 
             return builder.ToString();
+        }
+    }
+
+    static readonly string[] StandardVisualStudioImports =
+    [
+        @"$(VCTargetsPath)\Microsoft.Cpp.Default.props",
+        @"$(VCTargetsPath)\Microsoft.Cpp.props",
+        @"$(VCTargetsPath)\Microsoft.Cpp.targets",
+        @"$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"
+    ];
+
+    static void LogWarningsForUnsupportedImports(IEnumerable<string> imports, ILogger logger)
+    {
+        foreach (var import in imports.Where(import => !IsStandardVisualStudioImport(import)).Distinct(StringComparer.OrdinalIgnoreCase))
+            logger.LogWarning($"MSBuild imports are unsupported and will not be processed: {import}");
+
+        bool IsStandardVisualStudioImport(string import) =>
+            StandardVisualStudioImports.Contains(
+                PathUtils.NormalizePathSeparators(import),
+                StringComparer.OrdinalIgnoreCase);
+    }
+
+    static void LogWarningsForDirectoryBuildFiles(string absoluteProjectPath, IFileSystem fileSystem, ILogger logger)
+    {
+        var projectDirectory = fileSystem.Path.GetDirectoryName(absoluteProjectPath);
+        if (string.IsNullOrEmpty(projectDirectory))
+            return;
+
+        for (var currentDirectory = fileSystem.DirectoryInfo.New(projectDirectory);
+            currentDirectory != null;
+            currentDirectory = currentDirectory.Parent)
+        {
+            LogWarningIfFileExists(currentDirectory.File("Directory.Build.props"));
+            LogWarningIfFileExists(currentDirectory.File("Directory.Build.targets"));
+        }
+
+        void LogWarningIfFileExists(IFileInfo file)
+        {
+            if (file.Exists)
+                logger.LogWarning($"Directory.Build.props/targets are unsupported and will not be processed: {file.FullName}");
         }
     }
 }
