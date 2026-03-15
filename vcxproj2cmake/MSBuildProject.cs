@@ -137,6 +137,7 @@ class MSBuildProject
 
         LogWarningsForUnsupportedImports(imports, logger);
         LogWarningsForDirectoryBuildFiles(absoluteProjectPath, fileSystem, logger);
+        LogWarningsForUnsupportedFileLevelSettings(projectElement, itemGroupXName, logger);
 
         var projectReferences =
             projectElement
@@ -380,29 +381,30 @@ class MSBuildProject
             return new(property, defaultValue, settings.GetValueOrDefault(property, []), parser);
         }
 
-        static string UnescapeMSBuildValue(string value)
+    }
+
+    static string UnescapeMSBuildValue(string value)
+    {
+        if (string.IsNullOrEmpty(value) || !value.Contains('%'))
+            return value;
+
+        var builder = new StringBuilder(value.Length);
+
+        for (var i = 0; i < value.Length; i++)
         {
-            if (string.IsNullOrEmpty(value) || !value.Contains('%'))
-                return value;
-
-            var builder = new StringBuilder(value.Length);
-
-            for (var i = 0; i < value.Length; i++)
+            if (value[i] == '%' &&
+                i + 2 < value.Length &&
+                byte.TryParse(value.AsSpan(i + 1, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var escapedByte))
             {
-                if (value[i] == '%' &&
-                    i + 2 < value.Length &&
-                    byte.TryParse(value.AsSpan(i + 1, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var escapedByte))
-                {
-                    builder.Append((char)escapedByte);
-                    i += 2;
-                    continue;
-                }
-
-                builder.Append(value[i]);
+                builder.Append((char)escapedByte);
+                i += 2;
+                continue;
             }
 
-            return builder.ToString();
+            builder.Append(value[i]);
         }
+
+        return builder.ToString();
     }
 
     static readonly string[] StandardVisualStudioImports =
@@ -412,6 +414,16 @@ class MSBuildProject
         PathUtils.NormalizePathSeparators(@"$(VCTargetsPath)\Microsoft.Cpp.targets"),
         PathUtils.NormalizePathSeparators(@"$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props")
     ];
+
+    static readonly HashSet<string> FileItemElementNames = new(StringComparer.Ordinal)
+    {
+        "ClCompile",
+        "ClInclude",
+        "QtMoc",
+        "QtRcc",
+        "QtUic",
+        "ResourceCompile"
+    };
 
     static void LogWarningsForUnsupportedImports(IEnumerable<string> imports, ILogger logger)
     {
@@ -438,5 +450,40 @@ class MSBuildProject
             if (file.Exists)
                 logger.LogWarning($"Directory.Build.props/targets are unsupported and will not be processed: {file.FullName}");
         }
+    }
+
+    static void LogWarningsForUnsupportedFileLevelSettings(XElement projectElement, XName itemGroupXName, ILogger logger)
+    {
+        var fileLevelSettings =
+            projectElement
+                .Elements(itemGroupXName)
+                .SelectMany(group => group.Elements())
+                .Where(element => FileItemElementNames.Contains(element.Name.LocalName))
+                .Select(element => new
+                {
+                    FilePath = element.Attribute("Include")?.Value,
+                    SettingNames =
+                        element.Elements()
+                            .Select(setting => setting.Name.LocalName)
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .ToArray()
+                })
+                .Where(item => !string.IsNullOrWhiteSpace(item.FilePath) && item.SettingNames.Length > 0)
+                .GroupBy(
+                    item => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(item.FilePath!.Trim())),
+                    StringComparer.OrdinalIgnoreCase)
+                .Select(group => new
+                {
+                    FilePath = group.Key,
+                    SettingNames =
+                        group.SelectMany(item => item.SettingNames)
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                            .ToArray()
+                });
+
+        foreach (var fileLevelSetting in fileLevelSettings)
+            logger.LogWarning(
+                $"File-level MSBuild settings are unsupported and will not be processed: {fileLevelSetting.FilePath} ({string.Join(", ", fileLevelSetting.SettingNames)})");
     }
 }
