@@ -415,13 +415,8 @@ class MSBuildProject
 
     static void LogWarningsForUnsupportedImports(IEnumerable<string> imports, ILogger logger)
     {
-        foreach (var import in imports.Where(import => !IsStandardVisualStudioImport(import)).Distinct(StringComparer.OrdinalIgnoreCase))
+        foreach (var import in imports.Except(StandardVisualStudioImports).Distinct(StringComparer.OrdinalIgnoreCase))
             logger.LogWarning($"MSBuild imports are unsupported and will not be processed: {import}");
-
-        bool IsStandardVisualStudioImport(string import) =>
-            StandardVisualStudioImports.Contains(
-                PathUtils.NormalizePathSeparators(import),
-                StringComparer.OrdinalIgnoreCase);
     }
 
     static void LogWarningsForDirectoryBuildFiles(string absoluteProjectPath, IFileSystem fileSystem, ILogger logger)
