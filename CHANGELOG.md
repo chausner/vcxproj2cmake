@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Add support for linker property `ModuleDefinitionFile`.
+- Log warnings when MSBuild imports (directly or indirectly via Directory.Build.props/targets) are ignored.
+- Log warnings when file-specific MSBuild settings are ignored.
 
 ### Changed
 
