@@ -101,8 +101,8 @@ public partial class ConverterTests
                 target_sources(Project
                     PRIVATE
                         src/main.cpp
-                        "$<$<CONFIG:Debug>:project_debug.def>"
-                        "$<$<CONFIG:Release>:project_release.def>"
+                        $<$<CONFIG:Debug>:project_debug.def>
+                        $<$<CONFIG:Release>:project_release.def>
                 )
                 """.Trim(), cmake);
         }

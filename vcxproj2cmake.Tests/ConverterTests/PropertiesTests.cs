@@ -43,7 +43,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 set_target_properties(Project PROPERTIES
-                    COMPILE_WARNING_AS_ERROR "$<$<CONFIG:Debug>:ON>$<$<CONFIG:Release>:OFF>"
+                    COMPILE_WARNING_AS_ERROR $<$<CONFIG:Debug>:ON>$<$<CONFIG:Release>:OFF>
                 )
                 """.TrimEnd(), cmake);
         }

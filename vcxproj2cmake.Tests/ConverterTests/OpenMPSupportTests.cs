@@ -49,7 +49,7 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_link_libraries(Project
                     PUBLIC
-                        "$<$<CONFIG:Debug>:OpenMP::OpenMP_CXX>"
+                        $<$<CONFIG:Debug>:OpenMP::OpenMP_CXX>
                 )
                 """, cmake);
         }

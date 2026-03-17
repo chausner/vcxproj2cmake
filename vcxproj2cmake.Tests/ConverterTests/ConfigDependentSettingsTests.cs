@@ -333,8 +333,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_link_directories(Project
                     PUBLIC
-                        "$<$<CONFIG:Debug>:DebugLibs>"
-                        "$<$<CONFIG:Release>:ReleaseLibs>"
+                        $<$<CONFIG:Debug>:DebugLibs>
+                        $<$<CONFIG:Release>:ReleaseLibs>
                 )
                 """.Trim(), cmake);
         }
@@ -356,8 +356,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_link_directories(Project
                     PUBLIC
-                        "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:Win32Lib>"
-                        "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:X64Lib>"
+                        $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:Win32Lib>
+                        $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:X64Lib>
                 )
                 """.Trim(), cmake);
         }
@@ -398,8 +398,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_link_directories(Project
                     PUBLIC
-                        "$<$<CONFIG:Debug>:DebugLib2>"
-                        "$<$<CONFIG:Release>:Libs2>"
+                        $<$<CONFIG:Debug>:DebugLib2>
+                        $<$<CONFIG:Release>:Libs2>
                 )
                 """.Trim(), cmake);
             Assert.DoesNotContain("DebugLib1", cmake);

@@ -45,7 +45,7 @@ target_sources({{ project_name | literal }}
         {{~ end ~}}
         {{~ for kvp in module_definition_file.values ~}}
         {{~ if kvp.value != "" ~}}
-        {{ get_config_expression kvp.key kvp.value | literal }}
+        {{ get_config_expression kvp.key kvp.value }}
         {{~ end ~}}
         {{~ end ~}}
 )
@@ -55,7 +55,7 @@ target_sources({{ project_name | literal }}
 {{~ if properties | array.size > 0 ~}}
 set_target_properties({{ project_name | literal }} PROPERTIES
     {{~ for kvp in properties ~}}
-    {{ kvp.key | literal }} {{ kvp.value }}
+    {{ kvp.key | literal }} {{ kvp.value.value }}
     {{~ end ~}}
 )
 
@@ -66,7 +66,7 @@ target_compile_features({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in compile_features.values ~}}
         {{~ for feature in kvp.value ~}}
-        {{ get_config_expression kvp.key feature | literal }}
+        {{ get_config_expression kvp.key feature }}
         {{~ end ~}}  
         {{~ end ~}}
 )
@@ -78,7 +78,7 @@ target_precompile_headers({{ project_name | literal }}
     PRIVATE
         {{~ for kvp in precompiled_header_file.values ~}}
         {{~ if kvp.value != "" ~}}
-        {{ get_config_expression kvp.key (kvp.value | prepend_relative_paths_with_cmake_current_source_dir) | literal }}
+        {{ get_config_expression kvp.key (kvp.value | prepend_relative_paths_with_cmake_current_source_dir) }}
         {{~ end ~}}
         {{~ end ~}}
 )
@@ -91,7 +91,7 @@ target_include_directories({{ project_name | literal }}
     INTERFACE
         {{~ for kvp in public_include_paths.values ~}}
         {{~ for path in kvp.value ~}}
-        {{ get_config_expression kvp.key (path | prepend_relative_paths_with_cmake_current_source_dir) | literal }}
+        {{ get_config_expression kvp.key (path | prepend_relative_paths_with_cmake_current_source_dir) }}
         {{~ end ~}}  
         {{~ end ~}}  
 {{~ end ~}}
@@ -99,7 +99,7 @@ target_include_directories({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in include_paths.values ~}}
         {{~ for path in kvp.value ~}}
-        {{ get_config_expression kvp.key (path | prepend_relative_paths_with_cmake_current_source_dir) | literal }}
+        {{ get_config_expression kvp.key (path | prepend_relative_paths_with_cmake_current_source_dir) }}
         {{~ end ~}}  
         {{~ end ~}}  
 {{~ end ~}}
@@ -112,7 +112,7 @@ target_compile_definitions({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in defines.values ~}}
         {{~ for define in kvp.value ~}}
-        {{ get_config_expression kvp.key define | literal }}
+        {{ get_config_expression kvp.key define }}
         {{~ end ~}}
         {{~ end ~}}     
 )
@@ -124,7 +124,7 @@ target_link_directories({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in linker_paths.values ~}}
         {{~ for path in kvp.value ~}}
-        {{ get_config_expression kvp.key path | literal }}
+        {{ get_config_expression kvp.key path }}
         {{~ end ~}}  
         {{~ end ~}}      
 )
@@ -136,7 +136,7 @@ target_link_libraries({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in libraries.values ~}}
         {{~ for library in kvp.value ~}}
-        {{ get_config_expression kvp.key library | literal }}
+        {{ get_config_expression kvp.key library }}
         {{~ end ~}}
         {{~ end ~}}
 )
@@ -148,7 +148,7 @@ target_compile_options({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
         {{~ for kvp in options.values ~}}
         {{~ for option in kvp.value ~}}
-        {{ get_config_expression kvp.key option | literal }}
+        {{ get_config_expression kvp.key option }}
         {{~ end ~}}
         {{~ end ~}}     
 )

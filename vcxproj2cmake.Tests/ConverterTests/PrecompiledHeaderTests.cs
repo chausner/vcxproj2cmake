@@ -88,7 +88,7 @@ public partial class ConverterTests
                 """
                 target_precompile_headers(Project
                     PRIVATE
-                        "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/pch.h>"
+                        $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/pch.h>
                 )
                 """,
                 cmake);
@@ -112,8 +112,8 @@ public partial class ConverterTests
                 """
                 target_precompile_headers(Project
                     PRIVATE
-                        "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/pch_debug.h>"
-                        "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/pch_release.h>"
+                        $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/pch_debug.h>
+                        $<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/pch_release.h>
                 )
                 """,
                 cmake);

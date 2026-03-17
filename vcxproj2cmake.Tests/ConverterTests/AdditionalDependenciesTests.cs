@@ -106,8 +106,8 @@ public partial class ConverterTests
                 """
                 target_link_libraries(Project
                     PUBLIC
-                        "$<$<CONFIG:Debug>:Foo_d.lib>"
-                        "$<$<CONFIG:Release>:Foo.lib>"
+                        $<$<CONFIG:Debug>:Foo_d.lib>
+                        $<$<CONFIG:Release>:Foo.lib>
                 )
                 """.Trim(),
                 cmake);

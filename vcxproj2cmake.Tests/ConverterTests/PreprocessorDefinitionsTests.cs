@@ -166,10 +166,10 @@ public partial class ConverterTests
                 target_compile_definitions(Project
                     PUBLIC
                         FOO
-                        "$<$<CONFIG:Debug>:DEBUG>"
-                        "$<$<CONFIG:Debug>:VALUE=1>"
-                        "$<$<CONFIG:Release>:NDEBUG>"
-                        "$<$<CONFIG:Release>:VALUE=2>"
+                        $<$<CONFIG:Debug>:DEBUG>
+                        $<$<CONFIG:Debug>:VALUE=1>
+                        $<$<CONFIG:Release>:NDEBUG>
+                        $<$<CONFIG:Release>:VALUE=2>
                 )
                 """);
         }
@@ -196,8 +196,8 @@ public partial class ConverterTests
                 target_compile_definitions(ProjectMBCS
                     PUBLIC
                         _MBCS
-                        "$<$<CONFIG:Debug>:DEBUG_DEF>"
-                        "$<$<CONFIG:Release>:RELEASE_DEF>"
+                        $<$<CONFIG:Debug>:DEBUG_DEF>
+                        $<$<CONFIG:Release>:RELEASE_DEF>
                 )
                 """);
         }
@@ -244,8 +244,8 @@ public partial class ConverterTests
 
                 target_compile_definitions(ProjectArch
                     PUBLIC
-                        "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:X86_DEF>"
-                        "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:X64_DEF>"
+                        $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:X86_DEF>
+                        $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:X64_DEF>
                 )
                 """);
         }
