@@ -14,7 +14,7 @@ class CMakeProject
     public IList<CMakeFindPackage> FindPackages { get; set; }
     public CMakeConfigDependentMultiSetting CompileFeatures { get; set; }
     public CMakeExpression[] SourceFiles { get; set; }
-    public string OutputName { get; set; }
+    public CMakeExpression OutputName { get; set; }
     public CMakeConfigDependentMultiSetting IncludePaths { get; set; }
     public CMakeConfigDependentMultiSetting PublicIncludePaths { get; set; }
     public CMakeConfigDependentMultiSetting LinkerPaths { get; set; }
@@ -46,7 +46,7 @@ class CMakeProject
         var normalizedHeaderFiles = project.HeaderFiles.Select(value => TranslateAndNormalize(CMakeExpression.Literal(value), "HeaderFiles", logger));
         SourceFiles = normalizedSourceFiles.Concat(includeHeaders ? normalizedHeaderFiles : []).ToArray();
 
-        OutputName = project.ProjectName;  // may get overridden in ApplyTargetName
+        OutputName = CMakeExpression.Literal(project.ProjectName);  // may get overridden in ApplyTargetName
         var mergedIncludeDirectories = MergeIncludeDirectories(project, supportedProjectConfigurations);
         IncludePaths = new CMakeConfigDependentMultiSetting(mergedIncludeDirectories, supportedProjectConfigurations, logger)
             .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalIncludeDirectories+IncludePath", logger)).ToArray(), supportedProjectConfigurations, logger);
@@ -170,7 +170,7 @@ class CMakeProject
         if (targetName != CMakeExpression.Literal(project.ProjectName))
         {
             Properties["OUTPUT_NAME"] = targetName;
-            OutputName = targetName.Value; // TODO
+            OutputName = targetName;
         }
     }
 

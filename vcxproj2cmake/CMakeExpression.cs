@@ -2,7 +2,7 @@ using System.Text;
 
 namespace vcxproj2cmake;
 
-class CMakeExpression : IComparable, IComparable<CMakeExpression>
+class CMakeExpression : IComparable, IComparable<CMakeExpression>, IEquatable<CMakeExpression>
 {
     public string Value { get; }
 
@@ -99,6 +99,28 @@ class CMakeExpression : IComparable, IComparable<CMakeExpression>
             return 1;
 
         return Value.CompareTo(other.Value);
+    }
+
+    public bool Equals(CMakeExpression? other)
+    {
+        if (other is null)
+            return false;
+
+        if (GetType() != other.GetType())
+            return false;
+
+        return Value.Equals(other.Value);
+    }
+
+    public bool Equals(CMakeExpression? other, StringComparison comparisonType)
+    {
+        if (other is null)
+            return false;
+
+        if (GetType() != other.GetType())
+            return false;
+
+        return Value.Equals(other.Value, comparisonType);
     }
 
     public static bool operator ==(CMakeExpression? expression1, CMakeExpression? expression2)

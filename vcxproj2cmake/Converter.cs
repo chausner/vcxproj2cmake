@@ -171,17 +171,17 @@ public class Converter
 
             var dependencyTargets = project.GetAllReferencedProjects()
                 .Where(project => project.TargetType is CMakeTargetType.StaticLibrary or CMakeTargetType.SharedLibrary)
-                .Select(project => project.OutputName + ".lib")
+                .Select(project => project.OutputName + CMakeExpression.Literal(".lib"))
                 .ToArray();
 
             foreach (var dependencyTarget in dependencyTargets)
-                if (project.Libraries.Values.Values.SelectMany(s => s).Any(expr => expr.Value.Equals(dependencyTarget, StringComparison.OrdinalIgnoreCase)))
+                if (project.Libraries.Values.Values.SelectMany(s => s).Any(expr => expr.Equals(dependencyTarget, StringComparison.OrdinalIgnoreCase)))
                 {
                     logger!.LogInformation($"Removing explicit library dependency {dependencyTarget} from project {project.ProjectName} since LinkLibraryDependencies is enabled.");
                 }
 
             project.Libraries = project.Libraries.Map(libraries =>
-                libraries.Where(lib => !dependencyTargets.Contains(lib.Value, StringComparer.OrdinalIgnoreCase)).ToArray(),
+                libraries.Where(lib => !dependencyTargets.Any(target => target.Equals(lib, StringComparison.OrdinalIgnoreCase))).ToArray(),
                 project.ProjectConfigurations, logger!);
         }
     }
