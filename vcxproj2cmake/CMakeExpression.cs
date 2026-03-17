@@ -6,7 +6,7 @@ class CMakeExpression : IComparable, IComparable<CMakeExpression>
 {
     public string Value { get; }
 
-    private CMakeExpression(string value)
+    CMakeExpression(string value)
     {
         Value = value;
     }
@@ -19,11 +19,6 @@ class CMakeExpression : IComparable, IComparable<CMakeExpression>
     public static CMakeExpression Expression(string expression)
     {
         return new CMakeExpression(expression);
-    }
-
-    public static CMakeExpression operator +(CMakeExpression expression1, CMakeExpression expression2)
-    {
-        return new CMakeExpression(expression1.Value + expression2.Value);
     }
 
     static string Escape(string value)
@@ -120,5 +115,10 @@ class CMakeExpression : IComparable, IComparable<CMakeExpression>
     public static bool operator !=(CMakeExpression? expression1, CMakeExpression? expression2)
     { 
         return !(expression1 == expression2);
+    }
+
+    public static CMakeExpression operator +(CMakeExpression expression1, CMakeExpression expression2)
+    {
+        return new CMakeExpression(expression1.Value + expression2.Value);
     }
 }
