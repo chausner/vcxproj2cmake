@@ -59,7 +59,7 @@ class CMakeGenerator
         scriptObject.Import("literal", ToCMakeLiteral);
         scriptObject.Import("unquoted_literal", (string s) => ToCMakeLiteral(s, unquoted: true));
         scriptObject.Import("normalize_path", PathUtils.NormalizePath);
-        scriptObject.Import("get_config_expression", new Func<Config, CMakeExpression, string>((config, value) => config.Apply(value).Value));
+        scriptObject.Import("get_config_expression", new Func<Config, CMakeExpression, CMakeExpression>((config, value) => config.Apply(value)));
         scriptObject.Import("order_project_references_by_dependencies", (IEnumerable<CMakeProjectReference> pr) => ProjectDependencyUtils.OrderProjectReferencesByDependencies(pr, allProjects, logger));
         scriptObject.Import("get_directory_name", new Func<string?, string?>(Path.GetDirectoryName));
         scriptObject.Import("get_relative_path", new Func<string, string, string?>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));
@@ -150,8 +150,7 @@ class CMakeGenerator
                 '\n' => "\\n",  // newline
                 '\r' => "\\r",  // carriage return
                 '\t' => "\\t",  // tab
-                // commented out for now since it conflicts with TranslateMSBuildMacros
-                //'$' => "\\$",   // prevent ${VAR} expansion
+                '$' => "\\$",   // prevent ${VAR} expansion
                 _ => c.ToString()
             });  
 
@@ -171,11 +170,11 @@ class CMakeGenerator
 
         if (!isAbsolutePath)
             if (path == ".")
-                return CMakeExpression.Expression("${CMAKE_CURRENT_SOURCE_DIR}", quoteVariablesWhenStandalone: true);
+                return CMakeExpression.Expression("${CMAKE_CURRENT_SOURCE_DIR}");
             else
-                return CMakeExpression.Expression("${CMAKE_CURRENT_SOURCE_DIR}/" + path, quoteVariablesWhenStandalone: true);
+                return CMakeExpression.Expression("${CMAKE_CURRENT_SOURCE_DIR}/" + path);
         else
-            return normalizedPath.WithQuotedVariablesWhenStandalone();
+            return normalizedPath;
     }
 }
 

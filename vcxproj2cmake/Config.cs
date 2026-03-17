@@ -23,9 +23,6 @@ record Config(Regex MSBuildProjectConfigPattern, string Prefix, string Suffix)
 
     public CMakeExpression Apply(CMakeExpression value)
     {
-        if (this == CommonConfig)
-            return CMakeExpression.Expression(value.RenderStandalone());
-
         return CMakeExpression.Expression(Prefix + value.Value + Suffix);
     }
 

@@ -108,8 +108,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_link_directories(Project
                     PUBLIC
-                        ${CMAKE_CURRENT_SOURCE_DIR}/libs
-                        ${CMAKE_BUILD_TYPE}
+                        "${CMAKE_CURRENT_SOURCE_DIR}/libs"
+                        "${CMAKE_BUILD_TYPE}"
                 )
                 """.Trim(), cmake);
         }

@@ -88,7 +88,7 @@ public partial class ConverterTests
             Assert.Contains(
                 """
                 set_target_properties(Project PROPERTIES
-                    MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>
+                    MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
                 )
                 """,
                 cmake);

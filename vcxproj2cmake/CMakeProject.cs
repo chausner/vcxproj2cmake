@@ -89,19 +89,19 @@ class CMakeProject
     static CMakeExpression TranslateMSBuildMacros(CMakeExpression value, string settingName, ILogger logger)
     {
         string translatedValue = value.Value;
-        translatedValue = Regex.Replace(translatedValue, @"\$\(Configuration(Name)?\)", "${CMAKE_BUILD_TYPE}", RegexOptions.IgnoreCase);
-        translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectDir\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/", RegexOptions.IgnoreCase);
-        translatedValue = Regex.Replace(translatedValue, @"\$\(ProjectName\)", "${PROJECT_NAME}", RegexOptions.IgnoreCase);
-        translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/", RegexOptions.IgnoreCase);
-        translatedValue = Regex.Replace(translatedValue, @"\$\(SolutionName\)", "${CMAKE_PROJECT_NAME}", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(Configuration(Name)?\)", "${CMAKE_BUILD_TYPE}", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(ProjectDir\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(ProjectName\)", "${PROJECT_NAME}", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(SolutionName\)", "${CMAKE_PROJECT_NAME}", RegexOptions.IgnoreCase);
 
-        var unsupportedMacros = Regex.Matches(translatedValue, @"\$\(([A-Za-z0-9_]+)\)");
+        var unsupportedMacros = Regex.Matches(translatedValue, @"\\\$\(([A-Za-z0-9_]+)\)");
         if (unsupportedMacros.Count > 0)
         {
             var unsupportedMacroNames = unsupportedMacros.Select(match => match.Groups[1].Value);
             logger.LogWarning($"Setting {settingName} with value \"{value.Value}\" contains unsupported MSBuild macros/properties: {string.Join(", ", unsupportedMacroNames)}");
 
-            translatedValue = Regex.Replace(translatedValue, @"\$\(([A-Za-z0-9_]+)\)", "${$1}");
+            translatedValue = Regex.Replace(translatedValue, @"\\\$\(([A-Za-z0-9_]+)\)", "${$1}");
         }
 
         return CMakeExpression.Expression(translatedValue);
