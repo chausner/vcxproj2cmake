@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Percent-escaped characters in MSBuild values are now properly handled.
+- Values and expressions in CMake are now properly quoted when necessary.
 
 ## [1.4.0] - 2026-03-01
 
