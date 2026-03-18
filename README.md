@@ -179,13 +179,15 @@ similar configuration-specific defines and compiler options:
 Running the converter on the solution generates three `CMakeLists.txt` files:
 
 ```
-> .\vcxproj2cmake --solution ../ExampleSolution/ExampleSolution.sln
-Parsing ../ExampleSolution/ExampleSolution.sln
-Parsing ../ExampleSolution/MathLib/MathLib.vcxproj
-Parsing ../ExampleSolution/App/App.vcxproj
-Generating ../ExampleSolution/MathLib/CMakeLists.txt
-Generating ../ExampleSolution/App/CMakeLists.txt
-Generating ../ExampleSolution/CMakeLists.txt
+> .\vcxproj2cmake --solution ..\ExampleSolution\ExampleSolution.sln
+Parsing ..\ExampleSolution\ExampleSolution.sln
+Parsing ..\ExampleSolution\MathLib\MathLib.vcxproj
+Parsing ..\ExampleSolution\App\App.vcxproj
+Processing project ..\ExampleSolution\MathLib\MathLib.vcxproj
+Processing project ..\ExampleSolution\App\App.vcxproj
+Generating ..\ExampleSolution\MathLib\CMakeLists.txt
+Generating ..\ExampleSolution\App\CMakeLists.txt
+Generating ..\ExampleSolution\CMakeLists.txt
 ```
 
 `ExampleSolution/MathLib/CMakeLists.txt`:
@@ -201,11 +203,14 @@ target_sources(MathLib
         MathLib.cpp
 )
 
-target_compile_features(MathLib PUBLIC cxx_std_17)
+target_compile_features(MathLib
+    PUBLIC
+        cxx_std_17
+)
 
 target_include_directories(MathLib
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
 target_compile_definitions(MathLib
@@ -228,11 +233,14 @@ target_sources(App
         main.cpp
 )
 
-target_compile_features(App PUBLIC cxx_std_17)
+target_compile_features(App
+    PUBLIC
+        cxx_std_17
+)
 
 target_include_directories(App
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/../MathLib/include
+        "${CMAKE_CURRENT_SOURCE_DIR}/../MathLib/include"
 )
 
 target_compile_definitions(App
