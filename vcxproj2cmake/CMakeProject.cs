@@ -334,28 +334,28 @@ class CMakeProject
 
     void ApplyWarningLevel(MSBuildProject project, ILogger logger)
     {
-        Options = Options.Map((options, level) => level switch
+        Options = Options.Map((options, level) => level?.Value switch
         {
-            CMakeExpression e when e.Value == "TurnOffAllWarnings" => [.. options, CMakeExpression.Literal("/W0")],
-            CMakeExpression e when e.Value == "Level1" => [.. options, CMakeExpression.Literal("/W1")],
-            CMakeExpression e when e.Value == "Level2" => [.. options, CMakeExpression.Literal("/W2")],
-            CMakeExpression e when e.Value == "Level3" => [.. options, CMakeExpression.Literal("/W3")],
-            CMakeExpression e when e.Value == "Level4" => [.. options, CMakeExpression.Literal("/W4")],
-            null or { Value: "" } => options,
+            "TurnOffAllWarnings" => [.. options, CMakeExpression.Literal("/W0")],
+            "Level1" => [.. options, CMakeExpression.Literal("/W1")],
+            "Level2" => [.. options, CMakeExpression.Literal("/W2")],
+            "Level3" => [.. options, CMakeExpression.Literal("/W3")],
+            "Level4" => [.. options, CMakeExpression.Literal("/W4")],
+            "" or null => options,
             _ => throw new CatastrophicFailureException($"Invalid value for WarningLevel: {level?.Value}")
         }, project.WarningLevel, ProjectConfigurations, logger);
     }
 
     void ApplyExternalWarningLevel(MSBuildProject project, ILogger logger)
     {
-        Options = Options.Map((options, level) => level switch
+        Options = Options.Map((options, level) => level?.Value switch
         {
-            CMakeExpression e when e.Value == "TurnOffAllWarnings" => [.. options, CMakeExpression.Literal("/external:W0")],
-            CMakeExpression e when e.Value == "Level1" => [.. options, CMakeExpression.Literal("/external:W1")],
-            CMakeExpression e when e.Value == "Level2" => [.. options, CMakeExpression.Literal("/external:W2")],
-            CMakeExpression e when e.Value == "Level3" => [.. options, CMakeExpression.Literal("/external:W3")],
-            CMakeExpression e when e.Value == "Level4" => [.. options, CMakeExpression.Literal("/external:W4")],
-            null or { Value: "" } => options,
+            "TurnOffAllWarnings" => [.. options, CMakeExpression.Literal("/external:W0")],
+            "Level1" => [.. options, CMakeExpression.Literal("/external:W1")],
+            "Level2" => [.. options, CMakeExpression.Literal("/external:W2")],
+            "Level3" => [.. options, CMakeExpression.Literal("/external:W3")],
+            "Level4" => [.. options, CMakeExpression.Literal("/external:W4")],
+            "" or null => options,
             _ => throw new CatastrophicFailureException($"Invalid value for ExternalWarningLevel: {level?.Value}")
         }, project.ExternalWarningLevel, ProjectConfigurations, logger);
     }
