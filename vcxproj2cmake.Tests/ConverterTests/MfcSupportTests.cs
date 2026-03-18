@@ -108,7 +108,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 set_target_properties(Project PROPERTIES
-                    CMAKE_MFC_FLAG "$<$<CONFIG:Debug>:0>$<$<CONFIG:Release>:2>"
+                    CMAKE_MFC_FLAG $<$<CONFIG:Debug>:0>$<$<CONFIG:Release>:2>
                 )
                 """.TrimEnd(), cmake);
             Assert.Contains("""

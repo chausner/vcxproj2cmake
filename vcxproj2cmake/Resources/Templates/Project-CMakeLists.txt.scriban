@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.24)
 project({{ project_name | literal }}
 {{- if languages.size > 0 ~}}
  LANGUAGES {{ languages | array.join " " }}
@@ -41,7 +41,7 @@ add_library({{ project_name | literal }} INTERFACE)
 target_sources({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
         {{~ for file in source_files | array.sort ~}}
-        {{ file | literal }}
+        {{ file }}
         {{~ end ~}}
         {{~ for kvp in module_definition_file.values ~}}
         {{~ if kvp.value != "" ~}}
@@ -55,7 +55,7 @@ target_sources({{ project_name | literal }}
 {{~ if properties | array.size > 0 ~}}
 set_target_properties({{ project_name | literal }} PROPERTIES
     {{~ for kvp in properties ~}}
-    {{ kvp.key | literal }} {{ kvp.value | literal }}
+    {{ kvp.key | literal }} {{ kvp.value }}
     {{~ end ~}}
 )
 
@@ -154,4 +154,3 @@ target_compile_options({{ project_name | literal }}
 )
 
 {{~ end -}}
-

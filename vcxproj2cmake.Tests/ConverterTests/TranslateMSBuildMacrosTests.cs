@@ -79,9 +79,9 @@ public partial class ConverterTests
 
             // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
-            Assert.Contains("NAME=${Foo}_${Bar}", cmake);
+            Assert.Contains("\"NAME=${Foo}_${Bar}\"", cmake);
             Assert.Contains(
-                "Setting PreprocessorDefinitions with value \"NAME=$(Foo)_$(Bar)\" contains unsupported MSBuild macros/properties: Foo, Bar",
+                "Setting PreprocessorDefinitions with value \"NAME=\\$(Foo)_\\$(Bar)\" contains unsupported MSBuild macros/properties: Foo, Bar",
                 logger.AllMessageText);
         }
     }

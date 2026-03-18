@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Scriban;
 using Scriban.Runtime;
 using System.IO.Abstractions;
@@ -59,7 +59,7 @@ class CMakeGenerator
         scriptObject.Import("literal", ToCMakeLiteral);
         scriptObject.Import("unquoted_literal", (string s) => ToCMakeLiteral(s, unquoted: true));
         scriptObject.Import("normalize_path", PathUtils.NormalizePath);
-        scriptObject.Import("get_config_expression", new Func<Config, string, string>((config, value) => config.GetCMakeExpression(value)));
+        scriptObject.Import("get_config_expression", new Func<Config, CMakeExpression, CMakeExpression>((config, value) => config.Apply(value)));
         scriptObject.Import("order_project_references_by_dependencies", (IEnumerable<CMakeProjectReference> pr) => ProjectDependencyUtils.OrderProjectReferencesByDependencies(pr, allProjects, logger));
         scriptObject.Import("get_directory_name", new Func<string?, string?>(Path.GetDirectoryName));
         scriptObject.Import("get_relative_path", new Func<string, string, string?>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));
@@ -150,8 +150,7 @@ class CMakeGenerator
                 '\n' => "\\n",  // newline
                 '\r' => "\\r",  // carriage return
                 '\t' => "\\t",  // tab
-                // commented out for now since it conflicts with TranslateMSBuildMacros
-                //'$' => "\\$",   // prevent ${VAR} expansion
+                '$' => "\\$",   // prevent ${VAR} expansion
                 _ => c.ToString()
             });  
 
@@ -161,18 +160,19 @@ class CMakeGenerator
         return sb.ToString();
     }
 
-    static string PrependRelativePathsWithCMakeCurrentSourceDir(string normalizedPath)
+    static CMakeExpression PrependRelativePathsWithCMakeCurrentSourceDir(CMakeExpression normalizedPath)
     {
-        var isAbsolutePath = Path.IsPathRooted(normalizedPath);
+        var path = normalizedPath.Value;
+        var isAbsolutePath = Path.IsPathRooted(path);
 
         // if a path starts with a CMake variable, we just assume that the variable resolves to an absolute path
-        isAbsolutePath |= normalizedPath.StartsWith("${");
+        isAbsolutePath |= path.StartsWith("${");
 
         if (!isAbsolutePath)
-            if (normalizedPath == ".")
-                return "${CMAKE_CURRENT_SOURCE_DIR}";
+            if (path == ".")
+                return CMakeExpression.Expression("${CMAKE_CURRENT_SOURCE_DIR}");
             else
-                return "${CMAKE_CURRENT_SOURCE_DIR}/" + normalizedPath;
+                return CMakeExpression.Expression("${CMAKE_CURRENT_SOURCE_DIR}/" + path);
         else
             return normalizedPath;
     }
