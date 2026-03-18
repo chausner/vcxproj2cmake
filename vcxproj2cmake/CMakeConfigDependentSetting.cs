@@ -36,7 +36,7 @@ record CMakeConfigDependentSetting
         foreach (var config in projectConfigurations)
             if (!effectiveSettings.ContainsKey(config))
                 effectiveSettings[config] = settings.DefaultValue;
-        
+
         var allSettingValues = effectiveSettings.Values.Distinct().ToArray();
 
         var commonSettingValue = allSettingValues.FirstOrDefault(s => effectiveSettings.All(kvp => kvp.Value == s));
@@ -69,7 +69,7 @@ record CMakeConfigDependentSetting
             .Except(values.Values)
             .ToArray();
         if (skippedSettings.Length > 0)
-            logger.LogWarning($"The following values for setting {settings.SettingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings.Select(e => e.ToString()))}");
+            logger.LogWarning($"The following values for setting {settings.SettingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings)}");
     }
 
     public CMakeConfigDependentSetting(
@@ -79,7 +79,7 @@ record CMakeConfigDependentSetting
         : this(
             new MSBuildConfigDependentSetting<CMakeExpression>(
                 settings.SettingName,
-                settings.DefaultValue != null ? CMakeExpression.Literal(settings.DefaultValue) : CMakeExpression.Literal(string.Empty),
+                CMakeExpression.Literal(settings.DefaultValue ?? string.Empty),
                 settings.Values.ToDictionary(kvp => kvp.Key, kvp => CMakeExpression.Literal(kvp.Value))),
             projectConfigurations,
             logger)
@@ -90,15 +90,13 @@ record CMakeConfigDependentSetting
     {
         var config = Config.Configs.SingleOrDefault(config => config.MatchesProjectConfig(projectConfig) && Values.ContainsKey(config));
         if (config != null)
-            return Values[config];        
+            return Values[config];
         return Values.GetValueOrDefault(Config.CommonConfig);
     }
 
     public CMakeExpression ToCMakeExpression()
     {
-        return CMakeExpression.Expression(
-            string.Join(string.Empty,
-            Values.Select(kvp => kvp.Key.Apply(kvp.Value).Value)));
+        return CMakeExpression.Expression(string.Join(string.Empty, Values.Select(kvp => kvp.Key.Apply(kvp.Value).Value)));
     }
 
     public bool IsEmpty => Values.Count == 0;
@@ -170,7 +168,7 @@ record CMakeConfigDependentMultiSetting
             .Except(values.Values.SelectMany(s => s))
             .ToArray();
         if (skippedSettings.Length > 0)
-            logger.LogWarning($"The following values for setting {settings.SettingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings.Select(e => e.ToString()))}");
+            logger.LogWarning($"The following values for setting {settings.SettingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings)}");
     }
 
     public CMakeConfigDependentMultiSetting(
@@ -208,10 +206,7 @@ record CMakeConfigDependentMultiSetting
 
     public CMakeExpression ToCMakeExpression()
     {
-        return CMakeExpression.Expression(
-            string.Join(' ',
-            Values.SelectMany(kvp =>
-            kvp.Value.Select(value => kvp.Key.Apply(value).Value))));
+        return CMakeExpression.Expression(string.Join(' ', Values.SelectMany(kvp => kvp.Value.Select(value => kvp.Key.Apply(value).Value))));
     }
 
     public bool IsEmpty => Values.Count == 0;
