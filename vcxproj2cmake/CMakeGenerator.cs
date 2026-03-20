@@ -104,12 +104,16 @@ class CMakeGenerator
     {
         string cmakeListsPath = Path.Combine(Path.GetDirectoryName(project.AbsoluteProjectPath)!, "CMakeLists.txt");
 
+        using var scope = logger.BeginScope(Path.GetFileName(project.AbsoluteProjectPath));
+
         GenerateCMake(project, allProjects, cmakeListsPath, cmakeListsTemplate, settings);
     }
 
     void GenerateCMakeForSolution(CMakeSolution solution, IEnumerable<CMakeProject> allProjects, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
     {
         string cmakeListsPath = Path.Combine(Path.GetDirectoryName(solution.AbsoluteSolutionPath)!, "CMakeLists.txt");
+
+        using var scope = logger.BeginScope(Path.GetFileName(solution.AbsoluteSolutionPath));
 
         GenerateCMake(solution, allProjects, cmakeListsPath, cmakeListsTemplate, settings);
     }

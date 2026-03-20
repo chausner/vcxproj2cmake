@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Console logs now include the currently processed file as context
+
 ## [1.5.0] - 2026-03-18
 
 ### Added

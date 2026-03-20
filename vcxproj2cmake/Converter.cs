@@ -39,6 +39,9 @@ public class Converter
             foreach (var project in projectFiles!)
             {
                 var absolutePath = Path.GetFullPath(project.FullName);
+
+                using var scope = logger.BeginScope(project.Name);
+
                 try
                 {                    
                     projects.Add(MSBuildProject.ParseProjectFile(absolutePath, fileSystem, logger));
@@ -52,7 +55,8 @@ public class Converter
         }
         else if (solutionFile != null)
         {
-            solution = MSBuildSolution.ParseSolutionFile(solutionFile!.FullName, fileSystem, logger);
+            using (var scope = logger.BeginScope(solutionFile.Name))
+                solution = MSBuildSolution.ParseSolutionFile(solutionFile.FullName, fileSystem, logger);
 
             if (solution.Projects.Length == 0)
                 throw new CatastrophicFailureException($"No .vcxproj files found in solution: {solutionFile}");
@@ -60,6 +64,7 @@ public class Converter
             foreach (var projectReference in solution.Projects)
             {
                 string absolutePath = Path.GetFullPath(Path.Combine(solutionFile.DirectoryName!, projectReference));
+                using var scope = logger.BeginScope(Path.GetFileName(absolutePath));
                 try
                 {                    
                     projects.Add(MSBuildProject.ParseProjectFile(absolutePath, fileSystem, logger));
@@ -78,6 +83,8 @@ public class Converter
 
         foreach (var project in projects)
         {
+            using var scope = logger.BeginScope(Path.GetFileName(project.AbsoluteProjectPath));
+
             try
             {
                 cmakeProjects.Add(new CMakeProject(project, qtVersion, includeHeaders, conanPackageInfoRepository, logger));
@@ -91,6 +98,8 @@ public class Converter
 
         if (solution != null && solution.Projects.Length != cmakeProjects.Count)
         {
+            using var scope = logger.BeginScope(Path.GetFileName(solution.AbsoluteSolutionPath));
+
             solution = new MSBuildSolution
             {
                 AbsoluteSolutionPath = solution.AbsoluteSolutionPath,
