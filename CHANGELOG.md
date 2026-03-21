@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Console logs now include the currently processed file as context
 
+### Fixed
+
+- When paths passed to options --projects or --solution are non-existent, a user-friendly error message is now displayed instead of an exception and stack trace.
+
 ## [1.5.0] - 2026-03-18
 
 ### Added

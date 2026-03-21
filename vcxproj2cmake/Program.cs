@@ -90,11 +90,13 @@ public static class Program
 
         rootCommand.Validators.Add(result =>
         {
-            var hasProjects = result.GetValue(projectsOption)?.Count > 0;
-            var hasSolution = result.GetValue(solutionOption) != null;
+            var projectsSpecified = result.GetResult(projectsOption) != null;
+            var solutionSpecified = result.GetResult(solutionOption) != null;
 
-            if (hasProjects == hasSolution)
-                result.AddError("Specify either --projects or --solution, but not both.");
+            if (!projectsSpecified && !solutionSpecified)
+                result.AddError("Either --projects or --solution must be specified.");
+            else if (projectsSpecified && solutionSpecified)
+                result.AddError("Only one of --projects or --solution can be specified.");
         });
 
         rootCommand.SetAction(parseResult =>

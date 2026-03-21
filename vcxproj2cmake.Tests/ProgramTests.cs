@@ -15,6 +15,18 @@ public class ProgramTests
     }
 
     [Fact]
+    public void When_InvokedWithArgsVersion_Then_PrintsVersionAndReturnsZero()
+    {
+        const string SemVerRegex = @"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?\s*$";
+
+        var (stdout, stderr, exitCode) = RunProgramMainWithCapturedConsole("--version");
+
+        Assert.Equal(0, exitCode);
+        Assert.Matches(SemVerRegex, stdout);
+        Assert.True(string.IsNullOrEmpty(stderr));
+    }
+
+    [Fact]
     public void When_InvokedWithArgsProjectsAndAllOptions_Then_ReturnsZero()
     {
         var repoRoot = FindRepoRoot();
@@ -54,6 +66,18 @@ public class ProgramTests
     }
 
     [Fact]
+    public void When_InvokedWithoutArgsProjectsAndSolution_Then_ReturnsNonZeroAndPrintsError()
+    {
+        var repoRoot = FindRepoRoot();
+
+        var (_, stderr, exitCode) = RunProgramMainWithCapturedConsole(
+            "--dry-run");
+
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains("Either --projects or --solution must be specified.", stderr);
+    }
+
+    [Fact]
     public void When_InvokedWithArgsProjectsAndSolution_Then_ReturnsNonZeroAndPrintsError()
     {
         var repoRoot = FindRepoRoot();
@@ -65,7 +89,7 @@ public class ProgramTests
             "--solution", sln);
 
         Assert.NotEqual(0, exitCode);
-        Assert.Contains("Specify either --projects or --solution, but not both.", stderr);
+        Assert.Contains("Only one of --projects or --solution can be specified.", stderr);
     }
 
     static (string stdout, string stderr, int exitCode) RunProgramMainWithCapturedConsole(params string[] args)
