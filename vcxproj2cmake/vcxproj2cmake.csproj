@@ -40,7 +40,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.5" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.5" />
     <PackageReference Include="Microsoft.VisualStudio.SolutionPersistence" Version="1.0.52" />
-    <PackageReference Include="Scriban" Version="6.5.8" />
+    <PackageReference Include="Scriban" Version="6.6.0" />
     <PackageReference Include="System.CommandLine" Version="2.0.5" />
     <PackageReference Include="TestableIO.System.IO.Abstractions" Version="22.1.0" />
     <PackageReference Include="TestableIO.System.IO.Abstractions.Extensions" Version="22.0.4" />
