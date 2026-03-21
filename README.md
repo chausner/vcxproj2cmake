@@ -180,14 +180,14 @@ Running the converter on the solution generates three `CMakeLists.txt` files:
 
 ```
 > .\vcxproj2cmake --solution ..\ExampleSolution\ExampleSolution.sln
-Parsing ..\ExampleSolution\ExampleSolution.sln
-Parsing ..\ExampleSolution\MathLib\MathLib.vcxproj
-Parsing ..\ExampleSolution\App\App.vcxproj
-Processing project ..\ExampleSolution\MathLib\MathLib.vcxproj
-Processing project ..\ExampleSolution\App\App.vcxproj
-Generating ..\ExampleSolution\MathLib\CMakeLists.txt
-Generating ..\ExampleSolution\App\CMakeLists.txt
-Generating ..\ExampleSolution\CMakeLists.txt
+[ExampleSolution.sln] Parsing ..\ExampleSolution\ExampleSolution.sln
+[MathLib.vcxproj] Parsing ..\ExampleSolution\MathLib\MathLib.vcxproj
+[App.vcxproj] Parsing ..\ExampleSolution\App\App.vcxproj
+[MathLib.vcxproj] Processing project ..\ExampleSolution\MathLib\MathLib.vcxproj
+[App.vcxproj] Processing project ..\ExampleSolution\App\App.vcxproj
+[MathLib.vcxproj] Generating ..\ExampleSolution\MathLib\CMakeLists.txt
+[App.vcxproj] Generating ..\ExampleSolution\App\CMakeLists.txt
+[ExampleSolution.sln] Generating ..\ExampleSolution\CMakeLists.txt
 ```
 
 `ExampleSolution/MathLib/CMakeLists.txt`:
