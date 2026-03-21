@@ -415,6 +415,10 @@ class MSBuildProject
         PathUtils.NormalizePathSeparators(@"$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props")
     ];
 
+    static readonly Regex QtMsBuildImportPattern = new(@"^\$\(QtMsBuild\)[\\/]", RegexOptions.IgnoreCase);
+
+    static readonly Regex ConanImportPattern = new(@"conan_[A-Za-z0-9-_.]+\.props|conandeps\.props$", RegexOptions.IgnoreCase);
+
     static readonly HashSet<string> FileItemElementNames = new(StringComparer.Ordinal)
     {
         "ClCompile",
@@ -427,8 +431,22 @@ class MSBuildProject
 
     static void LogWarningsForUnsupportedImports(IEnumerable<string> imports, ILogger logger)
     {
-        foreach (var import in imports.Except(StandardVisualStudioImports).Distinct(StringComparer.OrdinalIgnoreCase))
+        var unsupportedImports =
+            imports
+            .Where(import => !IsKnownImport(import))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var import in unsupportedImports)
             logger.LogWarning($"MSBuild imports are unsupported and will not be processed: {import}");
+
+        bool IsKnownImport(string import)
+        {
+            var normalizedImport = PathUtils.NormalizePathSeparators(import);
+
+            return StandardVisualStudioImports.Contains(normalizedImport, StringComparer.OrdinalIgnoreCase) ||
+                QtMsBuildImportPattern.IsMatch(normalizedImport) ||
+                ConanImportPattern.IsMatch(normalizedImport);
+        }
     }
 
     static void LogWarningsForDirectoryBuildFiles(string absoluteProjectPath, IFileSystem fileSystem, ILogger logger)

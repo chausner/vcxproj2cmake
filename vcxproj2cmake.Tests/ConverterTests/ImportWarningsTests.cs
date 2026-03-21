@@ -89,6 +89,56 @@ public partial class ConverterTests
         }
 
         [Fact]
+        public void Given_ProjectWithQtMsBuildImports_When_Converted_Then_LogsNoImportWarnings()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+            fileSystem.AddFile(
+                @"Project.vcxproj",
+                new MockFileData(CreateProjectWithImports(
+                    @"$(QtMsBuild)\qt_defaults.props",
+                    @"$(QtMsBuild)\qt.targets")));
+
+            var logger = new InMemoryLogger();
+            var converter = new Converter(fileSystem, logger);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")],
+                dryRun: true);
+
+            // Assert
+            Assert.DoesNotContain("MSBuild imports are unsupported and will not be processed", logger.AllMessageText);
+        }
+
+        [Fact]
+        public void Given_ProjectWithConanImports_When_Converted_Then_LogsNoImportWarnings()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+            fileSystem.AddFile(
+                @"Project.vcxproj",
+                new MockFileData(CreateProjectWithImports(
+                    @"conan_boost.props",
+                    @"packages\conan_fmt.props",
+                    @"build\generators\conandeps.props",
+                    @"$(ConanDir)conan_fmt.props")));
+
+            var logger = new InMemoryLogger();
+            var converter = new Converter(fileSystem, logger);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")],
+                dryRun: true);
+
+            // Assert
+            Assert.DoesNotContain("MSBuild imports are unsupported and will not be processed", logger.AllMessageText);
+        }
+
+        [Fact]
         public void Given_ProjectWithDirectoryBuildFilesInImportSearchPath_When_Converted_Then_LogsWarnings()
         {
             // Arrange
