@@ -22,18 +22,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="conan-packages.csv" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\Templates\Solution-CMakeLists.txt.scriban" />
+    <EmbeddedResource Include="Resources\conan-packages.csv" />
     <EmbeddedResource Include="Resources\Templates\Project-CMakeLists.txt.scriban" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\conan-packages.csv">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Templates\Solution-CMakeLists.txt.scriban" />
   </ItemGroup>
 
   <ItemGroup>
