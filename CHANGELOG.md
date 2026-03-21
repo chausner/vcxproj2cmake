@@ -8,7 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Console logs now include the currently processed file as context
+- Console logs now include the currently processed file as context.
+
+### Changed
+
+- Tweak wording in CLI help.
 
 ### Fixed
 

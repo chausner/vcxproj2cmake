@@ -21,61 +21,61 @@ public static class Program
         var projectsOption = new Option<List<FileInfo>>("--projects")
         {
             AllowMultipleArgumentsPerToken = true,
-            Description = "Paths to one or multiple .vcxproj files",
+            Description = "Paths to one or more .vcxproj files",
             HelpName = "path(s)"
         }.AcceptExistingOnly();
 
         var solutionOption = new Option<FileInfo>("--solution")
         {
-            Description = "Path to a solution .sln file",
+            Description = "Path to a .sln or .slnx solution file",
             HelpName = "path"
         }.AcceptExistingOnly();
 
         var qtVersionOption = new Option<int?>("--qt-version") 
         { 
-            Description = "Set Qt version (required for Qt projects)" 
+            Description = "Qt version (required for Qt projects)"
         }.AcceptOnlyFromAmong("5", "6");
 
         var includeHeadersOption = new Option<bool>("--include-headers")
         {
-            Description = "Include header files in target_sources(...)"
+            Description = "Include header files in target_sources()"
         };
 
         var enableStandaloneProjectBuildsOption = new Option<bool>("--enable-standalone-project-builds")
         {
-            Description = "Generate necessary code to allow projects to be built standalone (not through the root CMakeLists.txt)"
+            Description = "Generate code to allow projects to be built standalone (without the root CMakeLists.txt)"
         };
 
         var indentStyleOption = new Option<IndentStyle>("--indent-style")
         {
-            Description = "The indentation style to use (spaces or tabs).",
+            Description = "Indentation style for CMake output (spaces or tabs)",
             DefaultValueFactory = _ => IndentStyle.Spaces,
         };
 
         var indentSizeOption = new Option<int>("--indent-size")
         {
-            Description = "The number of spaces to use for indentation.",
+            Description = "Number of spaces per indentation level in CMake output",
             HelpName = "count",
             DefaultValueFactory = _ => 4
         };
 
         var dryRunOption = new Option<bool>("--dry-run")
         {
-            Description = "Print generated output to the console, do not store generated files"
+            Description = "Print generated output instead of writing files"
         };
 
         var continueOnErrorOption = new Option<bool>("--continue-on-error")
         {
-            Description = "Do not abort when a project cannot be converted and continue with the remaining projects"
+            Description = "Continue processing remaining projects if the conversion of project fails"
         };
 
         var logLevelOption = new Option<LogLevel>("--log-level")
         { 
-            Description = "Set the minimum log level",
+            Description = "Minimum log level",
             DefaultValueFactory = _ => LogLevel.Information
         };
 
-        var rootCommand = new RootCommand("Converts Microsoft Visual C++ projects and solutions to CMake");
+        var rootCommand = new RootCommand("Convert Microsoft Visual C++ projects and solutions to CMake");
 
         rootCommand.Options.Add(projectsOption);
         rootCommand.Options.Add(solutionOption);

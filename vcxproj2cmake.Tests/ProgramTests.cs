@@ -10,7 +10,7 @@ public class ProgramTests
         var (stdout, stderr, exitCode) = RunProgramMainWithCapturedConsole("--help");
 
         Assert.Equal(0, exitCode);
-        Assert.Contains("Converts Microsoft Visual C++ projects and solutions to CMake", stdout);
+        Assert.Contains("Convert Microsoft Visual C++ projects and solutions to CMake", stdout);
         Assert.True(string.IsNullOrEmpty(stderr));
     }
 
