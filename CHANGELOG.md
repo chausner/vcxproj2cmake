@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Tweak wording in CLI help.
+- Remove extra blank lines between `find_package()` calls in generated CMake files.
 
 ### Fixed
 

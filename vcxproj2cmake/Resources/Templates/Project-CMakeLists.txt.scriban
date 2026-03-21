@@ -14,6 +14,7 @@ endif()
 
 {{~ end -}}
 
+{{~ if find_packages.size > 0 ~}}
 {{~ for find_package in find_packages ~}}
 find_package({{ find_package.package_name | literal }}
 {{- if find_package.required }} REQUIRED{{ end -}}
@@ -22,6 +23,7 @@ find_package({{ find_package.package_name | literal }}
  COMPONENTS {{ find_package.components | array.sort | array.each @literal | array.join " " }}
 {{- end -}}
 )
+{{~ end ~}}
 
 {{~ end -}}
 
