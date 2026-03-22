@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using Scriban;
 using Scriban.Runtime;
 using System.IO.Abstractions;
-using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -53,7 +53,30 @@ class CMakeGenerator
     {
         logger.LogInformation($"Generating {destinationPath}");
 
-        var scriptObject = CreateTemplateModel(model, settings, allProjects);
+        var scriptObject = new ScriptObject();
+
+        switch (model)
+        {
+            case CMakeProject project:
+                ImportTemplateModel(scriptObject, project);
+                break;
+            case CMakeSolution solution:
+                ImportTemplateModel(scriptObject, solution);
+                break;
+            default:
+                throw new ArgumentException($"Unsupported template model type: {model.GetType().FullName}", nameof(model));
+        }
+
+        ImportTemplateModel(scriptObject, settings);
+        scriptObject.Add("fail", DelegateCustomFunction.Create<string>(error => throw new CatastrophicFailureException(error)));
+        scriptObject.Add("literal", DelegateCustomFunction.CreateFunc<string, string>(s => ToCMakeLiteral(s)));
+        scriptObject.Add("unquoted_literal", DelegateCustomFunction.CreateFunc<string, string>(s => ToCMakeLiteral(s, unquoted: true)));
+        scriptObject.Add("normalize_path", DelegateCustomFunction.CreateFunc<string, string>(PathUtils.NormalizePath));
+        scriptObject.Add("get_config_expression", DelegateCustomFunction.CreateFunc<Config, CMakeExpression, CMakeExpression>((config, value) => config.Apply(value)));
+        scriptObject.Add("order_project_references_by_dependencies", DelegateCustomFunction.CreateFunc<IEnumerable<CMakeProjectReference>, CMakeProjectReference[]>(pr => ProjectDependencyUtils.OrderProjectReferencesByDependencies(pr, allProjects, logger)));
+        scriptObject.Add("get_directory_name", DelegateCustomFunction.CreateFunc<string?, string?>(Path.GetDirectoryName));
+        scriptObject.Add("get_relative_path", DelegateCustomFunction.CreateFunc<string, string, string?>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));
+        scriptObject.Add("prepend_relative_paths_with_cmake_current_source_dir", DelegateCustomFunction.CreateFunc<CMakeExpression, CMakeExpression>(PrependRelativePathsWithCMakeCurrentSourceDir));
 
         var context = new TemplateContext();
         context.LoopLimit = 0;
@@ -117,175 +140,20 @@ class CMakeGenerator
         return Template.Parse(content);
     }
 
-    ScriptObject CreateTemplateModel(object model, CMakeGeneratorSettings settings, IEnumerable<CMakeProject> allProjects)
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026",
+        Justification = "Scriban reflection import is limited to known template model types whose public properties are preserved explicitly for trimming and Native AOT.")]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeProject))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeSolution))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeProjectReference))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeFindPackage))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeConfigDependentSetting))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeConfigDependentMultiSetting))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeExpression))]
+    static void ImportTemplateModel<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(ScriptObject scriptObject, T model)
     {
-        var scriptObject = model switch
-        {
-            CMakeProject project => CreateProjectScriptObject(project),
-            CMakeSolution solution => CreateSolutionScriptObject(solution),
-            _ => throw new ArgumentException($"Unsupported template model type: {model.GetType().FullName}", nameof(model))
-        };
-
-        scriptObject.Add("enable_standalone_project_builds", settings.EnableStandaloneProjectBuilds);
-        scriptObject.Add("indent_style", settings.IndentStyle.ToString());
-        scriptObject.Add("indent_size", settings.IndentSize);
-        scriptObject.Add("dry_run", settings.DryRun);
-        scriptObject.Add("fail", DelegateCustomFunction.Create<string>(error => throw new CatastrophicFailureException(error)));
-        scriptObject.Add("literal", DelegateCustomFunction.CreateFunc<string, string>(s => ToCMakeLiteral(s)));
-        scriptObject.Add("unquoted_literal", DelegateCustomFunction.CreateFunc<string, string>(s => ToCMakeLiteral(s, unquoted: true)));
-        scriptObject.Add("normalize_path", DelegateCustomFunction.CreateFunc<string, string>(PathUtils.NormalizePath));
-        scriptObject.Add("get_config_expression", DelegateCustomFunction.CreateFunc<Config, string, string>((config, value) => config.Apply(CMakeExpression.Expression(value)).ToString()));
-        scriptObject.Add("order_project_references_by_dependencies", DelegateCustomFunction.CreateFunc<IEnumerable, ScriptArray>(projectReferences => OrderProjectReferencesByDependencies(projectReferences, allProjects)));
-        scriptObject.Add("get_directory_name", DelegateCustomFunction.CreateFunc<string?, string?>(Path.GetDirectoryName));
-        scriptObject.Add("get_relative_path", DelegateCustomFunction.CreateFunc<string, string, string?>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));
-        scriptObject.Add("prepend_relative_paths_with_cmake_current_source_dir", DelegateCustomFunction.CreateFunc<string, string>(PrependRelativePathsWithCMakeCurrentSourceDir));
-        return scriptObject;
-    }
-
-    static ScriptObject CreateProjectScriptObject(CMakeProject project)
-    {
-        var scriptObject = new ScriptObject
-        {
-            ["absolute_project_path"] = project.AbsoluteProjectPath,
-            ["project_name"] = project.ProjectName,
-            ["languages"] = ToScriptArray(project.Languages.Cast<object?>()),
-            ["target_type"] = project.TargetType.ToString(),
-            ["find_packages"] = ToScriptArray(project.FindPackages.Select(CreateFindPackageScriptObject)),
-            ["compile_features"] = CreateConfigDependentMultiSettingScriptObject(project.CompileFeatures),
-            ["source_files"] = ToScriptArray(project.SourceFiles.Select(expression => expression.ToString())),
-            ["properties"] = CreateExpressionDictionaryScriptArray(project.Properties),
-            ["module_definition_file"] = CreateConfigDependentSettingScriptObject(project.ModuleDefinitionFile),
-            ["project_references"] = ToScriptArray(project.ProjectReferences.Select(CreateProjectReferenceScriptObject)),
-            ["is_win32_executable"] = project.IsWin32Executable,
-            ["precompiled_header_file"] = CreateConfigDependentSettingScriptObject(project.PrecompiledHeaderFile),
-            ["public_include_paths"] = CreateConfigDependentMultiSettingScriptObject(project.PublicIncludePaths),
-            ["include_paths"] = CreateConfigDependentMultiSettingScriptObject(project.IncludePaths),
-            ["defines"] = CreateConfigDependentMultiSettingScriptObject(project.Defines),
-            ["linker_paths"] = CreateConfigDependentMultiSettingScriptObject(project.LinkerPaths),
-            ["libraries"] = CreateConfigDependentMultiSettingScriptObject(project.Libraries),
-            ["options"] = CreateConfigDependentMultiSettingScriptObject(project.Options)
-        };
-
-        return scriptObject;
-    }
-
-    static ScriptObject CreateSolutionScriptObject(CMakeSolution solution)
-    {
-        return new ScriptObject
-        {
-            ["absolute_solution_path"] = solution.AbsoluteSolutionPath,
-            ["solution_name"] = solution.SolutionName,
-            ["projects"] = ToScriptArray(solution.Projects.Select(CreateProjectReferenceScriptObject)),
-            ["solution_is_top_level"] = solution.SolutionIsTopLevel
-        };
-    }
-
-    static ScriptObject CreateFindPackageScriptObject(CMakeFindPackage package)
-    {
-        return new ScriptObject
-        {
-            ["package_name"] = package.PackageName,
-            ["required"] = package.Required,
-            ["config"] = package.Config,
-            ["components"] = package.Components != null ? ToScriptArray(package.Components.Cast<object?>()) : null
-        };
-    }
-
-    static ScriptObject CreateProjectReferenceScriptObject(CMakeProjectReference projectReference)
-    {
-        var scriptObject = new ScriptObject
-        {
-            ["path"] = projectReference.Path
-        };
-
-        if (projectReference.Project != null)
-        {
-            scriptObject["project"] = new ScriptObject
-            {
-                ["project_name"] = projectReference.Project.ProjectName,
-                ["absolute_project_path"] = projectReference.Project.AbsoluteProjectPath
-            };
-        }
-
-        return scriptObject;
-    }
-
-    static ScriptObject CreateConfigDependentSettingScriptObject(CMakeConfigDependentSetting setting)
-    {
-        return new ScriptObject
-        {
-            ["is_empty"] = setting.IsEmpty,
-            ["entries"] = CreateSettingValuesScriptArray(setting.Values.Select(kvp => CreateSettingEntryScriptObject(kvp.Key, kvp.Value.Value)))
-        };
-    }
-
-    static ScriptObject CreateConfigDependentMultiSettingScriptObject(CMakeConfigDependentMultiSetting setting)
-    {
-        return new ScriptObject
-        {
-            ["is_empty"] = setting.IsEmpty,
-            ["entries"] = CreateSettingValuesScriptArray(setting.Values.Select(kvp => CreateSettingEntryScriptObject(kvp.Key, ToScriptArray(kvp.Value.Select(value => value.Value)))))
-        };
-    }
-
-    static ScriptArray CreateExpressionDictionaryScriptArray(IEnumerable<KeyValuePair<string, CMakeExpression>> values)
-    {
-        return ToScriptArray(values.Select(kvp => new ScriptObject
-        {
-            ["key"] = kvp.Key,
-            ["value"] = kvp.Value.ToString()
-        }));
-    }
-
-    static ScriptArray CreateSettingValuesScriptArray(IEnumerable<ScriptObject> values)
-    {
-        return ToScriptArray(values);
-    }
-
-    static ScriptObject CreateSettingEntryScriptObject(Config config, object value)
-    {
-        return new ScriptObject
-        {
-            ["key"] = config,
-            ["value"] = value
-        };
-    }
-
-    static ScriptArray OrderProjectReferencesByDependencies(IEnumerable projectReferences, IEnumerable<CMakeProject> allProjects)
-    {
-        var projectReferencesArray = projectReferences.Cast<object?>().ToArray();
-        var orderedProjects = ProjectDependencyUtils.OrderProjectsByDependencies(allProjects);
-        var projectOrder = orderedProjects
-            .Select((project, index) => new { project.AbsoluteProjectPath, index })
-            .ToDictionary(entry => entry.AbsoluteProjectPath, entry => entry.index, StringComparer.OrdinalIgnoreCase);
-
-        return ToScriptArray(projectReferencesArray.OrderBy(projectReference => GetProjectReferenceOrder(projectReference, projectOrder)));
-    }
-
-    static int GetProjectReferenceOrder(object? projectReference, IReadOnlyDictionary<string, int> projectOrder)
-    {
-        if (projectReference is not ScriptObject projectReferenceScriptObject)
-            throw new ArgumentException("Expected Scriban project reference to be a ScriptObject.", nameof(projectReference));
-
-        if (!projectReferenceScriptObject.TryGetValue("project", out var project) || project is not ScriptObject projectScriptObject)
-            throw new CatastrophicFailureException("Project reference is missing resolved project metadata.");
-
-        if (!projectScriptObject.TryGetValue("absolute_project_path", out var absoluteProjectPathValue) || absoluteProjectPathValue is not string absoluteProjectPath)
-            throw new CatastrophicFailureException("Resolved project metadata is missing absolute_project_path.");
-
-        if (!projectOrder.TryGetValue(absoluteProjectPath, out var order))
-            throw new CatastrophicFailureException($"Project dependency order does not contain {absoluteProjectPath}.");
-
-        return order;
-    }
-
-    static ScriptArray ToScriptArray(IEnumerable values)
-    {
-        var array = new ScriptArray();
-        foreach (var value in values)
-            array.Add(value);
-
-        return array;
+        scriptObject.Import(model);
     }
 
     static string ToCMakeLiteral(string value, bool unquoted = false)
@@ -325,18 +193,19 @@ class CMakeGenerator
         return sb.ToString();
     }
 
-    static string PrependRelativePathsWithCMakeCurrentSourceDir(string normalizedPath)
+    static CMakeExpression PrependRelativePathsWithCMakeCurrentSourceDir(CMakeExpression normalizedPath)
     {
-        var isAbsolutePath = Path.IsPathRooted(normalizedPath);
+        var path = normalizedPath.Value;
+        var isAbsolutePath = Path.IsPathRooted(path);
 
         // if a path starts with a CMake variable, we just assume that the variable resolves to an absolute path
-        isAbsolutePath |= normalizedPath.StartsWith("${");
+        isAbsolutePath |= path.StartsWith("${");
 
         if (!isAbsolutePath)
-            if (normalizedPath == ".")
-                return "${CMAKE_CURRENT_SOURCE_DIR}";
+            if (path == ".")
+                return CMakeExpression.Expression("${CMAKE_CURRENT_SOURCE_DIR}");
             else
-                return "${CMAKE_CURRENT_SOURCE_DIR}/" + normalizedPath;
+                return CMakeExpression.Expression("${CMAKE_CURRENT_SOURCE_DIR}/" + path);
         else
             return normalizedPath;
     }
