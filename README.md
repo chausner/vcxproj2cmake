@@ -49,12 +49,9 @@
 * For projects referencing Qt 5 or 6 via Qt/MsBuild, a corresponding `find_package(Qt... REQUIRED COMPONENTS ...)` command is generated and `AUTOMOC`/`AUTOUIC`/`AUTORCC` are enabled.
 * For projects referencing Conan packages via the `MSBuildDeps` generator, corresponding `find_package` commands are generated, intended to be used with the `CMakeDeps` generator.
 
-## Installation
-
-1. Make sure you have the [.NET 10 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0/runtime) installed.
-2. Download the latest release from the [releases page](https://github.com/chausner/vcxproj2cmake/releases) and unzip it to a directory of your choice.
-
 ## Usage
+
+Download the latest release from the [releases page](https://github.com/chausner/vcxproj2cmake/releases) and unzip it to a directory of your choice.
 
 ### Basic Usage
 

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using System.Diagnostics.CodeAnalysis;
 using System.CommandLine;
 using System.Globalization;
 using System.IO.Abstractions;
@@ -146,6 +147,8 @@ public static class Program
         converter.Convert(projects, solution, qtVersion, includeHeaders, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError);
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "The application registers a concrete console formatter without binding formatter options from configuration.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The application registers a concrete console formatter without binding formatter options from configuration.")]
     static ILogger CreateLogger(LogLevel logLevel)
     {
         using var loggerFactory = LoggerFactory.Create(builder =>

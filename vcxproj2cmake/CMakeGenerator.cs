@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Scriban;
 using Scriban.Runtime;
 using System.IO.Abstractions;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -48,6 +49,14 @@ class CMakeGenerator
             throw new CatastrophicFailureException($"The solution file and at least one project file are located in the same directory. This is not supported.");
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Scriban reflection import is limited to known template model types whose public properties are preserved explicitly for trimming and Native AOT.")]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeProject))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeSolution))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeProjectReference))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeFindPackage))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeConfigDependentSetting))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeConfigDependentMultiSetting))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeExpression))]
     void GenerateCMake(object model, IEnumerable<CMakeProject> allProjects, string destinationPath, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
     {
         logger.LogInformation($"Generating {destinationPath}");
@@ -55,20 +64,21 @@ class CMakeGenerator
         var scriptObject = new ScriptObject();
         scriptObject.Import(model);
         scriptObject.Import(settings);
-        scriptObject.Import("fail", new Action<string>(error => throw new CatastrophicFailureException(error)));
-        scriptObject.Import("literal", ToCMakeLiteral);
-        scriptObject.Import("unquoted_literal", (string s) => ToCMakeLiteral(s, unquoted: true));
-        scriptObject.Import("normalize_path", PathUtils.NormalizePath);
-        scriptObject.Import("get_config_expression", new Func<Config, CMakeExpression, CMakeExpression>((config, value) => config.Apply(value)));
-        scriptObject.Import("order_project_references_by_dependencies", (IEnumerable<CMakeProjectReference> pr) => ProjectDependencyUtils.OrderProjectReferencesByDependencies(pr, allProjects, logger));
-        scriptObject.Import("get_directory_name", new Func<string?, string?>(Path.GetDirectoryName));
-        scriptObject.Import("get_relative_path", new Func<string, string, string?>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));
-        scriptObject.Import("prepend_relative_paths_with_cmake_current_source_dir", PrependRelativePathsWithCMakeCurrentSourceDir);
+        scriptObject.Add("fail", DelegateCustomFunction.Create<string>(error => throw new CatastrophicFailureException(error)));
+        scriptObject.Add("literal", DelegateCustomFunction.CreateFunc<string, string>(s => ToCMakeLiteral(s)));
+        scriptObject.Add("unquoted_literal", DelegateCustomFunction.CreateFunc<string, string>(s => ToCMakeLiteral(s, unquoted: true)));
+        scriptObject.Add("normalize_path", DelegateCustomFunction.CreateFunc<string, string>(PathUtils.NormalizePath));
+        scriptObject.Add("get_config_expression", DelegateCustomFunction.CreateFunc<Config, CMakeExpression, CMakeExpression>((config, value) => config.Apply(value)));
+        scriptObject.Add("order_project_references_by_dependencies", DelegateCustomFunction.CreateFunc<IEnumerable<CMakeProjectReference>, CMakeProjectReference[]>(pr => ProjectDependencyUtils.OrderProjectReferencesByDependencies(pr, allProjects, logger)));
+        scriptObject.Add("get_directory_name", DelegateCustomFunction.CreateFunc<string?, string?>(Path.GetDirectoryName));
+        scriptObject.Add("get_relative_path", DelegateCustomFunction.CreateFunc<string, string, string>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));
+        scriptObject.Add("prepend_relative_paths_with_cmake_current_source_dir", DelegateCustomFunction.CreateFunc<CMakeExpression, CMakeExpression>(PrependRelativePathsWithCMakeCurrentSourceDir));
 
         var context = new TemplateContext();
         context.LoopLimit = 0;
         context.RecursiveLimit = 0;
         context.PushGlobal(scriptObject);
+
         var result = cmakeListsTemplate.Render(context);
 
         if (settings.IndentStyle != IndentStyle.Spaces || settings.IndentSize != 4)
