@@ -58,6 +58,7 @@ base64,base64,aklomp::base64
 battery-embed,,battery::embed
 bdwgc,BDWgc,BDWgc::BDWgc
 beauty,beauty,beauty::beauty
+behaviortree.cpp,behaviortree_cpp,BT::behaviortree_cpp
 benchmark,benchmark,benchmark::benchmark_main
 bertrand,bertrand,bertrand::bertrand
 bgfx,bgfx,bgfx::bgfx
@@ -262,6 +263,7 @@ greg7mdp-gtl,gtl,gtl::gtl
 grpc,gRPC,
 gsl,GSL,GSL::gsl
 gsl-lite,gsl-lite,gsl::gsl-lite
+gstreamer,GStreamer,GStreamer::GStreamer
 gtest,GTest,
 gtlab-logging,GTlabLogging,GTlab::Logging
 gtsam,GTSAM,
@@ -393,6 +395,7 @@ libspng,SPNG,
 libssh,libssh,ssh::ssh
 libssh2,Libssh2,Libssh2::libssh2
 libtiff,TIFF,TIFF::TIFF
+libtommath,,libtommath
 libtorch,Torch,
 libtorrent,LibtorrentRasterbar,LibtorrentRasterbar::torrent-rasterbar
 libunifex,unifex,unifex::unifex
@@ -515,6 +518,7 @@ odbc,ODBC,ODBC::ODBC
 ode,ode,ODE::ODE
 ogg,Ogg,Ogg::ogg
 ogre,OGRE,
+omath,omath,omath::omath
 onedpl,ParallelSTL,pstl::ParallelSTL
 onetbb,TBB,TBB::TBB
 oniguruma,oniguruma,oniguruma::onig
@@ -756,7 +760,7 @@ unleash-client-cpp,unleash,unleash::unleash
 unordered_dense,unordered_dense,unordered_dense::unordered_dense
 upa-url,upa,upa::url
 uriparser,uriparser,uriparser::uriparser
-utfcpp,utf8cpp,utf8cpp
+utfcpp,utf8cpp,utf8cpp::utf8cpp
 util-linux-libuuid,libuuid,libuuid::libuuid
 valijson,,ValiJSON::valijson
 variant-lite,variant-lite,nonstd::variant-lite
@@ -809,5 +813,6 @@ zlib-ng,ZLIB,ZLIB::ZLIB
 zopfli,Zopfli,
 zserio,,zserio::ZserioCppRuntime
 zstd,zstd,
+zxc,zxc,zxc::zxc_lib
 zxing-cpp,ZXing,ZXing::ZXing
 zyre,zyre,

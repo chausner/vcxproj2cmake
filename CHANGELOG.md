@@ -13,13 +13,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - The application is now built self-contained with Native AOT.
-- Tweak wording in CLI help.
-- Remove extra blank lines between `find_package()` calls in generated CMake files.
 - MSBuild imports related to Qt/MsBuild and Conan no longer generate warnings.
+- Remove extra blank lines between `find_package()` calls in generated CMake files.
+- Tweak wording in CLI help.
+- Update list of Conan package metadata.
 
 ### Fixed
 
-- When paths passed to options --projects or --solution are non-existent, a user-friendly error message is now displayed instead of an exception and stack trace.
+- When paths passed to options `--projects` or `--solution` are non-existent, a user-friendly error message is now displayed instead of an exception and stack trace.
 
 ## [1.5.0] - 2026-03-18
 
