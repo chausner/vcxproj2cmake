@@ -14,7 +14,7 @@
 - Run locally (example):
   - `dotnet run --project vcxproj2cmake -- --solution ExampleSolution/ExampleSolution.sln`
   - Use `--projects <path1> <path2>` for multiple `.vcxproj` files.
-- Publish (Windows artifact): `dotnet publish vcxproj2cmake/vcxproj2cmake.csproj -c Release -r win-x64`
+- Publish (Windows artifact): `dotnet publish vcxproj2cmake/vcxproj2cmake.csproj -c Release`
 - Preview output without writing files: add `--dry-run`.
 
 ## Architecture Overview
