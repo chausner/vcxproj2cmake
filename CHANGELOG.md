@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-03-24
+
 ### Added
 
 - Console logs now include the currently processed file as context.
@@ -115,7 +117,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 First stable release.
 
-[unreleased]: https://github.com/chausner/vcxproj2cmake/compare/v1.5.0...HEAD
+[unreleased]: https://github.com/chausner/vcxproj2cmake/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.2.0...v1.3.0
