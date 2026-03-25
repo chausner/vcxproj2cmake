@@ -92,6 +92,9 @@ class CMakeGenerator
         }
         else
         {
+            if (fileSystem.File.Exists(destinationPath))
+                logger.LogWarning($"File {destinationPath} already exists and will be overwritten.");
+
             fileSystem.File.WriteAllText(destinationPath, result);
         }
     }

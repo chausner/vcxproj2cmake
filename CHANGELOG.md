@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- A warning is now logged when a CMake output file already exists and will be overwritten.
+
 ## [1.6.0] - 2026-03-24
 
 ### Added
