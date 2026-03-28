@@ -7,11 +7,6 @@
 
 **vcxproj2cmake** is a tool designed to convert Microsoft Visual C++ project files (`.vcxproj`) to equivalent CMake files (`CMakeLists.txt`).
 
-> [!NOTE]
-> Due to the complexity of MSBuild, the conversion works best for projects of low-to-medium complexity.
-> The generated CMake files may require manual adjustments, especially for larger projects with complex configurations or custom build steps.
-> Still, it can be a useful starting point for migrating projects to CMake and can save a lot of time compared to writing the CMake files from scratch.
-
 ## Features
 
 * Accepts either a list of `.vcxproj` project files or Visual Studio solution files (`.sln`/`.slnx`) as input.
@@ -282,6 +277,11 @@ add_subdirectory(App)
 * MSBuild properties defined in imported .props or .targets files are not considered.
 * Many advanced compiler and linker options are not supported and silently ignored.
   Only a limited set of commonly-used properties is converted, as listed in the [Features](#features) section.
+
+> [!NOTE]
+> Due to the complexity of MSBuild, the conversion works best for projects of low-to-medium complexity.
+> The generated CMake files may require manual adjustments, especially for larger projects with complex configurations or custom build steps.
+> Still, it can be a useful starting point for migrating projects to CMake and can save a lot of time compared to writing the CMake files from scratch.
 
 ## Contributing
 Contributions of any kind (e.g. bug fixes, improvements or new features) are gladly accepted!
