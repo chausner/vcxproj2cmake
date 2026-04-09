@@ -203,7 +203,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject(null, null, "foo", "foo")));    
+            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject(null, null, "foo", "foo")));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -212,6 +212,6 @@ public partial class ConverterTests
                     projectFiles: [new(@"Project.vcxproj")]));
 
             Assert.Contains("Unsupported C language standard", ex.Message);
-        }        
+        }
     }
 }

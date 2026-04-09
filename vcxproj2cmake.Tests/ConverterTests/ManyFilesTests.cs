@@ -26,8 +26,8 @@ public partial class ConverterTests
 
             // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
-            foreach (var source in sources)            
-                Assert.Contains(source, cmake);            
+            foreach (var source in sources)
+                Assert.Contains(source, cmake);
         }
     }
 }

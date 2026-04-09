@@ -14,7 +14,7 @@ public class CMakeSolutionTests
             SolutionName = "Test",
             Projects =
             [
-                "Project1/Project1.vcxproj", 
+                "Project1/Project1.vcxproj",
                 "Project2/Project2.vcxproj"
             ]
         };
@@ -82,6 +82,6 @@ public class CMakeSolutionTests
 
             // Act & Assert
             Assert.False(solution.SolutionIsTopLevel);
-        }        
+        }
     }
 }

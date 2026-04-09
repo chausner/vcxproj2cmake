@@ -70,8 +70,8 @@ class CMakeExpression : IComparable, IComparable<CMakeExpression>, IEquatable<CM
 
     public override bool Equals(object? obj)
     {
-        if (obj == null || GetType() != obj.GetType())        
-            return false;        
+        if (obj == null || GetType() != obj.GetType())
+            return false;
 
         var expression = (CMakeExpression)obj;
         return Value == expression.Value;
@@ -135,7 +135,7 @@ class CMakeExpression : IComparable, IComparable<CMakeExpression>, IEquatable<CM
     }
 
     public static bool operator !=(CMakeExpression? expression1, CMakeExpression? expression2)
-    { 
+    {
         return !(expression1 == expression2);
     }
 

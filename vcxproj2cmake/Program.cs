@@ -32,8 +32,8 @@ public static class Program
             HelpName = "path"
         }.AcceptExistingOnly();
 
-        var qtVersionOption = new Option<int?>("--qt-version") 
-        { 
+        var qtVersionOption = new Option<int?>("--qt-version")
+        {
             Description = "Qt version (required for Qt projects)"
         }.AcceptOnlyFromAmong("5", "6");
 
@@ -71,7 +71,7 @@ public static class Program
         };
 
         var logLevelOption = new Option<LogLevel>("--log-level")
-        { 
+        {
             Description = "Minimum log level",
             DefaultValueFactory = _ => LogLevel.Information
         };
@@ -130,14 +130,14 @@ public static class Program
     }
 
     static void Run(
-        List<FileInfo>? projects, 
-        FileInfo? solution, 
-        int? qtVersion, 
+        List<FileInfo>? projects,
+        FileInfo? solution,
+        int? qtVersion,
         bool includeHeaders,
-        bool enableStandaloneProjectBuilds, 
-        IndentStyle indentStyle, 
-        int indentSize, 
-        bool dryRun, 
+        bool enableStandaloneProjectBuilds,
+        IndentStyle indentStyle,
+        int indentSize,
+        bool dryRun,
         bool continueOnError,
         LogLevel logLevel)
     {
@@ -156,7 +156,7 @@ public static class Program
             builder
                 .SetMinimumLevel(logLevel)
                 .AddConsole(options => options.FormatterName = nameof(CustomConsoleFormatter))
-                .AddConsoleFormatter<CustomConsoleFormatter, ConsoleFormatterOptions>();    
+                .AddConsoleFormatter<CustomConsoleFormatter, ConsoleFormatterOptions>();
         });
 
         return loggerFactory.CreateLogger("vcxproj2cmake");

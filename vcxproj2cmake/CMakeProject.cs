@@ -38,7 +38,7 @@ class CMakeProject
         ProjectName = project.ProjectName;
         ProjectConfigurations = supportedProjectConfigurations;
         Languages = DetectLanguages(project.SourceFiles, logger);
-        TargetType = DetermineTargetType(project); 
+        TargetType = DetermineTargetType(project);
         FindPackages = [];
         CompileFeatures = new("CompileFeatures", []);
 
@@ -184,11 +184,11 @@ class CMakeProject
             .ToArray();
 
         Dictionary<MSBuildProjectConfig, string[]> values = [];
-        foreach (var projectConfig in projectConfigurations)        
+        foreach (var projectConfig in projectConfigurations)
             values[projectConfig] = project.AdditionalIncludeDirectories.GetEffectiveValue(projectConfig)
                 .Concat(project.IncludePath.GetEffectiveValue(projectConfig))
                 .Distinct()
-                .ToArray();        
+                .ToArray();
 
         return new("AdditionalIncludeDirectories+IncludePath", defaultValue, values);
     }
@@ -203,7 +203,7 @@ class CMakeProject
             .ToArray();
 
         Dictionary<MSBuildProjectConfig, string[]> values = [];
-        foreach (var projectConfig in projectConfigurations)        
+        foreach (var projectConfig in projectConfigurations)
             values[projectConfig] = project.AdditionalLibraryDirectories.GetEffectiveValue(projectConfig)
                 .Concat(project.LibraryPath.GetEffectiveValue(projectConfig))
                 .Distinct()
@@ -215,26 +215,26 @@ class CMakeProject
     void ApplyLanguageStandards(MSBuildProject project)
     {
         var cppFeature = project.LanguageStandard switch
-            {
-                "stdcpplatest" => "cxx_std_23",
-                "stdcpp23" => "cxx_std_23",
-                "stdcpp20" => "cxx_std_20",
-                "stdcpp17" => "cxx_std_17",
-                "stdcpp14" => "cxx_std_14",
-                "stdcpp11" => "cxx_std_11",
-                "Default" or null or "" => null,
-                _ => throw new CatastrophicFailureException($"Unsupported C++ language standard: {project.LanguageStandard}")
-            };
+        {
+            "stdcpplatest" => "cxx_std_23",
+            "stdcpp23" => "cxx_std_23",
+            "stdcpp20" => "cxx_std_20",
+            "stdcpp17" => "cxx_std_17",
+            "stdcpp14" => "cxx_std_14",
+            "stdcpp11" => "cxx_std_11",
+            "Default" or null or "" => null,
+            _ => throw new CatastrophicFailureException($"Unsupported C++ language standard: {project.LanguageStandard}")
+        };
 
         var cFeature = project.LanguageStandardC switch
-            {
-                "stdclatest" => "c_std_23",
-                "stdc23" => "c_std_23",
-                "stdc17" => "c_std_17",
-                "stdc11" => "c_std_11",
-                "Default" or null or "" => null,
-                _ => throw new CatastrophicFailureException($"Unsupported C language standard: {project.LanguageStandardC}")
-            };        
+        {
+            "stdclatest" => "c_std_23",
+            "stdc23" => "c_std_23",
+            "stdc17" => "c_std_17",
+            "stdc11" => "c_std_11",
+            "Default" or null or "" => null,
+            _ => throw new CatastrophicFailureException($"Unsupported C language standard: {project.LanguageStandardC}")
+        };
 
         if (cppFeature != null)
             CompileFeatures.AppendValue(Config.CommonConfig, CMakeExpression.Literal(cppFeature));
@@ -271,14 +271,14 @@ class CMakeProject
 
     void ApplyMfcSupport(MSBuildProject project, ILogger logger)
     {
-        static CMakeExpression TranslateMfcFlag(CMakeExpression? useOfMfc) => 
+        static CMakeExpression TranslateMfcFlag(CMakeExpression? useOfMfc) =>
             useOfMfc?.Value.ToLowerInvariant() switch
             {
                 "false" or "" or null => CMakeExpression.Literal("0"),
                 "static" => CMakeExpression.Literal("1"),
                 "dynamic" => CMakeExpression.Literal("2"),
                 _ => throw new CatastrophicFailureException($"Invalid value for UseOfMfc: {useOfMfc}")
-            };        
+            };
 
         var mfcFlag = new CMakeConfigDependentSetting(project.UseOfMfc, ProjectConfigurations, logger)
             .Map(value => TranslateMfcFlag(value), ProjectConfigurations, logger)
@@ -400,7 +400,7 @@ class CMakeProject
     {
         if (project.QtModules.Length == 0)
             return;
-                
+
         if (qtVersion == null)
             throw new CatastrophicFailureException("Project uses Qt but no Qt version is set. Specify the version with --qt-version.");
 
@@ -412,7 +412,7 @@ class CMakeProject
         var qtComponents = qtModules.Select(m => m.CMakeComponentName).ToArray();
         FindPackages.Add(new CMakeFindPackage($"Qt{qtVersion}", Required: true, Components: qtComponents));
 
-        foreach (var module in qtModules)        
+        foreach (var module in qtModules)
             Libraries.AppendValue(Config.CommonConfig, CMakeExpression.Literal(module.CMakeTargetName));
 
         if (project.RequiresQtMoc)

@@ -15,13 +15,13 @@ public class Converter
     }
 
     public void Convert(
-        List<FileInfo>? projectFiles = null, 
+        List<FileInfo>? projectFiles = null,
         FileInfo? solutionFile = null,
         int? qtVersion = null,
         bool includeHeaders = false,
-        bool enableStandaloneProjectBuilds = false, 
-        IndentStyle indentStyle = IndentStyle.Spaces, 
-        int indentSize = 4, 
+        bool enableStandaloneProjectBuilds = false,
+        IndentStyle indentStyle = IndentStyle.Spaces,
+        int indentSize = 4,
         bool dryRun = false,
         bool continueOnError = false)
     {
@@ -43,7 +43,7 @@ public class Converter
                 using var scope = logger.BeginScope(project.Name);
 
                 try
-                {                    
+                {
                     projects.Add(MSBuildProject.ParseProjectFile(absolutePath, fileSystem, logger));
                 }
                 catch (Exception ex) when (continueOnError)
@@ -66,7 +66,7 @@ public class Converter
                 string absolutePath = Path.GetFullPath(Path.Combine(solutionFile.DirectoryName!, projectReference));
                 using var scope = logger.BeginScope(Path.GetFileName(absolutePath));
                 try
-                {                    
+                {
                     projects.Add(MSBuildProject.ParseProjectFile(absolutePath, fileSystem, logger));
                 }
                 catch (Exception ex) when (continueOnError)
@@ -160,7 +160,7 @@ public class Converter
                         continue;
                     }
 
-                    throw new CatastrophicFailureException($"Project {project.AbsoluteProjectPath} references project {absoluteReference} which is not part of the solution or the list of projects.");                    
+                    throw new CatastrophicFailureException($"Project {project.AbsoluteProjectPath} references project {absoluteReference} which is not part of the solution or the list of projects.");
                 }
 
                 projectReference.Project = referencedProject;

@@ -169,7 +169,7 @@ class CMakeGenerator
                 '\t' => "\\t",  // tab
                 '$' => "\\$",   // prevent ${VAR} expansion
                 _ => c.ToString()
-            });  
+            });
 
         if (!unquoted)
             sb.Append('"');

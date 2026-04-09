@@ -255,7 +255,8 @@ class MSBuildProject
         var characterSet = ParseSetting("CharacterSet", otherSettings, "NotSet");
         var useOfMfc = ParseSetting("UseOfMfc", otherSettings, "false");
         var useDebugLibraries = ParseSetting("UseDebugLibraries", otherSettings, "false");
-        var runtimeLibrary = ParseSettingWithConfigSpecificDefault("RuntimeLibrary", compilerSettings, new(projectConfig => {
+        var runtimeLibrary = ParseSettingWithConfigSpecificDefault("RuntimeLibrary", compilerSettings, new(projectConfig =>
+        {
             if (useDebugLibraries.GetEffectiveValue(projectConfig) == "true")
                 return "MultiThreadedDebugDLL";
             else
