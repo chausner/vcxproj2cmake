@@ -76,11 +76,11 @@ class CMakeProject
         ApplyMfcSupport(project, logger);
         ApplyCharacterSetSetting(project, logger);
         ApplyDisableSpecificWarnings(project, settings.Compiler, logger);
-        ApplyTreatSpecificWarningsAsErrors(project, logger);
+        ApplyTreatSpecificWarningsAsErrors(project, settings.Compiler, logger);
         ApplyTreatWarningAsError(project, logger);
-        ApplyWarningLevel(project, logger);
-        ApplyExternalWarningLevel(project, logger);
-        ApplyTreatAngleIncludeAsExternal(project, logger);
+        ApplyWarningLevel(project, settings.Compiler, logger);
+        ApplyExternalWarningLevel(project, settings.Compiler, logger);
+        ApplyTreatAngleIncludeAsExternal(project, settings.Compiler, logger);
         ApplyOpenMPSupport(project, logger);
         ApplyQt(project, settings.QtVersion);
         ApplyConanPackages(project, conanPackageInfoRepository);
@@ -302,22 +302,15 @@ class CMakeProject
 
     void ApplyDisableSpecificWarnings(MSBuildProject project, Compiler compiler, ILogger logger)
     {
-        var expression = compiler switch
-        {
-            Compiler.Msvc => "/wd{0}",
-            Compiler.Portable => "$<$<CXX_COMPILER_ID:MSVC>:/wd{0}>",
-            _ => throw new ArgumentException($"Unsupported compiler: {compiler}", nameof(compiler))
-        };
-
         Options = Options.Map(
-            (options, warnings) => [.. options, .. warnings.Select(w => Convert.ToInt32(w.Value)).Select(w => CMakeExpression.Expression(string.Format(expression, w)))],
+            (options, warnings) => [.. options, .. warnings.Select(w => Convert.ToInt32(w.Value)).Select(w => ApplyMsvcCompilerGuard(CMakeExpression.Literal($"/wd{w}"), compiler))],
             project.DisableSpecificWarnings, ProjectConfigurations, logger);
     }
 
-    void ApplyTreatSpecificWarningsAsErrors(MSBuildProject project, ILogger logger)
+    void ApplyTreatSpecificWarningsAsErrors(MSBuildProject project, Compiler compiler, ILogger logger)
     {
         Options = Options.Map(
-            (options, warnings) => [.. options, .. warnings.Select(w => Convert.ToInt32(w.Value)).Select(w => CMakeExpression.Literal($"/we{w}"))],
+            (options, warnings) => [.. options, .. warnings.Select(w => Convert.ToInt32(w.Value)).Select(w => ApplyMsvcCompilerGuard(CMakeExpression.Literal($"/we{w}"), compiler))],
             project.TreatSpecificWarningsAsErrors, ProjectConfigurations, logger);
     }
 
@@ -339,39 +332,39 @@ class CMakeProject
         Properties["COMPILE_WARNING_AS_ERROR"] = compileWarningAsError;
     }
 
-    void ApplyWarningLevel(MSBuildProject project, ILogger logger)
+    void ApplyWarningLevel(MSBuildProject project, Compiler compiler, ILogger logger)
     {
         Options = Options.Map((options, level) => level?.Value switch
         {
-            "TurnOffAllWarnings" => [.. options, CMakeExpression.Literal("/W0")],
-            "Level1" => [.. options, CMakeExpression.Literal("/W1")],
-            "Level2" => [.. options, CMakeExpression.Literal("/W2")],
-            "Level3" => [.. options, CMakeExpression.Literal("/W3")],
-            "Level4" => [.. options, CMakeExpression.Literal("/W4")],
+            "TurnOffAllWarnings" => [.. options, ApplyMsvcCompilerGuard(CMakeExpression.Literal("/W0"), compiler)],
+            "Level1" => [.. options, ApplyMsvcCompilerGuard(CMakeExpression.Literal("/W1"), compiler)],
+            "Level2" => [.. options, ApplyMsvcCompilerGuard(CMakeExpression.Literal("/W2"), compiler)],
+            "Level3" => [.. options, ApplyMsvcCompilerGuard(CMakeExpression.Literal("/W3"), compiler)],
+            "Level4" => [.. options, ApplyMsvcCompilerGuard(CMakeExpression.Literal("/W4"), compiler)],
             "" or null => options,
             _ => throw new CatastrophicFailureException($"Invalid value for WarningLevel: {level?.Value}")
         }, project.WarningLevel, ProjectConfigurations, logger);
     }
 
-    void ApplyExternalWarningLevel(MSBuildProject project, ILogger logger)
+    void ApplyExternalWarningLevel(MSBuildProject project, Compiler compiler, ILogger logger)
     {
         Options = Options.Map((options, level) => level?.Value switch
         {
-            "TurnOffAllWarnings" => [.. options, CMakeExpression.Literal("/external:W0")],
-            "Level1" => [.. options, CMakeExpression.Literal("/external:W1")],
-            "Level2" => [.. options, CMakeExpression.Literal("/external:W2")],
-            "Level3" => [.. options, CMakeExpression.Literal("/external:W3")],
-            "Level4" => [.. options, CMakeExpression.Literal("/external:W4")],
+            "TurnOffAllWarnings" => [.. options, ApplyMsvcCompilerGuard(CMakeExpression.Literal("/external:W0"), compiler)],
+            "Level1" => [.. options, ApplyMsvcCompilerGuard(CMakeExpression.Literal("/external:W1"), compiler)],
+            "Level2" => [.. options, ApplyMsvcCompilerGuard(CMakeExpression.Literal("/external:W2"), compiler)],
+            "Level3" => [.. options, ApplyMsvcCompilerGuard(CMakeExpression.Literal("/external:W3"), compiler)],
+            "Level4" => [.. options, ApplyMsvcCompilerGuard(CMakeExpression.Literal("/external:W4"), compiler)],
             "" or null => options,
             _ => throw new CatastrophicFailureException($"Invalid value for ExternalWarningLevel: {level?.Value}")
         }, project.ExternalWarningLevel, ProjectConfigurations, logger);
     }
 
-    void ApplyTreatAngleIncludeAsExternal(MSBuildProject project, ILogger logger)
+    void ApplyTreatAngleIncludeAsExternal(MSBuildProject project, Compiler compiler, ILogger logger)
     {
         Options = Options.Map((options, treatAsExternal) => (treatAsExternal?.Value.ToLowerInvariant()) switch
         {
-            "true" => [.. options, CMakeExpression.Literal("/external:anglebrackets")],
+            "true" => [.. options, ApplyMsvcCompilerGuard(CMakeExpression.Literal("/external:anglebrackets"), compiler)],
             "false" or "" or null => options,
             _ => throw new CatastrophicFailureException($"Invalid value for TreatAngleIncludeAsExternal: {treatAsExternal}"),
         }, project.TreatAngleIncludeAsExternal, ProjectConfigurations, logger);
@@ -447,6 +440,16 @@ class CMakeProject
     static CMakeExpression[] AppendDefineIfNotPresent(CMakeExpression[] defines, params CMakeExpression[] additionalDefines)
     {
         return [.. defines, .. additionalDefines.Except(defines)];
+    }
+
+    static CMakeExpression ApplyMsvcCompilerGuard(CMakeExpression expression, Compiler compiler)
+    {
+        return compiler switch
+        {
+            Compiler.Msvc => expression,
+            Compiler.Portable => CMakeExpression.Expression($"$<$<CXX_COMPILER_ID:MSVC>:{expression.Value}>"),
+            _ => throw new ArgumentException($"Unsupported compiler: {compiler}", nameof(compiler))
+        };
     }
 
     public ISet<CMakeProject> GetAllReferencedProjects()

@@ -75,6 +75,29 @@ public partial class ConverterTests
         }
 
         [Fact]
+        public void Given_TreatSpecificWarningsAsErrorsAndPortableCompiler_When_Converted_Then_WeOptionsAreGuarded()
+        {
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("TreatSpecificWarningsAsErrors", "4800;4801", "4800;4801")));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")],
+                compiler: Compiler.Portable);
+
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+            Assert.Contains("""
+                target_compile_options(Project
+                    PUBLIC
+                        $<$<CXX_COMPILER_ID:MSVC>:/we4800>
+                        $<$<CXX_COMPILER_ID:MSVC>:/we4801>
+                )
+                """.TrimEnd(), cmake);
+        }
+
+        [Fact]
         public void Given_WarningLevel_When_Converted_Then_WOptionIsWritten()
         {
             var fileSystem = new MockFileSystem();
@@ -91,6 +114,28 @@ public partial class ConverterTests
                 target_compile_options(Project
                     PUBLIC
                         /W4
+                )
+                """.TrimEnd(), cmake);
+        }
+
+        [Fact]
+        public void Given_WarningLevelAndPortableCompiler_When_Converted_Then_WOptionIsGuarded()
+        {
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("WarningLevel", "Level4", "Level4")));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")],
+                compiler: Compiler.Portable);
+
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+            Assert.Contains("""
+                target_compile_options(Project
+                    PUBLIC
+                        $<$<CXX_COMPILER_ID:MSVC>:/W4>
                 )
                 """.TrimEnd(), cmake);
         }
@@ -131,6 +176,28 @@ public partial class ConverterTests
         }
 
         [Fact]
+        public void Given_ExternalWarningLevelAndPortableCompiler_When_Converted_Then_ExternalWOptionIsGuarded()
+        {
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("ExternalWarningLevel", "Level2", "Level2")));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")],
+                compiler: Compiler.Portable);
+
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+            Assert.Contains("""
+                target_compile_options(Project
+                    PUBLIC
+                        $<$<CXX_COMPILER_ID:MSVC>:/external:W2>
+                )
+                """.TrimEnd(), cmake);
+        }
+
+        [Fact]
         public void Given_InvalidExternalWarningLevel_When_Converted_Then_Throws()
         {
             var fileSystem = new MockFileSystem();
@@ -161,6 +228,28 @@ public partial class ConverterTests
                 target_compile_options(Project
                     PUBLIC
                         /external:anglebrackets
+                )
+                """.TrimEnd(), cmake);
+        }
+
+        [Fact]
+        public void Given_TreatAngleIncludeAsExternalAndPortableCompiler_When_Converted_Then_AngleBracketsOptionIsGuarded()
+        {
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("TreatAngleIncludeAsExternal", "true", "true")));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")],
+                compiler: Compiler.Portable);
+
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+            Assert.Contains("""
+                target_compile_options(Project
+                    PUBLIC
+                        $<$<CXX_COMPILER_ID:MSVC>:/external:anglebrackets>
                 )
                 """.TrimEnd(), cmake);
         }
