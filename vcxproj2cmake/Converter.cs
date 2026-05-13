@@ -18,6 +18,7 @@ public class Converter
         List<FileInfo>? projectFiles = null,
         FileInfo? solutionFile = null,
         int? qtVersion = null,
+        Compiler compiler = Compiler.Msvc,
         bool includeHeaders = false,
         bool enableStandaloneProjectBuilds = false,
         IndentStyle indentStyle = IndentStyle.Spaces,
@@ -87,7 +88,7 @@ public class Converter
 
             try
             {
-                cmakeProjects.Add(new CMakeProject(project, qtVersion, includeHeaders, conanPackageInfoRepository, logger));
+                cmakeProjects.Add(new CMakeProject(project, new(qtVersion, compiler), includeHeaders, conanPackageInfoRepository, logger));
             }
             catch (Exception ex) when (continueOnError)
             {

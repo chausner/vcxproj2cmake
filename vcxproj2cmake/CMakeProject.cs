@@ -27,7 +27,7 @@ class CMakeProject
     public bool IsWin32Executable { get; set; }
     public CMakeConfigDependentSetting PrecompiledHeaderFile { get; set; }
 
-    public CMakeProject(MSBuildProject project, int? qtVersion, bool includeHeaders, ConanPackageInfoRepository conanPackageInfoRepository, ILogger logger)
+    public CMakeProject(MSBuildProject project, CMakeProjectSettings settings, bool includeHeaders, ConanPackageInfoRepository conanPackageInfoRepository, ILogger logger)
     {
         logger.LogInformation($"Processing project {project.AbsoluteProjectPath}");
 
@@ -75,14 +75,14 @@ class CMakeProject
         ApplyRuntimeLibrary(project, logger);
         ApplyMfcSupport(project, logger);
         ApplyCharacterSetSetting(project, logger);
-        ApplyDisableSpecificWarnings(project, logger);
+        ApplyDisableSpecificWarnings(project, settings.Compiler, logger);
         ApplyTreatSpecificWarningsAsErrors(project, logger);
         ApplyTreatWarningAsError(project, logger);
         ApplyWarningLevel(project, logger);
         ApplyExternalWarningLevel(project, logger);
         ApplyTreatAngleIncludeAsExternal(project, logger);
         ApplyOpenMPSupport(project, logger);
-        ApplyQt(project, qtVersion);
+        ApplyQt(project, settings.QtVersion);
         ApplyConanPackages(project, conanPackageInfoRepository);
     }
 
@@ -300,10 +300,17 @@ class CMakeProject
         }, project.UseOfMfc, ProjectConfigurations, logger);
     }
 
-    void ApplyDisableSpecificWarnings(MSBuildProject project, ILogger logger)
+    void ApplyDisableSpecificWarnings(MSBuildProject project, Compiler compiler, ILogger logger)
     {
+        var expression = compiler switch
+        {
+            Compiler.Msvc => "/wd{0}",
+            Compiler.Portable => "$<$<CXX_COMPILER_ID:MSVC>:/wd{0}>",
+            _ => throw new ArgumentException($"Unsupported compiler: {compiler}", nameof(compiler))
+        };
+
         Options = Options.Map(
-            (options, warnings) => [.. options, .. warnings.Select(w => Convert.ToInt32(w.Value)).Select(w => CMakeExpression.Literal($"/wd{w}"))],
+            (options, warnings) => [.. options, .. warnings.Select(w => Convert.ToInt32(w.Value)).Select(w => CMakeExpression.Expression(string.Format(expression, w)))],
             project.DisableSpecificWarnings, ProjectConfigurations, logger);
     }
 
@@ -458,6 +465,14 @@ class CMakeProject
         return referencedProjects;
     }
 }
+
+public enum Compiler
+{
+    Msvc,
+    Portable
+}
+
+record CMakeProjectSettings(int? QtVersion, Compiler Compiler);
 
 enum CMakeTargetType
 {
