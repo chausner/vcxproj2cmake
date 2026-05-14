@@ -37,11 +37,10 @@ public static class Program
             Description = "Qt version (required for Qt projects)"
         }.AcceptOnlyFromAmong("5", "6");
 
-        var compilerOption = new Option<Compiler>("--compiler")
-        { 
-            Description = "Set whether the generated CMake sources should target a specific compiler or be compiler-agnostic",
-            DefaultValueFactory = _ => Compiler.Msvc
-        }.AcceptOnlyFromAmong("msvc", "portable");
+        var portableOption = new Option<bool>("--portable")
+        {
+            Description = "Guard generated MSVC-specific CMake settings so they are inactive for other compilers"
+        };
 
         var includeHeadersOption = new Option<bool>("--include-headers")
         {
@@ -87,7 +86,7 @@ public static class Program
         rootCommand.Options.Add(projectsOption);
         rootCommand.Options.Add(solutionOption);
         rootCommand.Options.Add(qtVersionOption);
-        rootCommand.Options.Add(compilerOption);
+        rootCommand.Options.Add(portableOption);
         rootCommand.Options.Add(includeHeadersOption);
         rootCommand.Options.Add(enableStandaloneProjectBuildsOption);
         rootCommand.Options.Add(indentStyleOption);
@@ -112,7 +111,7 @@ public static class Program
                 var projects = parseResult.GetValue(projectsOption);
                 var solution = parseResult.GetValue(solutionOption);
                 var qtVersion = parseResult.GetValue(qtVersionOption);
-                var compiler = parseResult.GetValue(compilerOption);
+                var portable = parseResult.GetValue(portableOption);
                 var includeHeaders = parseResult.GetValue(includeHeadersOption);
                 var enableStandaloneProjectBuilds = parseResult.GetValue(enableStandaloneProjectBuildsOption);
                 var indentStyle = parseResult.GetValue(indentStyleOption);
@@ -120,7 +119,7 @@ public static class Program
                 var dryRun = parseResult.GetValue(dryRunOption);
                 var continueOnError = parseResult.GetValue(continueOnErrorOption);
                 var logLevel = parseResult.GetValue(logLevelOption);
-                Run(projects, solution, qtVersion, compiler, includeHeaders, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError, logLevel);
+                Run(projects, solution, qtVersion, portable, includeHeaders, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError, logLevel);
             });
 
         try
@@ -141,7 +140,7 @@ public static class Program
         List<FileInfo>? projects,
         FileInfo? solution,
         int? qtVersion,
-        Compiler compiler,
+        bool portable,
         bool includeHeaders,
         bool enableStandaloneProjectBuilds,
         IndentStyle indentStyle,
@@ -153,7 +152,7 @@ public static class Program
         logger = CreateLogger(logLevel);
 
         var converter = new Converter(new FileSystem(), logger);
-        converter.Convert(projects, solution, qtVersion, compiler, includeHeaders, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError);
+        converter.Convert(projects, solution, qtVersion, portable, includeHeaders, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError);
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "The application registers a concrete console formatter without binding formatter options from configuration.")]

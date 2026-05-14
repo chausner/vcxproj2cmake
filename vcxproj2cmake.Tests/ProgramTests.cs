@@ -36,6 +36,7 @@ public class ProgramTests
         var (_, _, exitCode) = RunProgramMainWithCapturedConsole(
             "--projects", appProj, mathLibProj,
             "--qt-version", "6",
+            "--portable",
             "--include-headers",
             "--enable-standalone-project-builds",
             "--indent-style", "Tabs",

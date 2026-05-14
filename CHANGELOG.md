@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Add option `--portable` to guard generated MSVC-specific CMake settings so they are inactive for other compilers.
 - A warning is now logged when a CMake output file already exists and will be overwritten.
 
 ## [1.6.0] - 2026-03-24

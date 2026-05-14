@@ -53,6 +53,29 @@ public partial class ConverterTests
         }
 
         [Fact]
+        public void Given_DisableSpecificWarningsAndPortableMode_When_Converted_Then_WdOptionsAreGuarded()
+        {
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("DisableSpecificWarnings", "4100;4200", "4100;4200")));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")],
+                portable: true);
+
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+            Assert.Contains("""
+                target_compile_options(Project
+                    PUBLIC
+                        $<$<CXX_COMPILER_ID:MSVC>:/wd4100>
+                        $<$<CXX_COMPILER_ID:MSVC>:/wd4200>
+                )
+                """.TrimEnd(), cmake);
+        }
+
+        [Fact]
         public void Given_TreatSpecificWarningsAsErrors_When_Converted_Then_WeOptionsAreWritten()
         {
             var fileSystem = new MockFileSystem();
@@ -75,7 +98,7 @@ public partial class ConverterTests
         }
 
         [Fact]
-        public void Given_TreatSpecificWarningsAsErrorsAndPortableCompiler_When_Converted_Then_WeOptionsAreGuarded()
+        public void Given_TreatSpecificWarningsAsErrorsAndPortableMode_When_Converted_Then_WeOptionsAreGuarded()
         {
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
@@ -85,7 +108,7 @@ public partial class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")],
-                compiler: Compiler.Portable);
+                portable: true);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
@@ -119,7 +142,7 @@ public partial class ConverterTests
         }
 
         [Fact]
-        public void Given_WarningLevelAndPortableCompiler_When_Converted_Then_WOptionIsGuarded()
+        public void Given_WarningLevelAndPortableMode_When_Converted_Then_WOptionIsGuarded()
         {
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
@@ -129,7 +152,7 @@ public partial class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")],
-                compiler: Compiler.Portable);
+                portable: true);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
@@ -176,7 +199,7 @@ public partial class ConverterTests
         }
 
         [Fact]
-        public void Given_ExternalWarningLevelAndPortableCompiler_When_Converted_Then_ExternalWOptionIsGuarded()
+        public void Given_ExternalWarningLevelAndPortableMode_When_Converted_Then_ExternalWOptionIsGuarded()
         {
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
@@ -186,7 +209,7 @@ public partial class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")],
-                compiler: Compiler.Portable);
+                portable: true);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
@@ -233,7 +256,7 @@ public partial class ConverterTests
         }
 
         [Fact]
-        public void Given_TreatAngleIncludeAsExternalAndPortableCompiler_When_Converted_Then_AngleBracketsOptionIsGuarded()
+        public void Given_TreatAngleIncludeAsExternalAndPortableMode_When_Converted_Then_AngleBracketsOptionIsGuarded()
         {
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
@@ -243,7 +266,7 @@ public partial class ConverterTests
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")],
-                compiler: Compiler.Portable);
+                portable: true);
 
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
