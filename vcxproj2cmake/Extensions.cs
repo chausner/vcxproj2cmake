@@ -245,18 +245,6 @@ static class EnumerableExtensions
         }
     }
 
-    public static OrderedDictionary<TKey, TValue> ToOrderedDictionary<TKey, TValue>(
-        this IEnumerable<KeyValuePair<TKey, TValue>> source)
-        where TKey : notnull
-    {
-        OrderedDictionary<TKey, TValue> dictionary = [];
-
-        foreach (var kvp in source)
-            dictionary[kvp.Key] = kvp.Value;
-
-        return dictionary;
-    }
-
     public static Dictionary<TKey, TValue> ToDictionaryKeepingLast<TSource, TKey, TValue>(
         this IEnumerable<TSource> source,
         Func<TSource, TKey> keySelector,
