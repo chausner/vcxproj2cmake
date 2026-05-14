@@ -31,6 +31,29 @@ public partial class ConverterTests
         }
 
         [Fact]
+        public void Given_AdditionalOptionsAndPortableMode_When_Converted_Then_OptionsAreGuarded()
+        {
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("AdditionalOptions", "foo bar", "foo bar")));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")],
+                portable: true);
+
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+            Assert.Contains("""
+                target_compile_options(Project
+                    PUBLIC
+                        $<$<CXX_COMPILER_ID:MSVC>:foo>
+                        $<$<CXX_COMPILER_ID:MSVC>:bar>
+                )
+                """.TrimEnd(), cmake);
+        }
+
+        [Fact]
         public void Given_DisableSpecificWarnings_When_Converted_Then_WdOptionsAreWritten()
         {
             var fileSystem = new MockFileSystem();

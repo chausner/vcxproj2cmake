@@ -60,7 +60,7 @@ class CMakeProject
         Defines = new CMakeConfigDependentMultiSetting(project.PreprocessorDefinitions, supportedProjectConfigurations, logger)
             .Map(values => values.Select(value => TranslateMSBuildMacros(value, "PreprocessorDefinitions", logger)).ToArray(), supportedProjectConfigurations, logger);
         Options = new CMakeConfigDependentMultiSetting(project.AdditionalOptions, supportedProjectConfigurations, logger)
-            .Map(values => values.Select(value => TranslateMSBuildMacros(value, "AdditionalOptions", logger)).ToArray(), supportedProjectConfigurations, logger);
+            .Map(values => values.Select(value => ApplyMsvcCompilerGuard(TranslateMSBuildMacros(value, "AdditionalOptions", logger), settings.Portable)).ToArray(), supportedProjectConfigurations, logger);
         ModuleDefinitionFile = new CMakeConfigDependentSetting(project.ModuleDefinitionFile, supportedProjectConfigurations, logger)
             .Map(value => value != null ? TranslateAndNormalize(value, "ModuleDefinitionFile", logger) : null, supportedProjectConfigurations, logger);
         ProjectReferences = project.ProjectReferences.Select(path => new CMakeProjectReference { Path = path }).ToArray();
