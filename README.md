@@ -96,6 +96,9 @@ as well as a top-level `CMakeLists.txt` file in the same directory as the soluti
 
 ## Example
 
+<details>
+<summary>Click to expand</summary>
+  
 The repository contains a small demo solution under `ExampleSolution`. It
 consists of a static library project `MathLib` and an application project `App`
 that depends on the library. The solution references both projects and the
@@ -264,6 +267,8 @@ project(ExampleSolution)
 add_subdirectory(MathLib)
 add_subdirectory(App)
 ```
+
+</details>
 
 ## Limitations
 
