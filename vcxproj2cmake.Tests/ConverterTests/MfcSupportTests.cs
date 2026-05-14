@@ -138,5 +138,22 @@ public partial class ConverterTests
             Assert.DoesNotContain("CMAKE_MFC_FLAG", cmake);
             Assert.DoesNotContain("_AFXDLL", cmake);
         }
+
+        [Fact]
+        public void Given_ProjectWithInvalidMfcValue_When_Converted_Then_Throws()
+        {
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithUseOfMfc("invalid", "invalid")));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            var ex = Assert.Throws<CatastrophicFailureException>(() =>
+                converter.Convert(
+                    projectFiles: [new(@"Project.vcxproj")]));
+
+            Assert.Contains("Invalid value for UseOfMfc", ex.Message);
+        }
     }
 }
