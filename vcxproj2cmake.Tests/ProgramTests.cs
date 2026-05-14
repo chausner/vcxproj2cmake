@@ -93,6 +93,23 @@ public class ProgramTests
         Assert.Contains("Only one of --projects or --solution can be specified.", stderr);
     }
 
+    [Fact]
+    public void When_UnexpectedExceptionOccurs_Then_ReturnsNonZeroAndPrintsError()
+    {
+        var repoRoot = FindRepoRoot();
+        var sln = Path.Combine(repoRoot, "ExampleSolution", "ExampleSolution.sln");
+
+        // Open the solution file with an exclusive lock to simulate an IOException when trying to read it
+        using var fileLock = File.Open(sln, FileMode.Open, FileAccess.Read, FileShare.None);
+
+        var (stdout, stderr, exitCode) = RunProgramMainWithCapturedConsole(
+            "--solution", sln);
+
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains("Unexpected error", stdout);
+        Assert.Contains("System.IO.IOException: The process cannot access the file", stdout);
+    }
+
     static (string stdout, string stderr, int exitCode) RunProgramMainWithCapturedConsole(params string[] args)
     {
         var originalOut = Console.Out;
