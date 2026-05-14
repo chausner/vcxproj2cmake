@@ -1,0 +1,5 @@
+/* Visual Studio Settings File */
+{
+  "test.coverage.config.overrideRunsettings": true,
+  "test.coverage.config.includeTestAssembly": false
+}
