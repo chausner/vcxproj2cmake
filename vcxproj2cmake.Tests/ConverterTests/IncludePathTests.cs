@@ -69,7 +69,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_include_directories(Project
-                    PUBLIC
+                    PRIVATE
                         "${CMAKE_CURRENT_SOURCE_DIR}/include"
                         "${CMAKE_CURRENT_SOURCE_DIR}/../shared"
                 )
@@ -92,7 +92,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_include_directories(Project
-                    PUBLIC
+                    PRIVATE
                         $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/debug>
                         $<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/release>
                 )
@@ -119,7 +119,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_include_directories(Project
-                    PUBLIC
+                    PRIVATE
                         "${CMAKE_CURRENT_SOURCE_DIR}/shared"
                         $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/additionaldebug>
                         $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/debuginc>
@@ -149,7 +149,31 @@ public partial class ConverterTests
                         "${CMAKE_CURRENT_SOURCE_DIR}/../common"
                 )
                 """, cmake);
-            Assert.DoesNotContain("PUBLIC\n", cmake); // only INTERFACE section expected
+            Assert.DoesNotContain("PRIVATE\n", cmake); // only INTERFACE section expected
+        }
+        
+        [Fact]
+        public void Given_ProjectWithAdditionalIncludeDirectoriesAndPublicIncludeDirectories_When_Converted_Then_PrivateAndInterfacePathsAreWritten()
+        {
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("private", "private", "public")));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+            Assert.Contains("""
+                target_include_directories(Project
+                    INTERFACE
+                        "${CMAKE_CURRENT_SOURCE_DIR}/public"
+                    PRIVATE
+                        "${CMAKE_CURRENT_SOURCE_DIR}/private"
+                )
+                """, cmake);
         }
 
         [Fact]

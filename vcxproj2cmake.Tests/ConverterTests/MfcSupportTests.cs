@@ -79,7 +79,7 @@ public partial class ConverterTests
                 """.TrimEnd(), cmake);
             Assert.Contains("""
                 target_compile_definitions(Project
-                    PUBLIC
+                    PRIVATE
                         _AFXDLL
                 )
                 """.TrimEnd(), cmake);
@@ -108,7 +108,7 @@ public partial class ConverterTests
                 """.TrimEnd(), cmake);
             Assert.Contains("""
                 target_compile_definitions(Project
-                    PUBLIC
+                    PRIVATE
                         $<$<CONFIG:Release>:_AFXDLL>
                 )
                 """.TrimEnd(), cmake);
@@ -137,7 +137,7 @@ public partial class ConverterTests
                 """.TrimEnd(), cmake);
             Assert.Contains("""
                 target_compile_definitions(Project
-                    PUBLIC
+                    PRIVATE
                         $<$<CONFIG:Release>:_AFXDLL>
                 )
                 """.TrimEnd(), cmake);

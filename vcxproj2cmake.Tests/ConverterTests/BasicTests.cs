@@ -31,7 +31,7 @@ public partial class ConverterTests
                 add_executable(EmptyProject)
 
                 target_compile_definitions(EmptyProject
-                    PUBLIC
+                    PRIVATE
                         WIN32
                         _CONSOLE
                         UNICODE
@@ -41,7 +41,7 @@ public partial class ConverterTests
                 )
 
                 target_compile_options(EmptyProject
-                    PUBLIC
+                    PRIVATE
                         /W3
                 )            
                 """);
@@ -111,7 +111,7 @@ public partial class ConverterTests
                 add_executable(EmptyProject1)
 
                 target_compile_definitions(EmptyProject1
-                    PUBLIC
+                    PRIVATE
                         WIN32
                         _CONSOLE
                         UNICODE
@@ -121,7 +121,7 @@ public partial class ConverterTests
                 )
 
                 target_compile_options(EmptyProject1
-                    PUBLIC
+                    PRIVATE
                         /W3
                 )
                 """);
@@ -133,7 +133,7 @@ public partial class ConverterTests
                 add_executable(EmptyProject2)
 
                 target_compile_definitions(EmptyProject2
-                    PUBLIC
+                    PRIVATE
                         WIN32
                         _CONSOLE
                         UNICODE
@@ -143,7 +143,7 @@ public partial class ConverterTests
                 )
 
                 target_compile_options(EmptyProject2
-                    PUBLIC
+                    PRIVATE
                         /W3
                 )
                 """);

@@ -25,7 +25,7 @@ public partial class ConverterTests
             Assert.Contains("find_package(OpenMP REQUIRED)", cmake);
             Assert.Contains("""
                 target_link_libraries(Project
-                    PUBLIC
+                    PRIVATE
                         OpenMP::OpenMP_CXX
                 )
                 """, cmake);
@@ -48,7 +48,7 @@ public partial class ConverterTests
             Assert.Contains("find_package(OpenMP REQUIRED)", cmake);
             Assert.Contains("""
                 target_link_libraries(Project
-                    PUBLIC
+                    PRIVATE
                         $<$<CONFIG:Debug>:OpenMP::OpenMP_CXX>
                 )
                 """, cmake);

@@ -62,7 +62,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_link_directories(Project
-                    PUBLIC
+                    PRIVATE
                         C:/Lib
                 )
                 """.Trim(), cmake);
@@ -84,7 +84,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_link_directories(Project
-                    PUBLIC
+                    PRIVATE
                         $<$<CONFIG:Debug>:DebugLibs>
                         $<$<CONFIG:Release>:ReleaseLibs>
                 )
@@ -107,7 +107,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_link_directories(Project
-                    PUBLIC
+                    PRIVATE
                         "${CMAKE_CURRENT_SOURCE_DIR}/libs"
                         "${CMAKE_BUILD_TYPE}"
                 )
@@ -134,7 +134,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_link_directories(Project
-                    PUBLIC
+                    PRIVATE
                         shared
                         $<$<CONFIG:Debug>:additionaldebug>
                         $<$<CONFIG:Debug>:debuglib>

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Generated CMake target settings are now PRIVATE instead of PUBLIC (except INTERFACE settings which remain INTERFACE).
+
 ### Fixed
 
 - Fix definition `_AFXDLL` erroneously being added when `UseOfMfc` is set to "Static".

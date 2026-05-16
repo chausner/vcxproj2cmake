@@ -70,7 +70,7 @@ public partial class ConverterTests
             Assert.Contains(
                 """
                 target_include_directories(Project
-                    PUBLIC
+                    PRIVATE
                         "${CMAKE_CURRENT_SOURCE_DIR}/include;dir"
                         "${CMAKE_CURRENT_SOURCE_DIR}/folder name"
                 )
@@ -79,7 +79,7 @@ public partial class ConverterTests
             Assert.Contains(
                 """
                 target_compile_definitions(Project
-                    PUBLIC
+                    PRIVATE
                         "VALUE=a;b"
                         SECOND=100%
                 )
@@ -88,7 +88,7 @@ public partial class ConverterTests
             Assert.Contains(
                 """
                 target_compile_options(Project
-                    PUBLIC
+                    PRIVATE
                         "/DNAME=foo bar"
                         /DVALUE=100%
                 )
@@ -135,7 +135,7 @@ public partial class ConverterTests
             Assert.Contains(
                 """
                 target_link_libraries(Project
-                    PUBLIC
+                    PRIVATE
                         my-pkg::my-pkg
                         "My Lib"
                 )

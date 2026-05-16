@@ -23,7 +23,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_compile_options(Project
-                    PUBLIC
+                    PRIVATE
                         foo
                         bar
                 )
@@ -46,7 +46,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_compile_options(Project
-                    PUBLIC
+                    PRIVATE
                         $<$<CXX_COMPILER_ID:MSVC>:foo>
                         $<$<CXX_COMPILER_ID:MSVC>:bar>
                 )
@@ -68,7 +68,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_compile_options(Project
-                    PUBLIC
+                    PRIVATE
                         /wd4100
                         /wd4200
                 )
@@ -91,7 +91,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_compile_options(Project
-                    PUBLIC
+                    PRIVATE
                         $<$<CXX_COMPILER_ID:MSVC>:/wd4100>
                         $<$<CXX_COMPILER_ID:MSVC>:/wd4200>
                 )
@@ -113,7 +113,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_compile_options(Project
-                    PUBLIC
+                    PRIVATE
                         /we4800
                         /we4801
                 )
@@ -136,7 +136,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_compile_options(Project
-                    PUBLIC
+                    PRIVATE
                         $<$<CXX_COMPILER_ID:MSVC>:/we4800>
                         $<$<CXX_COMPILER_ID:MSVC>:/we4801>
                 )
@@ -158,7 +158,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_compile_options(Project
-                    PUBLIC
+                    PRIVATE
                         /W4
                 )
                 """.TrimEnd(), cmake);
@@ -180,7 +180,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_compile_options(Project
-                    PUBLIC
+                    PRIVATE
                         $<$<CXX_COMPILER_ID:MSVC>:/W4>
                 )
                 """.TrimEnd(), cmake);
@@ -215,7 +215,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_compile_options(Project
-                    PUBLIC
+                    PRIVATE
                         /external:W2
                 )
                 """.TrimEnd(), cmake);
@@ -237,7 +237,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_compile_options(Project
-                    PUBLIC
+                    PRIVATE
                         $<$<CXX_COMPILER_ID:MSVC>:/external:W2>
                 )
                 """.TrimEnd(), cmake);
@@ -272,7 +272,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_compile_options(Project
-                    PUBLIC
+                    PRIVATE
                         /external:anglebrackets
                 )
                 """.TrimEnd(), cmake);
@@ -294,7 +294,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_compile_options(Project
-                    PUBLIC
+                    PRIVATE
                         $<$<CXX_COMPILER_ID:MSVC>:/external:anglebrackets>
                 )
                 """.TrimEnd(), cmake);

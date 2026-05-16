@@ -164,7 +164,7 @@ public partial class ConverterTests
                 add_executable(Project)
 
                 target_compile_definitions(Project
-                    PUBLIC
+                    PRIVATE
                         FOO
                         $<$<CONFIG:Debug>:DEBUG>
                         $<$<CONFIG:Debug>:VALUE=1>
@@ -194,7 +194,7 @@ public partial class ConverterTests
                 add_executable(ProjectMBCS)
 
                 target_compile_definitions(ProjectMBCS
-                    PUBLIC
+                    PRIVATE
                         _MBCS
                         $<$<CONFIG:Debug>:DEBUG_DEF>
                         $<$<CONFIG:Release>:RELEASE_DEF>
@@ -243,7 +243,7 @@ public partial class ConverterTests
                 )
 
                 target_compile_definitions(ProjectArch
-                    PUBLIC
+                    PRIVATE
                         $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:X86_DEF>
                         $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:X64_DEF>
                 )

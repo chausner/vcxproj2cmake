@@ -200,17 +200,17 @@ target_sources(MathLib
 )
 
 target_compile_features(MathLib
-    PUBLIC
+    PRIVATE
         cxx_std_17
 )
 
 target_include_directories(MathLib
-    PUBLIC
+    PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
 target_compile_definitions(MathLib
-    PUBLIC
+    PRIVATE
         $<$<CONFIG:Debug>:DEBUG>
         $<$<CONFIG:Release>:NDEBUG>
 )
@@ -230,29 +230,29 @@ target_sources(App
 )
 
 target_compile_features(App
-    PUBLIC
+    PRIVATE
         cxx_std_17
 )
 
 target_include_directories(App
-    PUBLIC
+    PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/../MathLib/include"
 )
 
 target_compile_definitions(App
-    PUBLIC
+    PRIVATE
         MATHLIB
         $<$<CONFIG:Debug>:DEBUG>
         $<$<CONFIG:Release>:NDEBUG>
 )
 
 target_link_libraries(App
-    PUBLIC
+    PRIVATE
         MathLib
 )
 
 target_compile_options(App
-    PUBLIC
+    PRIVATE
         $<$<CONFIG:Debug>:/W4>
         $<$<CONFIG:Release>:/O2>
 )

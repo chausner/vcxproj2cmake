@@ -36,7 +36,7 @@ public partial class ConverterTests
                 add_executable(App)
 
                 target_link_libraries(App
-                    PUBLIC
+                    PRIVATE
                         Dll
                 )
                 """);
@@ -70,7 +70,7 @@ public partial class ConverterTests
                 add_executable(App)
 
                 target_link_libraries(App
-                    PUBLIC
+                    PRIVATE
                         Dll
                 )
                 """);

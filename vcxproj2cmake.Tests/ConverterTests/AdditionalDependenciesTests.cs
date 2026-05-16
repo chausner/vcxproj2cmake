@@ -50,7 +50,7 @@ public partial class ConverterTests
             Assert.Contains(
                 """
                 target_link_libraries(Project
-                    PUBLIC
+                    PRIVATE
                         Foo.lib
                         Bar.lib
                 )
@@ -105,7 +105,7 @@ public partial class ConverterTests
             Assert.Contains(
                 """
                 target_link_libraries(Project
-                    PUBLIC
+                    PRIVATE
                         $<$<CONFIG:Debug>:Foo_d.lib>
                         $<$<CONFIG:Release>:Foo.lib>
                 )

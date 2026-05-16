@@ -31,7 +31,7 @@ public partial class ConverterTests
                 add_executable("Project with \$pecial c#aracters")
 
                 target_compile_definitions("Project with \$pecial c#aracters"
-                    PUBLIC
+                    PRIVATE
                         WIN32
                         _CONSOLE
                         UNICODE
@@ -41,7 +41,7 @@ public partial class ConverterTests
                 )
 
                 target_compile_options("Project with \$pecial c#aracters"
-                    PUBLIC
+                    PRIVATE
                         /W3
                 )            
                 """);

@@ -33,7 +33,7 @@ public partial class ConverterTests
                 add_executable(EmptyProject)
 
                 target_compile_definitions(EmptyProject
-                {"\t"}PUBLIC
+                {"\t"}PRIVATE
                 {"\t"}{"\t"}WIN32
                 {"\t"}{"\t"}_CONSOLE
                 {"\t"}{"\t"}UNICODE
@@ -43,7 +43,7 @@ public partial class ConverterTests
                 )
 
                 target_compile_options(EmptyProject
-                {"\t"}PUBLIC
+                {"\t"}PRIVATE
                 {"\t"}{"\t"}/W3
                 )            
                 """);
@@ -73,7 +73,7 @@ public partial class ConverterTests
                 add_executable(EmptyProject)
 
                 target_compile_definitions(EmptyProject
-                  PUBLIC
+                  PRIVATE
                     WIN32
                     _CONSOLE
                     UNICODE
@@ -83,7 +83,7 @@ public partial class ConverterTests
                 )
 
                 target_compile_options(EmptyProject
-                  PUBLIC
+                  PRIVATE
                     /W3
                 )            
                 """);

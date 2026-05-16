@@ -50,7 +50,7 @@ public partial class ConverterTests
             Assert.Contains(
                 """
                 target_link_libraries(Project
-                    PUBLIC
+                    PRIVATE
                         boost::boost
                 )
                 """.Trim(),
@@ -75,7 +75,7 @@ public partial class ConverterTests
             Assert.Contains(
                 """
                 target_link_libraries(Project
-                    PUBLIC
+                    PRIVATE
                         unknown::unknown
                 )
                 """.Trim(),
@@ -101,7 +101,7 @@ public partial class ConverterTests
             Assert.Contains(
                 """
                 target_link_libraries(Project
-                    PUBLIC
+                    PRIVATE
                         boost::boost
                         fmt::fmt
                 )

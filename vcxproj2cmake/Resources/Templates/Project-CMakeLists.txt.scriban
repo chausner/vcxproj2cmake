@@ -65,7 +65,7 @@ set_target_properties({{ project_name | literal }} PROPERTIES
 
 {{~ if !compile_features.is_empty ~}}
 target_compile_features({{ project_name | literal }}
-    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
+    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
         {{~ for kvp in compile_features.values ~}}
         {{~ for feature in kvp.value ~}}
         {{ get_config_expression kvp.key feature }}
@@ -98,7 +98,7 @@ target_include_directories({{ project_name | literal }}
         {{~ end ~}}  
 {{~ end ~}}
 {{~ if !include_paths.is_empty ~}}
-    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
+    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
         {{~ for kvp in include_paths.values ~}}
         {{~ for path in kvp.value ~}}
         {{ get_config_expression kvp.key (path | prepend_relative_paths_with_cmake_current_source_dir) }}
@@ -111,7 +111,7 @@ target_include_directories({{ project_name | literal }}
 
 {{~ if !defines.is_empty ~}}
 target_compile_definitions({{ project_name | literal }}
-    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
+    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
         {{~ for kvp in defines.values ~}}
         {{~ for define in kvp.value ~}}
         {{ get_config_expression kvp.key define }}
@@ -123,7 +123,7 @@ target_compile_definitions({{ project_name | literal }}
 
 {{~ if !linker_paths.is_empty ~}}
 target_link_directories({{ project_name | literal }}
-    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
+    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
         {{~ for kvp in linker_paths.values ~}}
         {{~ for path in kvp.value ~}}
         {{ get_config_expression kvp.key path }}
@@ -135,7 +135,7 @@ target_link_directories({{ project_name | literal }}
 
 {{~ if !libraries.is_empty ~}}
 target_link_libraries({{ project_name | literal }}
-    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
+    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
         {{~ for kvp in libraries.values ~}}
         {{~ for library in kvp.value ~}}
         {{ get_config_expression kvp.key library }}
@@ -147,7 +147,7 @@ target_link_libraries({{ project_name | literal }}
 
 {{~ if !options.is_empty ~}}
 target_compile_options({{ project_name | literal }}
-    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PUBLIC{{ end }}
+    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
         {{~ for kvp in options.values ~}}
         {{~ for option in kvp.value ~}}
         {{ get_config_expression kvp.key option }}

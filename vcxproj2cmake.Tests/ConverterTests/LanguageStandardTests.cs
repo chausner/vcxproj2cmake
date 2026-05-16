@@ -67,7 +67,7 @@ public partial class ConverterTests
             if (expected != null)
                 Assert.Contains($"""
                     target_compile_features(Project
-                        PUBLIC
+                        PRIVATE
                             {expected}
                     )
                     """, cmake);
@@ -98,7 +98,7 @@ public partial class ConverterTests
             if (expected != null)
                 Assert.Contains($"""
                     target_compile_features(Project
-                        PUBLIC
+                        PRIVATE
                             {expected}
                     )
                     """, cmake);
@@ -122,7 +122,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_compile_features(Project
-                    PUBLIC
+                    PRIVATE
                         cxx_std_17
                         c_std_11
                 )

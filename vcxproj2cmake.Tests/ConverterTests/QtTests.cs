@@ -108,7 +108,7 @@ public partial class ConverterTests
             )
 
             target_link_libraries(QtProject
-                PUBLIC
+                PRIVATE
                     Qt6::Core
                     Qt6::Widgets
             )

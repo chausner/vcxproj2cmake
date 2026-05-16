@@ -262,7 +262,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_link_directories(Project
-                    PUBLIC
+                    PRIVATE
                         C:/Lib
                 )
                 """.Trim(), cmake);
@@ -284,7 +284,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_link_directories(Project
-                    PUBLIC
+                    PRIVATE
                         C:/Lib
                 )
                 """.Trim(), cmake);
@@ -307,7 +307,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_link_directories(Project
-                    PUBLIC
+                    PRIVATE
                         SupportedLib
                 )
                 """.Trim(), cmake);
@@ -332,7 +332,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_link_directories(Project
-                    PUBLIC
+                    PRIVATE
                         $<$<CONFIG:Debug>:DebugLibs>
                         $<$<CONFIG:Release>:ReleaseLibs>
                 )
@@ -355,7 +355,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_link_directories(Project
-                    PUBLIC
+                    PRIVATE
                         $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:Win32Lib>
                         $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:X64Lib>
                 )
@@ -397,7 +397,7 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
             Assert.Contains("""
                 target_link_directories(Project
-                    PUBLIC
+                    PRIVATE
                         $<$<CONFIG:Debug>:DebugLib2>
                         $<$<CONFIG:Release>:Libs2>
                 )
