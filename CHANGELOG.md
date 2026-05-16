@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix definition `_AFXDLL` erroneously being added when `UseOfMfc` is set to "Static".
+
 ## [1.7.0] - 2026-05-14
 
 ### Added

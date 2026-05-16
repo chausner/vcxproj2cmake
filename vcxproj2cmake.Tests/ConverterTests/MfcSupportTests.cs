@@ -33,7 +33,7 @@ public partial class ConverterTests
             """;
 
         [Fact]
-        public void Given_ProjectWithStaticMfc_When_Converted_Then_CMakeMfcFlagSetTo1AndAfxdllDefinitionAdded()
+        public void Given_ProjectWithStaticMfc_When_Converted_Then_CMakeMfcFlagSetTo1AndAfxdllDefinitionIsNotAdded()
         {
             // Arrange
             var fileSystem = new MockFileSystem();
@@ -53,12 +53,7 @@ public partial class ConverterTests
                     CMAKE_MFC_FLAG 1
                 )
                 """.TrimEnd(), cmake);
-            Assert.Contains("""
-                target_compile_definitions(Project
-                    PUBLIC
-                        _AFXDLL
-                )
-                """.TrimEnd(), cmake);
+            Assert.DoesNotContain("_AFXDLL", cmake);
         }
 
         [Fact]
@@ -109,6 +104,35 @@ public partial class ConverterTests
             Assert.Contains("""
                 set_target_properties(Project PROPERTIES
                     CMAKE_MFC_FLAG $<$<CONFIG:Debug>:0>$<$<CONFIG:Release>:2>
+                )
+                """.TrimEnd(), cmake);
+            Assert.Contains("""
+                target_compile_definitions(Project
+                    PUBLIC
+                        $<$<CONFIG:Release>:_AFXDLL>
+                )
+                """.TrimEnd(), cmake);
+        }
+
+        [Fact]
+        public void Given_ProjectWithStaticMfcInDebugAndSharedMfcInRelease_When_Converted_Then_AfxdllDefinitionIsAddedOnlyForRelease()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithUseOfMfc("Static", "Dynamic")));
+
+            // Act
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+            Assert.Contains("""
+                set_target_properties(Project PROPERTIES
+                    CMAKE_MFC_FLAG $<$<CONFIG:Debug>:1>$<$<CONFIG:Release>:2>
                 )
                 """.TrimEnd(), cmake);
             Assert.Contains("""

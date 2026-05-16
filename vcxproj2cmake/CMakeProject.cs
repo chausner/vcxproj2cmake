@@ -293,7 +293,7 @@ class CMakeProject
 
         Defines = Defines.Map((defines, useOfMfc) =>
         {
-            if (TranslateMfcFlag(useOfMfc).Value != "0")
+            if (useOfMfc?.Value.ToLowerInvariant() == "dynamic")
                 return AppendDefineIfNotPresent(defines, CMakeExpression.Literal("_AFXDLL"));
             else
                 return defines;
