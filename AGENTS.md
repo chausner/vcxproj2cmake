@@ -36,6 +36,7 @@
 - Framework: xUnit (`[Fact]`, `[Theory]`).
 - Location: under `vcxproj2cmake.Tests/`; mirror source folders when useful.
 - Naming: `Given_<Arrange>_When_<Act>_Then_<Assert>`.
+- Mark sections in tests with comments (`// Arrange`, `// Act`, `// Assert`). Use `// Act & Assert` if steps are intertwined. Leave out sections if not applicable. Stay consistent with existing tests.
 - Run: `dotnet test -c Release`.
 - Keep tests deterministic; use `MockFileSystem` from IO.Abstractions for file I/O.
 
