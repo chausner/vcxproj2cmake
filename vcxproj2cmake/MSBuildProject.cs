@@ -497,7 +497,7 @@ class MSBuildProject
                     SettingNames =
                         group.SelectMany(item => item.SettingNames)
                             .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                            .Order(StringComparer.OrdinalIgnoreCase)
                             .ToArray()
                 });
 
