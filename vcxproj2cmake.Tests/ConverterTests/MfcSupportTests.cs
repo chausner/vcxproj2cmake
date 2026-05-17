@@ -26,7 +26,7 @@ public partial class ConverterTests
 
             // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
-            
+
             Assert.Contains("""
                 set_target_properties(Project PROPERTIES
                     CMAKE_MFC_FLAG 1

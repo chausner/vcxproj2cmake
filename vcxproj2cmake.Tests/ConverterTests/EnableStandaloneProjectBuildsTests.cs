@@ -21,7 +21,7 @@ public partial class ConverterTests
             fileSystem.AddFile(@"App/App.vcxproj", new(TestData.Project()
                 .WithProperty("ConfigurationType", "Application")
                 .WithProjectReferences("..\\Lib\\Lib.vcxproj")
-                .Build()));               
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 

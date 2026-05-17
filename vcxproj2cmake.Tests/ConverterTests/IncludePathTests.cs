@@ -128,7 +128,7 @@ public partial class ConverterTests
                 """, cmake);
             Assert.DoesNotContain("PRIVATE\n", cmake); // only INTERFACE section expected
         }
-        
+
         [Fact]
         public void Given_ProjectWithAdditionalIncludeDirectoriesAndPublicIncludeDirectories_When_Converted_Then_PrivateAndInterfacePathsAreWritten()
         {

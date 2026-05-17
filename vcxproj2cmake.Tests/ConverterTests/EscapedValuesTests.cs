@@ -74,7 +74,7 @@ public partial class ConverterTests
                 .WithImports("packages%2Fconan_my%2Dpkg.props")
                 .WithItems("ClCompile", "src%2Fmain.cpp")
                 .WithItems("ClInclude", "include%5Cmy%23header.hpp")
-                .WithProjectReferences("libs%2FMy%20Lib.vcxproj")               
+                .WithProjectReferences("libs%2FMy%20Lib.vcxproj")
                 .Build()));
             fileSystem.AddFile(Path.Combine("libs", "My Lib.vcxproj"), new(TestData.Project()
                 .WithProperty("ConfigurationType", "StaticLibrary")

@@ -5,10 +5,10 @@ using Xunit;
 
 namespace vcxproj2cmake.Tests;
 
-static class AssertExtensions 
+static class AssertExtensions
 {
     extension(Assert)
-    {        
+    {
         public static void FileHasContent(string path, MockFileSystem fileSystem, string content)
         {
             var trimmedExpectedContent = content.Trim();
