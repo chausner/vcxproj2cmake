@@ -11,6 +11,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_PortableModeAndProjectWithoutSources_When_Converted_Then_SettingsAreGuardedUsingCXX_COMPILER_ID()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -19,11 +20,15 @@ public partial class ConverterTests
                 .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")],
                 portable: true);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""
                 target_compile_options(Project
                     PRIVATE
@@ -35,6 +40,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_PortableModeAndProjectWithOnlyCFiles_When_Converted_Then_SettingsAreGuardedUsingC_COMPILER_ID()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -44,11 +50,15 @@ public partial class ConverterTests
                 .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")],
                 portable: true);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""
                 target_compile_options(Project
                     PRIVATE
@@ -60,6 +70,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_PortableModeAndProjectWithOnlyCppFiles_When_Converted_Then_SettingsAreGuardedUsingCXX_COMPILER_ID()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -69,11 +80,15 @@ public partial class ConverterTests
                 .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")],
                 portable: true);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""
                 target_compile_options(Project
                     PRIVATE
@@ -85,6 +100,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_PortableModeAndProjectWithCAndCppFiles_When_Converted_Then_SettingsAreGuardedUsingCXX_COMPILER_ID()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -94,11 +110,15 @@ public partial class ConverterTests
                 .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")],
                 portable: true);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""
                 target_compile_options(Project
                     PRIVATE

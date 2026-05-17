@@ -10,6 +10,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectWithSourcesAndHeaders_When_IncludeHeadersIsFalse_Then_TargetSourcesDoesNotListHeaders()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -19,9 +20,13 @@ public partial class ConverterTests
                 .Build()));
 
             var converter = new Converter(fileSystem, new InMemoryLogger());
+
+            // Act
             converter.Convert(projectFiles: [new FileInfo(@"Project.vcxproj")], includeHeaders: false);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""                
                 target_sources(Project
                     PRIVATE
@@ -34,6 +39,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectWithSourcesAndHeaders_When_IncludeHeadersIsTrue_Then_TargetSourcesListsHeaders()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -43,9 +49,13 @@ public partial class ConverterTests
                 .Build()));
 
             var converter = new Converter(fileSystem, new InMemoryLogger());
+
+            // Act
             converter.Convert(projectFiles: [new FileInfo(@"Project.vcxproj")], includeHeaders: true);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""                
                 target_sources(Project
                     PRIVATE
@@ -58,6 +68,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectWithQtMocHeaders_When_IncludeHeadersIsTrue_Then_TargetSourcesListsQtMocHeaders()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -71,9 +82,13 @@ public partial class ConverterTests
                 .Build()));
 
             var converter = new Converter(fileSystem, new InMemoryLogger());
+
+            // Act
             converter.Convert(projectFiles: [new FileInfo(@"Project.vcxproj")], includeHeaders: true);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""                
                 target_sources(Project
                     PRIVATE
@@ -90,6 +105,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectWithQtMocSourceFiles_When_IncludeHeadersIsTrue_Then_TargetSourcesDoesNotListQtMocSources()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -99,9 +115,13 @@ public partial class ConverterTests
                 .Build()));
 
             var converter = new Converter(fileSystem, new InMemoryLogger());
+
+            // Act
             converter.Convert(projectFiles: [new FileInfo(@"Project.vcxproj")], includeHeaders: true);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""                
                 target_sources(Project
                     PRIVATE

@@ -11,6 +11,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_ApplicationProject_When_Converted_Then_UsesAddExecutable()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -20,9 +21,11 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"App.vcxproj")]);
 
+            // Assert
             Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(App)
@@ -35,6 +38,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_StaticLibraryProject_When_Converted_Then_UsesAddLibraryStatic()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -44,9 +48,11 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Lib.vcxproj")]);
 
+            // Assert
             Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(Lib)
@@ -58,6 +64,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_DynamicLibraryProject_When_Converted_Then_UsesAddLibraryShared()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -67,9 +74,11 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Dll.vcxproj")]);
 
+            // Assert
             Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(Dll)
@@ -81,6 +90,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_HeaderOnlyLibrary_When_Converted_Then_UsesAddLibraryInterface()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -91,9 +101,11 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"HeaderOnly.vcxproj")]);
 
+            // Assert
             Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(HeaderOnly)
@@ -105,6 +117,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectWithUnsupportedConfigurationType_When_Converted_Then_Throws()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -114,6 +127,7 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act & Assert
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
                     projectFiles: [new(@"Bad.vcxproj")]));

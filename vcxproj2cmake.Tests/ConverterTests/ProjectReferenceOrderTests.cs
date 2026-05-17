@@ -11,6 +11,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_SolutionWithChainDependencies_When_Converted_Then_CMakeListsProjectsAreOrdered()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -35,8 +36,10 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(solutionFile: new("Solution.sln"));
 
+            // Assert
             Assert.FileHasContent("CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(Solution)
@@ -50,6 +53,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_SolutionWithBranchingDependencies_When_Converted_Then_CMakeListsProjectsAreOrdered()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -79,8 +83,10 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(solutionFile: new("Branching.sln"));
 
+            // Assert
             Assert.FileHasContent("CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(Branching)

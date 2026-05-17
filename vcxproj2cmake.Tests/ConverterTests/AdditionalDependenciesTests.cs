@@ -11,6 +11,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectWithAdditionalDependencies_When_Converted_Then_LibrariesAreLinked()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -20,10 +21,13 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains(
                 """
                 target_link_libraries(Project
@@ -38,6 +42,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectWithConfigSpecificAdditionalDependencies_When_Converted_Then_GeneratorExpressionsUsed()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -47,10 +52,13 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains(
                 """
                 target_link_libraries(Project

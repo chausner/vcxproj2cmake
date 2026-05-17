@@ -11,6 +11,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_QtProjectWithoutQtVersion_When_Converted_Then_Throws()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -20,6 +21,7 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act & Assert
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
                     projectFiles: [new(@"QtProject.vcxproj")]));
@@ -30,6 +32,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_QtProjectWithUnknownModule_When_Converted_Then_Throws()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -39,6 +42,7 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act & Assert
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
                     projectFiles: [new(@"QtProject.vcxproj")],
@@ -50,6 +54,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_QtProjectWithQtVersionAndModules_When_Converted_Then_MatchesExpectedOutput()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -62,10 +67,12 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"QtProject.vcxproj")],
                 qtVersion: 6);
 
+            // Assert
             Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(QtProject)

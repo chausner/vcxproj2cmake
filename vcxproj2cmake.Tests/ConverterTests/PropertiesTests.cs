@@ -11,6 +11,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_TreatWarningAsErrorEnabledForAllConfigs_When_Converted_Then_CompileWarningAsErrorPropertyIsSet()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -19,10 +20,14 @@ public partial class ConverterTests
                 .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""
                 set_target_properties(Project PROPERTIES
                     COMPILE_WARNING_AS_ERROR ON
@@ -33,6 +38,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_TreatWarningAsErrorEnabledConfigSpecific_When_Converted_Then_CompileWarningAsErrorPropertyIsSetWithGeneratorExpression()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -41,10 +47,14 @@ public partial class ConverterTests
                 .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""
                 set_target_properties(Project PROPERTIES
                     COMPILE_WARNING_AS_ERROR $<$<CONFIG:Debug>:ON>$<$<CONFIG:Release>:OFF>

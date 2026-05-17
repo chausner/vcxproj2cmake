@@ -10,6 +10,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectWithResourceCompile_When_Converted_Then_TargetSourcesListsResourceFile()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -19,9 +20,13 @@ public partial class ConverterTests
                 .Build()));
 
             var converter = new Converter(fileSystem, new InMemoryLogger());
+
+            // Act
             converter.Convert(projectFiles: [new FileInfo(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""                
                 target_sources(Project
                     PRIVATE

@@ -26,6 +26,7 @@ public partial class ConverterTests
 
             // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+            
             Assert.Contains("""
                 set_target_properties(Project PROPERTIES
                     CMAKE_MFC_FLAG 1
@@ -52,6 +53,7 @@ public partial class ConverterTests
 
             // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""
                 set_target_properties(Project PROPERTIES
                     CMAKE_MFC_FLAG 2
@@ -84,6 +86,7 @@ public partial class ConverterTests
 
             // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""
                 set_target_properties(Project PROPERTIES
                     CMAKE_MFC_FLAG $<$<CONFIG:Debug>:0>$<$<CONFIG:Release>:2>
@@ -116,6 +119,7 @@ public partial class ConverterTests
 
             // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""
                 set_target_properties(Project PROPERTIES
                     CMAKE_MFC_FLAG $<$<CONFIG:Debug>:1>$<$<CONFIG:Release>:2>
@@ -147,6 +151,7 @@ public partial class ConverterTests
 
             // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.DoesNotContain("CMAKE_MFC_FLAG", cmake);
             Assert.DoesNotContain("_AFXDLL", cmake);
         }
@@ -154,6 +159,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectWithInvalidMfcValue_When_Converted_Then_Throws()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -163,6 +169,7 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act & Assert
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
                     projectFiles: [new(@"Project.vcxproj")]));

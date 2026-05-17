@@ -11,6 +11,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectReferencesDynamicLibrary_When_Converted_Then_LibraryIsLinked()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -24,9 +25,11 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Dll", "Dll.vcxproj"))]);
 
+            // Assert
             Assert.FileHasContent(Path.Combine("Dll", "CMakeLists.txt"), fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(Dll)
@@ -50,6 +53,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectReferencesStaticLibrary_When_Converted_Then_LibraryIsLinked()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -63,9 +67,11 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Dll", "Dll.vcxproj"))]);
 
+            // Assert
             Assert.FileHasContent(Path.Combine("Dll", "CMakeLists.txt"), fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(Dll)
@@ -89,6 +95,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectReferencesHeaderOnlyLibrary_When_Converted_Then_NoLibraryIsLinked()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -103,16 +110,20 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("HeaderOnly", "HeaderOnly.vcxproj"))]);
 
+            // Assert
             var cmake = fileSystem.GetFile(Path.Combine("App", "CMakeLists.txt")).TextContents;
+
             Assert.DoesNotContain("target_link_libraries(App", cmake);
         }
 
         [Fact]
         public void Given_ProjectReferencesApplication_When_Converted_Then_NoLibraryIsLinked()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -126,10 +137,13 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Exe", "Exe.vcxproj"))]);
 
+            // Assert
             var cmake = fileSystem.GetFile(Path.Combine("App", "CMakeLists.txt")).TextContents;
+
             Assert.DoesNotContain("target_link_libraries(App", cmake);
         }
     }

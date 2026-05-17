@@ -11,6 +11,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectWithConfigurationSpecificDefines_When_Converted_Then_GeneratorExpressionsUsedAndDuplicatesRemoved()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -23,9 +24,11 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(Project)
@@ -46,6 +49,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectWithMultiByteCharacterSet_When_Converted_Then_MBCSDefinitionAdded()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -56,9 +60,11 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"ProjectMBCS.vcxproj")]);
 
+            // Assert
             Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(ProjectMBCS)
@@ -75,6 +81,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectWithInvalidCharacterSet_When_Converted_Then_Throws()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -85,6 +92,7 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act & Assert
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
                     projectFiles: [new(@"Project.vcxproj")]));
@@ -95,6 +103,7 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectWithArchitectureSpecificDefines_When_Converted_Then_UsesGeneratorExpressionsForArchitecture()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
@@ -106,9 +115,11 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"ProjectArch.vcxproj")]);
 
+            // Assert
             Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(ProjectArch)

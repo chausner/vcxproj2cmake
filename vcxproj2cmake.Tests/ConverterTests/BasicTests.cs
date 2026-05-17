@@ -66,6 +66,7 @@ public partial class ConverterTests
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
                     solutionFile: new(@"EmptySolution.sln")));
+
             Assert.Contains("No .vcxproj files found in solution", ex.Message);
         }
 

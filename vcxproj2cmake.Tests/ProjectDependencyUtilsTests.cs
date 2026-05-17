@@ -34,11 +34,10 @@ public class ProjectDependencyUtilsTests
 
         var logger = new InMemoryLogger();
 
-        // Act
+        // Act & Assert
         var exception = Assert.Throws<CatastrophicFailureException>(
             () => ProjectDependencyUtils.OrderProjectsByDependencies([cmakeApp], logger));
 
-        // Assert
         Assert.Equal("Could not determine project dependency tree", exception.Message);
         Assert.Contains("Could not determine project dependency tree", logger.AllMessageText);
         Assert.Contains("Project App" + Environment.NewLine + $"  missing dependency {Path.Combine("..", "Lib", "Lib.vcxproj")}", logger.AllMessageText);
