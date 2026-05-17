@@ -38,7 +38,7 @@ public partial class ConverterTests
 
             converter.Convert(solutionFile: new("Solution.sln"));
 
-            AssertEx.FileHasContent("CMakeLists.txt", fileSystem, """
+            Assert.FileHasContent("CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(Solution)
 
@@ -83,7 +83,7 @@ public partial class ConverterTests
 
             converter.Convert(solutionFile: new("Branching.sln"));
 
-            AssertEx.FileHasContent("CMakeLists.txt", fileSystem, """
+            Assert.FileHasContent("CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(Branching)
 

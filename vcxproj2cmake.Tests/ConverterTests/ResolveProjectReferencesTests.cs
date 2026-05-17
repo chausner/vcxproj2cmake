@@ -43,14 +43,14 @@ public partial class ConverterTests
                 projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Lib", "Lib.vcxproj"))]);
 
             // Assert
-            AssertEx.FileHasContent(Path.Combine("Lib", "CMakeLists.txt"), fileSystem, """
+            Assert.FileHasContent(Path.Combine("Lib", "CMakeLists.txt"), fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(Lib)
 
                 add_library(Lib STATIC)
                 """);
 
-            AssertEx.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
+            Assert.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(App)
 
@@ -81,14 +81,14 @@ public partial class ConverterTests
                 projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Lib", "Lib.vcxproj"))]);
 
             // Assert
-            AssertEx.FileHasContent(Path.Combine("Lib", "CMakeLists.txt"), fileSystem, """
+            Assert.FileHasContent(Path.Combine("Lib", "CMakeLists.txt"), fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(Lib)
 
                 add_library(Lib STATIC)
                 """);
 
-            AssertEx.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
+            Assert.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(App)
 

@@ -26,7 +26,7 @@ public partial class ConverterTests
                 enableStandaloneProjectBuilds: true);
 
             // Assert
-            AssertEx.FileHasContent(@"App/CMakeLists.txt", fileSystem, """
+            Assert.FileHasContent(@"App/CMakeLists.txt", fileSystem, """
                 cmake_minimum_required(VERSION 3.24)
                 project(App)
 

@@ -87,7 +87,7 @@ public partial class ConverterTests
                 projectFiles: [new(@"QtProject.vcxproj")],
                 qtVersion: 6);
 
-            AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
+            Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """
             cmake_minimum_required(VERSION 3.24)
             project(QtProject)
 

@@ -5,13 +5,16 @@ using Xunit;
 
 namespace vcxproj2cmake.Tests;
 
-internal static class AssertEx
+static class AssertExtensions 
 {
-    public static void FileHasContent(string path, MockFileSystem fileSystem, string content)
-    {
-        var trimmedExpectedContent = content.Trim();
-        var trimmedContent = fileSystem.GetFile(path).TextContents.Trim();
-        Assert.Equal(trimmedExpectedContent, trimmedContent);
+    extension(Assert)
+    {        
+        public static void FileHasContent(string path, MockFileSystem fileSystem, string content)
+        {
+            var trimmedExpectedContent = content.Trim();
+            var trimmedContent = fileSystem.GetFile(path).TextContents.Trim();
+            Assert.Equal(trimmedExpectedContent, trimmedContent);
+        }
     }
 }
 

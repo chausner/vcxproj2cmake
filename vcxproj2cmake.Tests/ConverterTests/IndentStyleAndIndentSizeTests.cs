@@ -26,7 +26,7 @@ public partial class ConverterTests
                 indentStyle: IndentStyle.Tabs);
 
             // Assert
-            AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, $"""            
+            Assert.FileHasContent(@"CMakeLists.txt", fileSystem, $"""            
                 cmake_minimum_required(VERSION 3.24)
                 project(EmptyProject)
 
@@ -66,7 +66,7 @@ public partial class ConverterTests
                 indentSize: 2);
 
             // Assert
-            AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """            
+            Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """            
                 cmake_minimum_required(VERSION 3.24)
                 project(EmptyProject)
 

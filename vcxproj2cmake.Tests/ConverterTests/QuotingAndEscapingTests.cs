@@ -24,7 +24,7 @@ public partial class ConverterTests
                 projectFiles: [new(@"Project with $pecial c#aracters.vcxproj")]);
 
             // Assert
-            AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """            
+            Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """            
                 cmake_minimum_required(VERSION 3.24)
                 project("Project with \$pecial c#aracters")
 
