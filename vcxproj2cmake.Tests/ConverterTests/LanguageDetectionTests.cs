@@ -14,7 +14,8 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithSources()));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -31,7 +32,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithSources("main.c")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItems("ClCompile", "main.c")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -48,7 +51,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithSources("main.cpp")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItems("ClCompile", "main.cpp")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -65,7 +70,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithSources("main.c", "main.cpp")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItems("ClCompile", "main.c", "main.cpp")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 

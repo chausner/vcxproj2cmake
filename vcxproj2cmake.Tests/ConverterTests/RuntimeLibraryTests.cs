@@ -14,7 +14,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("RuntimeLibrary", "MultiThreadedDebugDLL", "MultiThreadedDLL")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("RuntimeLibrary", debugValue: "MultiThreadedDebugDLL", releaseValue: "MultiThreadedDLL")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -31,7 +33,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("RuntimeLibrary", "MultiThreaded", "MultiThreaded")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("RuntimeLibrary", "MultiThreaded")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -54,7 +58,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("RuntimeLibrary", "MultiThreadedDebug", "MultiThreadedDLL")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("RuntimeLibrary", debugValue: "MultiThreadedDebug", releaseValue: "MultiThreadedDLL")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -77,7 +83,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("RuntimeLibrary", "MultiThreadedDebug", "MultiThreaded")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("RuntimeLibrary", debugValue: "MultiThreadedDebug", releaseValue: "MultiThreaded")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 

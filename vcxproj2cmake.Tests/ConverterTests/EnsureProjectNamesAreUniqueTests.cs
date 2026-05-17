@@ -15,9 +15,9 @@ public partial class ConverterTests
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
             // Three projects with the same name in different folders
-            fileSystem.AddFile(Path.Combine("Lib", "Project.vcxproj"), new(TestData.EmptyProject));
-            fileSystem.AddFile(Path.Combine("App", "Project.vcxproj"), new(TestData.EmptyProject));
-            fileSystem.AddFile(Path.Combine("Test", "Project.vcxproj"), new(TestData.EmptyProject));
+            fileSystem.AddFile(Path.Combine("Lib", "Project.vcxproj"), new(TestData.DefaultEmptyProject));
+            fileSystem.AddFile(Path.Combine("App", "Project.vcxproj"), new(TestData.DefaultEmptyProject));
+            fileSystem.AddFile(Path.Combine("Test", "Project.vcxproj"), new(TestData.DefaultEmptyProject));
 
             fileSystem.AddFile("DuplicateNames.sln", new("""
                 Microsoft Visual Studio Solution File, Format Version 12.00
@@ -51,9 +51,9 @@ public partial class ConverterTests
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
             // Three projects with the same name in different folders
-            fileSystem.AddFile(Path.Combine("Lib", "Project.vcxproj"), new(TestData.EmptyProject));
-            fileSystem.AddFile(Path.Combine("App", "Project.vcxproj"), new(TestData.EmptyProject));
-            fileSystem.AddFile(Path.Combine("Test", "Project.vcxproj"), new(TestData.EmptyProject));
+            fileSystem.AddFile(Path.Combine("Lib", "Project.vcxproj"), new(TestData.DefaultEmptyProject));
+            fileSystem.AddFile(Path.Combine("App", "Project.vcxproj"), new(TestData.DefaultEmptyProject));
+            fileSystem.AddFile(Path.Combine("Test", "Project.vcxproj"), new(TestData.DefaultEmptyProject));
 
             fileSystem.AddFile(Path.Combine("Solution", "DuplicateNames.sln"), new("""
                 Microsoft Visual Studio Solution File, Format Version 12.00

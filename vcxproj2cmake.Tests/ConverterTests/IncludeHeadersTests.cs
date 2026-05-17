@@ -13,14 +13,10 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithItemGroups("""
-                <ItemGroup>
-                    <ClCompile Include="src\main.cpp" />
-                </ItemGroup>
-                <ItemGroup>
-                    <ClInclude Include="include\foo.h" />
-                </ItemGroup>
-                """)));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItems("ClCompile", @"src\main.cpp")
+                .WithItems("ClInclude", @"include\foo.h")
+                .Build()));
 
             var converter = new Converter(fileSystem, new InMemoryLogger());
             converter.Convert(projectFiles: [new FileInfo(@"Project.vcxproj")], includeHeaders: false);
@@ -41,14 +37,10 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithItemGroups("""
-                <ItemGroup>
-                    <ClCompile Include="src\main.cpp" />
-                </ItemGroup>
-                <ItemGroup>
-                    <ClInclude Include="include\foo.h" />
-                </ItemGroup>
-                """)));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItems("ClCompile", @"src\main.cpp")
+                .WithItems("ClInclude", @"include\foo.h")
+                .Build()));
 
             var converter = new Converter(fileSystem, new InMemoryLogger());
             converter.Convert(projectFiles: [new FileInfo(@"Project.vcxproj")], includeHeaders: true);
@@ -69,18 +61,14 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithItemGroups("""
-                <ItemGroup>
-                    <ClCompile Include="src\main.cpp" />
-                </ItemGroup>
-                <ItemGroup>
-                    <QtMoc Include="include\moc.H" />
-                    <QtMoc Include="include\moc.HpP" />
-                    <QtMoc Include="include\moc.HxX" />
-                    <QtMoc Include="include\moc.H++" />
-                    <QtMoc Include="include\moc.Hh" />
-                </ItemGroup>
-                """)));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItems("ClCompile", @"src\main.cpp")
+                .WithItems("QtMoc", @"include\moc.H")
+                .WithItems("QtMoc", @"include\moc.HpP")
+                .WithItems("QtMoc", @"include\moc.HxX")
+                .WithItems("QtMoc", @"include\moc.H++")
+                .WithItems("QtMoc", @"include\moc.Hh")
+                .Build()));
 
             var converter = new Converter(fileSystem, new InMemoryLogger());
             converter.Convert(projectFiles: [new FileInfo(@"Project.vcxproj")], includeHeaders: true);
@@ -105,12 +93,10 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithItemGroups("""
-                <ItemGroup>
-                    <ClCompile Include="src\main.cpp" />
-                    <QtMoc Include="src\moc.cpp" />
-                </ItemGroup>
-                """)));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItems("ClCompile", @"src\main.cpp")
+                .WithItems("QtMoc", @"src\moc.cpp")
+                .Build()));
 
             var converter = new Converter(fileSystem, new InMemoryLogger());
             converter.Convert(projectFiles: [new FileInfo(@"Project.vcxproj")], includeHeaders: true);

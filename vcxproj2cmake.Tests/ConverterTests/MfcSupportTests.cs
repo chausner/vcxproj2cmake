@@ -8,30 +8,6 @@ public partial class ConverterTests
 {
     public class MfcSupportTests
     {
-        static string CreateProjectWithUseOfMfc(string debugUseOfMfc, string releaseUseOfMfc) => $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Debug|Win32">
-                        <Configuration>Debug</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Release|Win32">
-                        <Configuration>Release</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                    <UseOfMfc>{debugUseOfMfc}</UseOfMfc>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                    <UseOfMfc>{releaseUseOfMfc}</UseOfMfc>
-                </PropertyGroup>
-            </Project>
-            """;
-
         [Fact]
         public void Given_ProjectWithStaticMfc_When_Converted_Then_CMakeMfcFlagSetTo1AndAfxdllDefinitionIsNotAdded()
         {
@@ -39,7 +15,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithUseOfMfc("Static", "Static")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithProperty("UseOfMfc", "Static")
+                .Build()));
 
             // Act
             var converter = new Converter(fileSystem, NullLogger.Instance);
@@ -63,7 +41,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithUseOfMfc("Dynamic", "Dynamic")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithProperty("UseOfMfc", "Dynamic")
+                .Build()));
 
             // Act
             var converter = new Converter(fileSystem, NullLogger.Instance);
@@ -92,7 +72,10 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithUseOfMfc("false", "Dynamic")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithProperty("Debug", "Win32", "UseOfMfc", "false")
+                .WithProperty("Release", "Win32", "UseOfMfc", "Dynamic")
+                .Build()));
 
             // Act
             var converter = new Converter(fileSystem, NullLogger.Instance);
@@ -121,7 +104,10 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithUseOfMfc("Static", "Dynamic")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithProperty("Debug", "Win32", "UseOfMfc", "Static")
+                .WithProperty("Release", "Win32", "UseOfMfc", "Dynamic")
+                .Build()));
 
             // Act
             var converter = new Converter(fileSystem, NullLogger.Instance);
@@ -150,7 +136,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithUseOfMfc("false", "false")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithProperty("UseOfMfc", "false")
+                .Build()));
 
             // Act
             var converter = new Converter(fileSystem, NullLogger.Instance);
@@ -169,7 +157,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithUseOfMfc("invalid", "invalid")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithProperty("UseOfMfc", "invalid")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 

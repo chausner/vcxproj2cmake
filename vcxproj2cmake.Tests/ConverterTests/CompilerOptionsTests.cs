@@ -14,7 +14,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("AdditionalOptions", "foo bar", "foo bar")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("AdditionalOptions", "foo bar")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
@@ -36,7 +38,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("AdditionalOptions", "foo bar", "foo bar")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("AdditionalOptions", "foo bar")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
@@ -59,7 +63,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("DisableSpecificWarnings", "4100;4200", "4100;4200")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("DisableSpecificWarnings", "4100;4200")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
@@ -81,7 +87,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("DisableSpecificWarnings", "4100;4200", "4100;4200")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("DisableSpecificWarnings", "4100;4200")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
@@ -104,7 +112,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("TreatSpecificWarningsAsErrors", "4800;4801", "4800;4801")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("TreatSpecificWarningsAsErrors", "4800;4801")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
@@ -126,7 +136,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("TreatSpecificWarningsAsErrors", "4800;4801", "4800;4801")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("TreatSpecificWarningsAsErrors", "4800;4801")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
@@ -149,7 +161,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("WarningLevel", "Level4", "Level4")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("WarningLevel", "Level4")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
@@ -170,7 +184,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("WarningLevel", "Level4", "Level4")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("WarningLevel", "Level4")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
@@ -192,7 +208,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("WarningLevel", "Bad", "Bad")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("WarningLevel", "Bad")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -206,7 +224,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("ExternalWarningLevel", "Level2", "Level2")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("ExternalWarningLevel", "Level2")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
@@ -227,7 +247,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("ExternalWarningLevel", "Level2", "Level2")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("ExternalWarningLevel", "Level2")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
@@ -249,7 +271,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("ExternalWarningLevel", "Foo", "Foo")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("ExternalWarningLevel", "Foo")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -263,7 +287,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("TreatAngleIncludeAsExternal", "true", "true")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("TreatAngleIncludeAsExternal", "true")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
@@ -284,7 +310,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("TreatAngleIncludeAsExternal", "true", "true")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("TreatAngleIncludeAsExternal", "true")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(

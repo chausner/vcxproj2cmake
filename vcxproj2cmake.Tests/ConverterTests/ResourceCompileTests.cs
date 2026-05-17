@@ -13,12 +13,10 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithItemGroups("""
-                <ItemGroup>
-                    <ClCompile Include="src\main.cpp" />
-                    <ResourceCompile Include="app.rc" />
-                </ItemGroup>
-                """)));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItems("ClCompile", @"src\main.cpp")
+                .WithItems("ResourceCompile", @"app.rc")
+                .Build()));
 
             var converter = new Converter(fileSystem, new InMemoryLogger());
             converter.Convert(projectFiles: [new FileInfo(@"Project.vcxproj")]);

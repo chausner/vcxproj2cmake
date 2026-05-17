@@ -16,8 +16,11 @@ public class ProjectDependencyUtilsTests
         var appProjectPath = Path.Combine("App", "App.vcxproj");
         var libProjectPath = Path.Combine("Lib", "Lib.vcxproj");
 
-        fileSystem.AddFile(appProjectPath, new MockFileData(TestData.CreateProject("Application", "..\\Lib\\Lib.vcxproj")));
-        fileSystem.AddFile(libProjectPath, new MockFileData(TestData.CreateProject("StaticLibrary")));
+        fileSystem.AddFile(appProjectPath, new MockFileData(TestData.Project()
+            .WithProjectReferences("..\\Lib\\Lib.vcxproj")
+            .Build()));
+        fileSystem.AddFile(libProjectPath, new MockFileData(TestData.Project()
+            .Build()));
 
         var msbuildApp = MSBuildProject.ParseProjectFile(Path.GetFullPath(appProjectPath), fileSystem, NullLogger.Instance);
         var msbuildLib = MSBuildProject.ParseProjectFile(Path.GetFullPath(libProjectPath), fileSystem, NullLogger.Instance);

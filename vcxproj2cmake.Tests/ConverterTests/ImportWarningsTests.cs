@@ -7,48 +7,18 @@ public partial class ConverterTests
 {
     public class ImportWarningsTests
     {
-        static string CreateProjectWithImports(params string[] imports)
-        {
-            var importXml = string.Join(
-                Environment.NewLine,
-                imports.Select(import => $"        <Import Project=\"{import}\" />"));
-
-            return $"""
-                <?xml version="1.0" encoding="utf-8"?>
-                <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                    <ItemGroup Label="ProjectConfigurations">
-                        <ProjectConfiguration Include="Debug|Win32">
-                            <Configuration>Debug</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                        <ProjectConfiguration Include="Release|Win32">
-                            <Configuration>Release</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                    </ItemGroup>
-                {importXml}
-                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                        <UseDebugLibraries>true</UseDebugLibraries>
-                    </PropertyGroup>
-                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                        <UseDebugLibraries>false</UseDebugLibraries>
-                    </PropertyGroup>
-                </Project>
-                """;
-        }
-
         [Fact]
         public void Given_ProjectWithUnexpectedImport_When_Converted_Then_LogsWarning()
         {
             // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
-            fileSystem.AddFile(
-                @"Project.vcxproj",
-                new MockFileData(CreateProjectWithImports(
+            fileSystem.AddFile(@"Project.vcxproj", new MockFileData(TestData.Project()
+                .WithImports(
                     @"$(VCTargetsPath)\Microsoft.Cpp.Default.props",
                     "custom.props",
-                    @"$(VCTargetsPath)\Microsoft.Cpp.targets")));
+                    @"$(VCTargetsPath)\Microsoft.Cpp.targets")
+                .Build()));
 
             var logger = new InMemoryLogger();
             var converter = new Converter(fileSystem, logger);
@@ -68,13 +38,13 @@ public partial class ConverterTests
             // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
-            fileSystem.AddFile(
-                @"Project.vcxproj",
-                new MockFileData(CreateProjectWithImports(
+            fileSystem.AddFile(@"Project.vcxproj", new MockFileData(TestData.Project()
+                .WithImports(
                     @"$(VCTargetsPath)\Microsoft.Cpp.Default.props",
                     @"$(VCTargetsPath)\Microsoft.Cpp.props",
                     @"$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props",
-                    @"$(VCTargetsPath)\Microsoft.Cpp.targets")));
+                    @"$(VCTargetsPath)\Microsoft.Cpp.targets")
+                .Build()));
 
             var logger = new InMemoryLogger();
             var converter = new Converter(fileSystem, logger);
@@ -94,11 +64,11 @@ public partial class ConverterTests
             // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
-            fileSystem.AddFile(
-                @"Project.vcxproj",
-                new MockFileData(CreateProjectWithImports(
+            fileSystem.AddFile(@"Project.vcxproj", new MockFileData(TestData.Project()
+                .WithImports(
                     @"$(QtMsBuild)\qt_defaults.props",
-                    @"$(QtMsBuild)\qt.targets")));
+                    @"$(QtMsBuild)\qt.targets")
+                .Build()));
 
             var logger = new InMemoryLogger();
             var converter = new Converter(fileSystem, logger);
@@ -118,13 +88,13 @@ public partial class ConverterTests
             // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
-            fileSystem.AddFile(
-                @"Project.vcxproj",
-                new MockFileData(CreateProjectWithImports(
+            fileSystem.AddFile(@"Project.vcxproj", new MockFileData(TestData.Project()
+                .WithImports(
                     @"conan_boost.props",
                     @"packages\conan_fmt.props",
                     @"build\generators\conandeps.props",
-                    @"$(ConanDir)conan_fmt.props")));
+                    @"$(ConanDir)conan_fmt.props")
+                .Build()));
 
             var logger = new InMemoryLogger();
             var converter = new Converter(fileSystem, logger);
@@ -149,7 +119,8 @@ public partial class ConverterTests
             var directoryBuildPropsPath = Path.GetFullPath("Directory.Build.props");
             var directoryBuildTargetsPath = Path.GetFullPath(Path.Combine("src", "Directory.Build.targets"));
 
-            fileSystem.AddFile(projectPath, new MockFileData(TestData.CreateProject()));
+            fileSystem.AddFile(projectPath, new MockFileData(TestData.Project()
+                .Build()));
             fileSystem.AddFile(directoryBuildPropsPath, new MockFileData("<Project />"));
             fileSystem.AddFile(directoryBuildTargetsPath, new MockFileData("<Project />"));
 

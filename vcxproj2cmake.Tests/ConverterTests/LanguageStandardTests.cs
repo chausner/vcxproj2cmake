@@ -8,40 +8,6 @@ public partial class ConverterTests
 {
     public class LanguageStandardTests
     {
-        static string CreateProject(string? cppDebug = null, string? cppRelease = null, string? cDebug = null, string? cRelease = null) => $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Debug|Win32">
-                        <Configuration>Debug</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Release|Win32">
-                        <Configuration>Release</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                </PropertyGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                    <ClCompile>
-                        {(cppDebug != null ? $"<LanguageStandard>{cppDebug}</LanguageStandard>" : string.Empty)}
-                        {(cDebug != null ? $"<LanguageStandard_C>{cDebug}</LanguageStandard_C>" : string.Empty)}
-                    </ClCompile>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                    <ClCompile>
-                        {(cppRelease != null ? $"<LanguageStandard>{cppRelease}</LanguageStandard>" : string.Empty)}
-                        {(cRelease != null ? $"<LanguageStandard_C>{cRelease}</LanguageStandard_C>" : string.Empty)}
-                    </ClCompile>
-                </ItemDefinitionGroup>
-            </Project>
-            """;
-
         [Theory]
         [InlineData("stdcpplatest", "cxx_std_23")]
         [InlineData("stdcpp23", "cxx_std_23")]
@@ -55,7 +21,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject(standard, standard)));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("LanguageStandard", standard)
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -86,7 +54,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject(null, null, standard, standard)));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("LanguageStandard_C", standard)
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -112,7 +82,10 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("stdcpp17", "stdcpp17", "stdc11", "stdc11")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("LanguageStandard", "stdcpp17")
+                .WithClCompileSetting("LanguageStandard_C", "stdc11")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -135,7 +108,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject()));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project().Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -152,7 +125,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("stdcpp20", "stdcpp17")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("LanguageStandard", debugValue: "stdcpp20", releaseValue: "stdcpp17")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -169,7 +144,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject(null, null, "stdc17", "stdc11")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("LanguageStandard_C", debugValue: "stdc17", releaseValue: "stdc11")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -186,7 +163,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("foo", "foo")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("LanguageStandard", "foo")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -203,7 +182,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject(null, null, "foo", "foo")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("LanguageStandard_C", "foo")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 

@@ -8,50 +8,18 @@ public partial class ConverterTests
 {
     public class EscapedValuesTests
     {
-        static string CreateProject(
-            string? propertyGroupContent = null,
-            string? itemDefinitionGroupContent = null,
-            string? itemGroupContent = null,
-            string? importContent = null) => $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Release|Win32">
-                        <Configuration>Release</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                {importContent ?? string.Empty}
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                    {propertyGroupContent ?? string.Empty}
-                </PropertyGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                    {itemDefinitionGroupContent ?? string.Empty}
-                </ItemDefinitionGroup>
-                <ItemGroup>
-                    {itemGroupContent ?? string.Empty}
-                </ItemGroup>
-            </Project>
-            """;
-
         [Fact]
         public void Given_EscapedScalarAndListValues_When_Converted_Then_UnescapedValuesAreWrittenWithoutSplittingEscapedSeparators()
         {
             // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject(
-                propertyGroupContent: """
-                    <TargetName>My%20Target%23%25</TargetName>
-                    """,
-                itemDefinitionGroupContent: """
-                    <ClCompile>
-                        <AdditionalIncludeDirectories>include%3Bdir;folder%20name;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-                        <PreprocessorDefinitions>VALUE=a%3Bb;SECOND=100%25;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-                        <AdditionalOptions>/DNAME%3Dfoo%20bar /DVALUE%3D100%25</AdditionalOptions>
-                    </ClCompile>
-                    """)));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithProperty("TargetName", "My%20Target%23%25")
+                .WithItemDefinitionSetting("ClCompile", "AdditionalIncludeDirectories", "include%3Bdir;folder%20name;%(AdditionalIncludeDirectories)")
+                .WithItemDefinitionSetting("ClCompile", "PreprocessorDefinitions", "VALUE=a%3Bb;SECOND=100%25;%(PreprocessorDefinitions)")
+                .WithItemDefinitionSetting("ClCompile", "AdditionalOptions", "/DNAME%3Dfoo%20bar /DVALUE%3D100%25")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -102,16 +70,15 @@ public partial class ConverterTests
             // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject(
-                importContent: """
-                    <Import Project="packages%2Fconan_my%2Dpkg.props" />
-                    """,
-                itemGroupContent: """
-                    <ClCompile Include="src%2Fmain.cpp" />
-                    <ClInclude Include="include%5Cmy%23header.hpp" />
-                    <ProjectReference Include="libs%2FMy%20Lib.vcxproj" />
-                    """)));
-            fileSystem.AddFile(Path.Combine("libs", "My Lib.vcxproj"), new(TestData.CreateProject("StaticLibrary")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithImports("packages%2Fconan_my%2Dpkg.props")
+                .WithItems("ClCompile", "src%2Fmain.cpp")
+                .WithItems("ClInclude", "include%5Cmy%23header.hpp")
+                .WithProjectReferences("libs%2FMy%20Lib.vcxproj")               
+                .Build()));
+            fileSystem.AddFile(Path.Combine("libs", "My Lib.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "StaticLibrary")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 

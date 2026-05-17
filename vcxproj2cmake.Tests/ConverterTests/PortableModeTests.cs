@@ -14,7 +14,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithSourcesAndClCompileProperty([], "AdditionalOptions", "foo", "foo")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("AdditionalOptions", "foo")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
@@ -36,7 +38,10 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithSourcesAndClCompileProperty(["main.c"], "AdditionalOptions", "foo", "foo")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("AdditionalOptions", "foo")
+                .WithItems("ClCompile", "main.c")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
@@ -58,7 +63,10 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithSourcesAndClCompileProperty(["main.cpp"], "AdditionalOptions", "foo", "foo")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("AdditionalOptions", "foo")
+                .WithItems("ClCompile", "main.cpp")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
@@ -80,7 +88,10 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithSourcesAndClCompileProperty(["main.c", "main.cpp"], "AdditionalOptions", "foo", "foo")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("AdditionalOptions", "foo")
+                .WithItems("ClCompile", "main.c", "main.cpp")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(

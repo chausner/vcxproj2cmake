@@ -9,28 +9,9 @@ public partial class ConverterTests
     public class ConanPackagesTests
     {
         static string CreateProjectWithConanImports(params string[] packages)
-            => $"""
-        <?xml version="1.0" encoding="utf-8"?>
-        <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-            <ItemGroup Label="ProjectConfigurations">
-                <ProjectConfiguration Include="Debug|Win32">
-                    <Configuration>Debug</Configuration>
-                    <Platform>Win32</Platform>
-                </ProjectConfiguration>
-                <ProjectConfiguration Include="Release|Win32">
-                    <Configuration>Release</Configuration>
-                    <Platform>Win32</Platform>
-                </ProjectConfiguration>
-            </ItemGroup>
-            <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                <UseDebugLibraries>true</UseDebugLibraries>
-            </PropertyGroup>
-            <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                <UseDebugLibraries>false</UseDebugLibraries>
-            </PropertyGroup>
-            {string.Join(Environment.NewLine, packages.Select(p => $"<Import Project=\"conan_{p}.props\" />"))}
-        </Project>
-        """;
+            => TestData.Project()
+                .WithImports(packages.Select(package => $"conan_{package}.props"))
+                .Build();
 
         [Fact]
         public void Given_ProjectWithKnownConanPackage_When_Converted_Then_FindPackageAndTargetLinkLibrariesAreGenerated()

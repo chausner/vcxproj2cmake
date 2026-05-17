@@ -8,23 +8,6 @@ public partial class ConverterTests
 {
     public class TranslateMSBuildMacrosTests
     {
-        static string CreateProjectWithUnsupportedMacroDefinitions() => $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Release|Win32">
-                        <Configuration>Release</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                    <ClCompile>
-                        <PreprocessorDefinitions>NAME=$(Foo)_$(Bar)</PreprocessorDefinitions>
-                    </ClCompile>
-                </ItemDefinitionGroup>
-            </Project>
-            """;
-
         [Fact]
         public void Given_ProjectPropertiesWithMSBuildMacros_When_Converted_Then_MacrosAreReplacedByCMakeEquivalents()
         {
@@ -32,13 +15,15 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithSources(
-                "$(ConFIGuration).cpp",
-                "$(ConFIGurationName).cpp",
-                "$(ProJECtDir)SomeFile.cpp",
-                "$(ProJECtName).cpp",
-                "$(SolUTIonDir)SomeFile.cpp",
-                "$(SolUTIonName).cpp")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItems("ClCompile",
+                    "$(ConFIGuration).cpp",
+                    "$(ConFIGurationName).cpp",
+                    "$(ProJECtDir)SomeFile.cpp",
+                    "$(ProJECtName).cpp",
+                    "$(SolUTIonDir)SomeFile.cpp",
+                    "$(SolUTIonName).cpp")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -68,7 +53,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithUnsupportedMacroDefinitions()));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItemDefinitionSetting("ClCompile", "PreprocessorDefinitions", "NAME=$(Foo)_$(Bar)")
+                .Build()));
 
             var logger = new InMemoryLogger();
             var converter = new Converter(fileSystem, logger);

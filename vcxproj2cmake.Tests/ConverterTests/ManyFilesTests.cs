@@ -15,8 +15,10 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            var sources = Enumerable.Range(1, 1500).Select(i => $"Source{i}.cpp").ToArray();
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithSources(sources)));
+            var sources = Enumerable.Range(1, 1500).Select(i => $"Source{i}.cpp");
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItems("ClCompile", sources)
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 

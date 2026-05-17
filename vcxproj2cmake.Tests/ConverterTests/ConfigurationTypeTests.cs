@@ -14,7 +14,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"App.vcxproj", new(TestData.CreateProject("Application")));
+            fileSystem.AddFile(@"App.vcxproj", new(TestData.Project()
+                .WithProperty("ConfigurationType", "Application")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -36,7 +38,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Lib.vcxproj", new(TestData.CreateProject("StaticLibrary")));
+            fileSystem.AddFile(@"Lib.vcxproj", new(TestData.Project()
+                .WithProperty("ConfigurationType", "StaticLibrary")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -57,7 +61,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Dll.vcxproj", new(TestData.CreateProject("DynamicLibrary")));
+            fileSystem.AddFile(@"Dll.vcxproj", new(TestData.Project()
+                .WithProperty("ConfigurationType", "DynamicLibrary")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -78,33 +84,10 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"HeaderOnly.vcxproj", new("""
-                <?xml version="1.0" encoding="utf-8"?>
-                <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                    <ItemGroup Label="ProjectConfigurations">
-                        <ProjectConfiguration Include="Debug|Win32">
-                            <Configuration>Debug</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                        <ProjectConfiguration Include="Release|Win32">
-                            <Configuration>Release</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                    </ItemGroup>
-                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                        <UseDebugLibraries>true</UseDebugLibraries>
-                    </PropertyGroup>
-                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                        <UseDebugLibraries>false</UseDebugLibraries>
-                    </PropertyGroup>
-                    <PropertyGroup>
-                        <ConfigurationType>StaticLibrary</ConfigurationType>
-                    </PropertyGroup>
-                    <ItemGroup>
-                        <ClInclude Include="header.hpp" />
-                    </ItemGroup>
-                </Project>
-                """));
+            fileSystem.AddFile(@"HeaderOnly.vcxproj", new(TestData.Project()
+                .WithProperty("ConfigurationType", "StaticLibrary")
+                .WithItems("ClInclude", "header.hpp")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -125,7 +108,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Bad.vcxproj", new(TestData.CreateProject("Makefile")));
+            fileSystem.AddFile(@"Bad.vcxproj", new(TestData.Project()
+                .WithProperty("ConfigurationType", "Makefile")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 

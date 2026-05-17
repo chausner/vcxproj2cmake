@@ -8,51 +8,15 @@ public partial class ConverterTests
 {
     public class LinkerLibraryDirectoriesTests
     {
-        static string CreateProjectWithLibraryDirs(
-            string debugDirs,
-            string releaseDirs,
-            string? debugLibraryPath = null,
-            string? releaseLibraryPath = null) => $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Debug|Win32">
-                        <Configuration>Debug</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Release|Win32">
-                        <Configuration>Release</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                    {(debugLibraryPath != null ? $"<LibraryPath>{debugLibraryPath}</LibraryPath>" : string.Empty)}
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                    {(releaseLibraryPath != null ? $"<LibraryPath>{releaseLibraryPath}</LibraryPath>" : string.Empty)}
-                </PropertyGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                    <Link>
-                        <AdditionalLibraryDirectories>{debugDirs}</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                    <Link>
-                        <AdditionalLibraryDirectories>{releaseDirs}</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-            </Project>
-            """;
-
         [Fact]
         public void Given_LinkerPathsSameForAllConfigs_When_Converted_Then_TargetLinkDirectoriesAdded()
         {
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithLibraryDirs("C:\\Lib\\", "C:\\Lib\\")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("AdditionalLibraryDirectories", debugValue: "C:\\Lib\\", releaseValue: "C:\\Lib\\")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -74,7 +38,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithLibraryDirs("DebugLibs", "ReleaseLibs")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("AdditionalLibraryDirectories", debugValue: "DebugLibs", releaseValue: "ReleaseLibs")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -97,7 +63,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithLibraryDirs("$(ProjectDir)libs;$(Configuration)", "$(ProjectDir)libs;$(Configuration)")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("AdditionalLibraryDirectories", "$(ProjectDir)libs;$(Configuration)")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -120,11 +88,11 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithLibraryDirs(
-                debugDirs: "shared;additionaldebug;%(AdditionalLibraryDirectories)",
-                releaseDirs: "shared;%(AdditionalLibraryDirectories)",
-                debugLibraryPath: "debuglib;$(LibraryPath)",
-                releaseLibraryPath: "releaselib;$(LibraryPath)")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithProperty("Debug", "Win32", "LibraryPath", "debuglib;$(LibraryPath)")
+                .WithProperty("Release", "Win32", "LibraryPath", "releaselib;$(LibraryPath)")
+                .WithLinkSetting("AdditionalLibraryDirectories", debugValue: "shared;additionaldebug;%(AdditionalLibraryDirectories)", releaseValue: "shared;%(AdditionalLibraryDirectories)")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 

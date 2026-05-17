@@ -14,28 +14,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new("""
-                <?xml version="1.0" encoding="utf-8"?>
-                <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                    <ItemGroup Label="ProjectConfigurations">
-                        <ProjectConfiguration Include="Debug|Win32">
-                            <Configuration>Debug</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                    </ItemGroup>
-                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                        <UseDebugLibraries>true</UseDebugLibraries>
-                    </PropertyGroup>
-                    <ItemGroup>
-                        <ClCompile Include="src\main.cpp" />
-                    </ItemGroup>
-                    <ItemDefinitionGroup>
-                        <Link>
-                            <ModuleDefinitionFile>project.def</ModuleDefinitionFile>
-                        </Link>
-                    </ItemDefinitionGroup>
-                </Project>
-                """));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("ModuleDefinitionFile", "project.def")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -45,7 +26,6 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_sources(Project
                     PRIVATE
-                        src/main.cpp
                         project.def
                 )
                 """.Trim(), cmake);
@@ -57,40 +37,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new("""
-                <?xml version="1.0" encoding="utf-8"?>
-                <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                    <ItemGroup Label="ProjectConfigurations">
-                        <ProjectConfiguration Include="Debug|Win32">
-                            <Configuration>Debug</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                        <ProjectConfiguration Include="Release|Win32">
-                            <Configuration>Release</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                    </ItemGroup>
-                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                        <UseDebugLibraries>true</UseDebugLibraries>
-                    </PropertyGroup>
-                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                        <UseDebugLibraries>false</UseDebugLibraries>
-                    </PropertyGroup>
-                    <ItemGroup>
-                        <ClCompile Include="src\main.cpp" />
-                    </ItemGroup>
-                    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                        <Link>
-                            <ModuleDefinitionFile>project_debug.def</ModuleDefinitionFile>
-                        </Link>
-                    </ItemDefinitionGroup>
-                    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                        <Link>
-                            <ModuleDefinitionFile>project_release.def</ModuleDefinitionFile>
-                        </Link>
-                    </ItemDefinitionGroup>
-                </Project>
-                """));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("ModuleDefinitionFile", debugValue: "project_debug.def", releaseValue: "project_release.def")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -100,7 +49,6 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_sources(Project
                     PRIVATE
-                        src/main.cpp
                         $<$<CONFIG:Debug>:project_debug.def>
                         $<$<CONFIG:Release>:project_release.def>
                 )

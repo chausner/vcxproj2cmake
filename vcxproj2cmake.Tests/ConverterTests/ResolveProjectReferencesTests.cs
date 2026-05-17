@@ -15,7 +15,10 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", "..\\Missing\\Missing.vcxproj")));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "Application")
+                .WithProjectReferences("..\\Missing\\Missing.vcxproj")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -33,8 +36,13 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("Lib", "Lib.vcxproj"), new(TestData.CreateProject("StaticLibrary")));
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", "..\\Lib\\Lib.vcxproj")));
+            fileSystem.AddFile(Path.Combine("Lib", "Lib.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "StaticLibrary")
+                .Build()));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "Application")
+                .WithProjectReferences("..\\Lib\\Lib.vcxproj")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -71,8 +79,13 @@ public partial class ConverterTests
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
             var absoluteLibPath = Path.GetFullPath(Path.Combine("Lib", "Lib.vcxproj"));
-            fileSystem.AddFile(Path.Combine("Lib", "Lib.vcxproj"), new(TestData.CreateProject("StaticLibrary")));
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", absoluteLibPath)));
+            fileSystem.AddFile(Path.Combine("Lib", "Lib.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "StaticLibrary")
+                .Build()));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "Application")
+                .WithProjectReferences(absoluteLibPath)
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 

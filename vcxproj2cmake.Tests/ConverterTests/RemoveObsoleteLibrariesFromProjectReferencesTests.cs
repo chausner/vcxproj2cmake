@@ -8,39 +8,6 @@ public partial class ConverterTests
 {
     public class RemoveObsoleteLibrariesFromProjectReferencesTests
     {
-        static string CreateAppProject(bool linkLibraryDependencies, string additionalDependency) => $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Debug|Win32">
-                        <Configuration>Debug</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Release|Win32">
-                        <Configuration>Release</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                </PropertyGroup>
-                <ItemGroup>
-                    <ProjectReference Include="..\\Lib\\Lib.vcxproj" />
-                </ItemGroup>
-                <ItemDefinitionGroup>
-                    <ProjectReference>
-                        <LinkLibraryDependencies>{(linkLibraryDependencies ? "true" : "false")}</LinkLibraryDependencies>
-                    </ProjectReference>
-                    <Link>
-                        <AdditionalDependencies>{additionalDependency};%(AdditionalDependencies)</AdditionalDependencies>
-                    </Link>
-                </ItemDefinitionGroup>
-            </Project>
-            """;
-
         [Fact]
         public void Given_ProjectLinksLibraryExplicitlyAndLinkLibraryDependenciesDisabled_When_Converted_Then_LibraryIsPreserved()
         {
@@ -48,8 +15,14 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Lib/Lib.vcxproj", new(TestData.CreateProject("StaticLibrary")));
-            fileSystem.AddFile(@"App/App.vcxproj", new(CreateAppProject(false, "Lib.lib")));
+            fileSystem.AddFile(@"Lib/Lib.vcxproj", new(TestData.Project()
+                .WithProperty("ConfigurationType", "StaticLibrary")
+                .Build()));
+            fileSystem.AddFile(@"App/App.vcxproj", new(TestData.Project()
+                .WithProjectReferences(@"..\Lib\Lib.vcxproj")
+                .WithItemDefinitionSetting("ProjectReference", "LinkLibraryDependencies", "false")
+                .WithItemDefinitionSetting("Link", "AdditionalDependencies", "Lib.lib;%(AdditionalDependencies)")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -78,8 +51,14 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Lib/Lib.vcxproj", new(TestData.CreateProject("StaticLibrary")));
-            fileSystem.AddFile(@"App/App.vcxproj", new(CreateAppProject(true, "Lib.lib")));
+            fileSystem.AddFile(@"Lib/Lib.vcxproj", new(TestData.Project()
+                .WithProperty("ConfigurationType", "StaticLibrary")
+                .Build()));
+            fileSystem.AddFile(@"App/App.vcxproj", new(TestData.Project()
+                .WithProjectReferences(@"..\Lib\Lib.vcxproj")
+                .WithItemDefinitionSetting("ProjectReference", "LinkLibraryDependencies", "true")
+                .WithItemDefinitionSetting("Link", "AdditionalDependencies", "Lib.lib;%(AdditionalDependencies)")
+                .Build()));
 
             var logger = new InMemoryLogger();
             var converter = new Converter(fileSystem, logger);
@@ -113,8 +92,15 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Lib/Lib.vcxproj", new(TestData.CreateProject("StaticLibrary", targetName: "MyLib")));
-            fileSystem.AddFile(@"App/App.vcxproj", new(CreateAppProject(true, "MyLib.lib")));
+            fileSystem.AddFile(@"Lib/Lib.vcxproj", new(TestData.Project()
+                .WithProperty("ConfigurationType", "StaticLibrary")
+                .WithProperty("TargetName", "MyLib")
+                .Build()));
+            fileSystem.AddFile(@"App/App.vcxproj", new(TestData.Project()
+                .WithProjectReferences(@"..\Lib\Lib.vcxproj")
+                .WithItemDefinitionSetting("ProjectReference", "LinkLibraryDependencies", "true")
+                .WithItemDefinitionSetting("Link", "AdditionalDependencies", "MyLib.lib;%(AdditionalDependencies)")
+                .Build()));
 
             var logger = new InMemoryLogger();
             var converter = new Converter(fileSystem, logger);

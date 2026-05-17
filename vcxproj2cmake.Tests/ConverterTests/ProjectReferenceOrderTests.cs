@@ -14,15 +14,14 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("LibC", "LibC.vcxproj"), new(TestData.CreateProjectWithProjectReferences(
-                configurationType: "StaticLibrary",
-                projectReferences: [])));
-            fileSystem.AddFile(Path.Combine("LibB", "LibB.vcxproj"), new(TestData.CreateProjectWithProjectReferences(
-                configurationType: "StaticLibrary",
-                projectReferences: ["..\\LibC\\LibC.vcxproj"])));
-            fileSystem.AddFile(Path.Combine("LibA", "LibA.vcxproj"), new(TestData.CreateProjectWithProjectReferences(
-                configurationType: "StaticLibrary",
-                projectReferences: ["..\\LibB\\LibB.vcxproj"])));
+            fileSystem.AddFile(Path.Combine("LibC", "LibC.vcxproj"), new(TestData.Project()
+                .Build()));
+            fileSystem.AddFile(Path.Combine("LibB", "LibB.vcxproj"), new(TestData.Project()
+                .WithProjectReferences("..\\LibC\\LibC.vcxproj")
+                .Build()));
+            fileSystem.AddFile(Path.Combine("LibA", "LibA.vcxproj"), new(TestData.Project()
+                .WithProjectReferences("..\\LibB\\LibB.vcxproj")
+                .Build()));
 
             fileSystem.AddFile("Solution.sln", new("""
                 Microsoft Visual Studio Solution File, Format Version 12.00
@@ -54,18 +53,17 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("LibC", "LibC.vcxproj"), new(TestData.CreateProjectWithProjectReferences(
-                configurationType: "StaticLibrary",
-                projectReferences: [])));
-            fileSystem.AddFile(Path.Combine("LibB", "LibB.vcxproj"), new(TestData.CreateProjectWithProjectReferences(
-                configurationType: "StaticLibrary",
-                projectReferences: ["..\\LibC\\LibC.vcxproj"])));
-            fileSystem.AddFile(Path.Combine("LibA", "LibA.vcxproj"), new(TestData.CreateProjectWithProjectReferences(
-                configurationType: "StaticLibrary",
-                projectReferences: ["..\\LibC\\LibC.vcxproj"])));
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProjectWithProjectReferences(
-                configurationType: "Application",
-                projectReferences: ["..\\LibA\\LibA.vcxproj", "..\\LibB\\LibB.vcxproj"])));
+            fileSystem.AddFile(Path.Combine("LibC", "LibC.vcxproj"), new(TestData.Project()
+                .Build()));
+            fileSystem.AddFile(Path.Combine("LibB", "LibB.vcxproj"), new(TestData.Project()
+                .WithProjectReferences("..\\LibC\\LibC.vcxproj")
+                .Build()));
+            fileSystem.AddFile(Path.Combine("LibA", "LibA.vcxproj"), new(TestData.Project()
+                .WithProjectReferences("..\\LibC\\LibC.vcxproj")
+                .Build()));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.Project()
+                .WithProjectReferences("..\\LibA\\LibA.vcxproj", "..\\LibB\\LibB.vcxproj")
+                .Build()));
 
             fileSystem.AddFile("Branching.sln", new("""
                 Microsoft Visual Studio Solution File, Format Version 12.00

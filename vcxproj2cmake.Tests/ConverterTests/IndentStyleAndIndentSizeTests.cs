@@ -16,7 +16,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"EmptyProject.vcxproj", new(TestData.EmptyProject));
+            fileSystem.AddFile(@"EmptyProject.vcxproj", new(TestData.DefaultEmptyProject));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -56,7 +56,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"EmptyProject.vcxproj", new(TestData.EmptyProject));
+            fileSystem.AddFile(@"EmptyProject.vcxproj", new(TestData.DefaultEmptyProject));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 

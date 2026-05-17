@@ -14,7 +14,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("TreatWarningAsError", "true", "true")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("TreatWarningAsError", "true")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(
@@ -34,7 +36,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(TestData.CreateProjectWithClCompileProperty("TreatWarningAsError", "true", "false")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("TreatWarningAsError", debugValue: "true", releaseValue: "false")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
             converter.Convert(

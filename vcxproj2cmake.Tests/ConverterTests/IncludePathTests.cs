@@ -8,58 +8,15 @@ public partial class ConverterTests
 {
     public class IncludePathTests
     {
-        static string CreateProject(
-            string debugIncludes,
-            string releaseIncludes,
-            string? publicIncludes = null,
-            string? allPublic = null,
-            string? debugIncludePath = null,
-            string? releaseIncludePath = null) => $"""
-        <?xml version="1.0" encoding="utf-8"?>
-        <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-            <ItemGroup Label="ProjectConfigurations">
-                <ProjectConfiguration Include="Debug|Win32">
-                    <Configuration>Debug</Configuration>
-                    <Platform>Win32</Platform>
-                </ProjectConfiguration>
-                <ProjectConfiguration Include="Release|Win32">
-                    <Configuration>Release</Configuration>
-                    <Platform>Win32</Platform>
-                </ProjectConfiguration>
-            </ItemGroup>
-            <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                <UseDebugLibraries>true</UseDebugLibraries>
-                {(debugIncludePath != null ? $"<IncludePath>{debugIncludePath}</IncludePath>" : string.Empty)}
-            </PropertyGroup>
-            <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                <UseDebugLibraries>false</UseDebugLibraries>
-                {(releaseIncludePath != null ? $"<IncludePath>{releaseIncludePath}</IncludePath>" : string.Empty)}
-            </PropertyGroup>
-            <PropertyGroup>
-                <ConfigurationType>StaticLibrary</ConfigurationType>
-                {(publicIncludes != null ? $"<PublicIncludeDirectories>{publicIncludes}</PublicIncludeDirectories>" : string.Empty)}
-                {(allPublic != null ? $"<AllProjectIncludesArePublic>{allPublic}</AllProjectIncludesArePublic>" : string.Empty)}
-            </PropertyGroup>
-            <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                <ClCompile>
-                    <AdditionalIncludeDirectories>{debugIncludes}</AdditionalIncludeDirectories>
-                </ClCompile>
-            </ItemDefinitionGroup>
-            <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                <ClCompile>
-                    <AdditionalIncludeDirectories>{releaseIncludes}</AdditionalIncludeDirectories>
-                </ClCompile>
-            </ItemDefinitionGroup>
-        </Project>
-        """;
-
         [Fact]
         public void Given_ProjectWithIncludeDirectories_When_Converted_Then_PathsAreWritten()
         {
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("$(ProjectDir)include;..\\shared", "$(ProjectDir)include;..\\shared")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("AdditionalIncludeDirectories", "$(ProjectDir)include;..\\shared")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -82,7 +39,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("debug", "release")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("AdditionalIncludeDirectories", debugValue: "debug", releaseValue: "release")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -105,11 +64,11 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject(
-                debugIncludes: "shared;additionaldebug;%(AdditionalIncludeDirectories)",
-                releaseIncludes: "shared;%(AdditionalIncludeDirectories)",
-                debugIncludePath: "debuginc;$(IncludePath)",
-                releaseIncludePath: "releaseinc;$(IncludePath)")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithProperty("Debug", "Win32", "IncludePath", "debuginc;$(IncludePath)")
+                .WithProperty("Release", "Win32", "IncludePath", "releaseinc;$(IncludePath)")
+                .WithClCompileSetting("AdditionalIncludeDirectories", debugValue: "shared;additionaldebug;%(AdditionalIncludeDirectories)", releaseValue: "shared;%(AdditionalIncludeDirectories)")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -134,7 +93,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("", "", "public;..\\common")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithProperty("PublicIncludeDirectories", "public;..\\common")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -158,7 +119,10 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("private", "private", "public")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithProperty("PublicIncludeDirectories", "public")
+                .WithClCompileSetting("AdditionalIncludeDirectories", debugValue: "private", releaseValue: "private")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -182,7 +146,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("", "", null, "true")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithProperty("AllProjectIncludesArePublic", "true")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -204,7 +170,9 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("", "", null, "foo")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithProperty("AllProjectIncludesArePublic", "foo")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 

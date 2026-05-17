@@ -14,8 +14,13 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("Dll", "Dll.vcxproj"), new(TestData.CreateProject("DynamicLibrary")));
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", "..\\Dll\\Dll.vcxproj")));
+            fileSystem.AddFile(Path.Combine("Dll", "Dll.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "DynamicLibrary")
+                .Build()));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "Application")
+                .WithProjectReferences("..\\Dll\\Dll.vcxproj")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -48,8 +53,13 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("Dll", "Dll.vcxproj"), new(TestData.CreateProject("StaticLibrary")));
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", "..\\Dll\\Dll.vcxproj")));
+            fileSystem.AddFile(Path.Combine("Dll", "Dll.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "StaticLibrary")
+                .Build()));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "Application")
+                .WithProjectReferences("..\\Dll\\Dll.vcxproj")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -82,34 +92,14 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("HeaderOnly", "HeaderOnly.vcxproj"), new("""
-                <?xml version="1.0" encoding="utf-8"?>
-                <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                    <ItemGroup Label="ProjectConfigurations">
-                        <ProjectConfiguration Include="Debug|Win32">
-                            <Configuration>Debug</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                        <ProjectConfiguration Include="Release|Win32">
-                            <Configuration>Release</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                    </ItemGroup>
-                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                        <UseDebugLibraries>true</UseDebugLibraries>
-                    </PropertyGroup>
-                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                        <UseDebugLibraries>false</UseDebugLibraries>
-                    </PropertyGroup>
-                    <PropertyGroup>
-                        <ConfigurationType>StaticLibrary</ConfigurationType>
-                    </PropertyGroup>
-                    <ItemGroup>
-                        <ClInclude Include="header.hpp" />
-                    </ItemGroup>
-                </Project>
-                """));
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", "..\\HeaderOnly\\HeaderOnly.vcxproj")));
+            fileSystem.AddFile(Path.Combine("HeaderOnly", "HeaderOnly.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "StaticLibrary")
+                .WithItems("ClInclude", "header.hpp")
+                .Build()));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "Application")
+                .WithProjectReferences("..\\HeaderOnly\\HeaderOnly.vcxproj")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -126,8 +116,13 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("Exe", "Exe.vcxproj"), new(TestData.CreateProject("Application")));
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", "..\\Exe\\Exe.vcxproj")));
+            fileSystem.AddFile(Path.Combine("Exe", "Exe.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "Application")
+                .Build()));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "Application")
+                .WithProjectReferences("..\\Exe\\Exe.vcxproj")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
