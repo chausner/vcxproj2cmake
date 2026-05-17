@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - Fix definition `_AFXDLL` erroneously being added when `UseOfMfc` is set to "Static".
+- Fix an issue where if `--portable` is used with a C-only project, the generated CMake file would use wrong MSVC compiler guards.
 
 ## [1.7.0] - 2026-05-14
 

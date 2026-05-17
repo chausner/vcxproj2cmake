@@ -442,11 +442,22 @@ class CMakeProject
         return [.. defines, .. additionalDefines.Except(defines)];
     }
 
-    static CMakeExpression ApplyMsvcCompilerGuard(CMakeExpression expression, bool portable)
+    CMakeExpression ApplyMsvcCompilerGuard(CMakeExpression expression, bool portable)
     {
-        return portable
-            ? CMakeExpression.Expression($"$<$<CXX_COMPILER_ID:MSVC>:{expression.Value}>")
-            : expression;
+        if (!portable)
+            return expression;
+        else
+        {
+            string compilerIDVariable;
+            if (Languages.Contains("CXX"))
+                compilerIDVariable = "CXX_COMPILER_ID";
+            else if (Languages.Contains("C"))
+                compilerIDVariable = "C_COMPILER_ID";
+            else
+                compilerIDVariable = "CXX_COMPILER_ID";
+
+            return CMakeExpression.Expression($"$<$<{compilerIDVariable}:MSVC>:{expression.Value}>");
+        }
     }
 
     public ISet<CMakeProject> GetAllReferencedProjects()
