@@ -4,8 +4,8 @@ namespace vcxproj2cmake.Tests;
 
 public class TextWriterExtensionsTests
 {
-    const string ResetForeground = "\x1B[39m\x1B[22m";
-    const string ResetBackground = "\x1B[49m";
+    const string ResetForeground = "\e[39m\e[22m";
+    const string ResetBackground = "\e[49m";
 
     [Fact]
     public void When_WriteColoredCalledWithNoColors_Then_WritesMessageOnly()
@@ -19,9 +19,9 @@ public class TextWriterExtensionsTests
     }
 
     [Theory]
-    [InlineData(ConsoleColor.DarkGreen, "\x1B[32m")] // regular
-    [InlineData(ConsoleColor.Red, "\x1B[1m\x1B[31m")] // bold + bright
-    [InlineData(ConsoleColor.Gray, "\x1B[37m")] // regular gray
+    [InlineData(ConsoleColor.DarkGreen, "\e[32m")] // regular
+    [InlineData(ConsoleColor.Red, "\e[1m\e[31m")] // bold + bright
+    [InlineData(ConsoleColor.Gray, "\e[37m")] // regular gray
     public void When_WriteColoredCalledWithForegroundOnly_Then_WritesFgCodesAndResets(ConsoleColor fg, string expectedFgCode)
     {
         using var writer = new StringWriter();
@@ -34,8 +34,8 @@ public class TextWriterExtensionsTests
     }
 
     [Theory]
-    [InlineData(ConsoleColor.DarkBlue, "\x1B[44m")]
-    [InlineData(ConsoleColor.Gray, "\x1B[47m")]
+    [InlineData(ConsoleColor.DarkBlue, "\e[44m")]
+    [InlineData(ConsoleColor.Gray, "\e[47m")]
     public void When_WriteColoredCalledWithBackgroundOnly_Then_WritesBgCodesAndResets(ConsoleColor bg, string expectedBgCode)
     {
         using var writer = new StringWriter();
@@ -53,10 +53,10 @@ public class TextWriterExtensionsTests
         using var writer = new StringWriter();
         var message = "Both";
 
-        // Background Gray -> \x1B[47m, Foreground White -> \x1B[1m\x1B[37m
+        // Background Gray -> \e[47m, Foreground White -> \e[1m\e[37m
         writer.WriteColored(message, background: ConsoleColor.Gray, foreground: ConsoleColor.White);
 
-        var expected = "\x1B[47m" + "\x1B[1m\x1B[37m" + message + ResetForeground + ResetBackground;
+        var expected = "\e[47m" + "\e[1m\e[37m" + message + ResetForeground + ResetBackground;
         Assert.Equal(expected, writer.ToString());
     }
 
@@ -66,10 +66,10 @@ public class TextWriterExtensionsTests
         using var writer = new StringWriter();
         var message = "Line";
 
-        // Background DarkCyan -> \x1B[46m, Foreground Yellow -> \x1B[1m\x1B[33m
+        // Background DarkCyan -> \e[46m, Foreground Yellow -> \e[1m\e[33m
         writer.WriteLineColored(message, background: ConsoleColor.DarkCyan, foreground: ConsoleColor.Yellow);
 
-        var expected = "\x1B[46m" + "\x1B[1m\x1B[33m" + message + Environment.NewLine + ResetForeground + ResetBackground;
+        var expected = "\e[46m" + "\e[1m\e[33m" + message + Environment.NewLine + ResetForeground + ResetBackground;
         Assert.Equal(expected, writer.ToString());
     }
 }
