@@ -4,259 +4,251 @@ namespace vcxproj2cmake;
 
 static class ConfigDependentSettingExtensions
 {
-    public static CMakeConfigDependentSetting Map(
-        this CMakeConfigDependentSetting self,
-        Func<CMakeExpression?, CMakeExpression?> mapper,
-        IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
+    extension(CMakeConfigDependentSetting self)
     {
-        Dictionary<MSBuildProjectConfig, CMakeExpression> mappedValues = [];
-
-        foreach (var projectConfig in projectConfigurations)
+        public CMakeConfigDependentSetting Map(
+            Func<CMakeExpression?, CMakeExpression?> mapper,
+            IEnumerable<MSBuildProjectConfig> projectConfigurations,
+            ILogger logger)
         {
-            var value = self.GetValue(projectConfig);
-            var mappedValue = mapper(value);
-            if (mappedValue != null)
-                mappedValues[projectConfig] = mappedValue;
+            Dictionary<MSBuildProjectConfig, CMakeExpression> mappedValues = [];
+
+            foreach (var projectConfig in projectConfigurations)
+            {
+                var value = self.GetValue(projectConfig);
+                var mappedValue = mapper(value);
+                if (mappedValue != null)
+                    mappedValues[projectConfig] = mappedValue;
+            }
+
+            var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression>(self.SettingName, self.DefaultValue, mappedValues);
+
+            return new(msbuildSetting, projectConfigurations, logger);
         }
 
-        var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression>(self.SettingName, self.DefaultValue, mappedValues);
-
-        return new(msbuildSetting, projectConfigurations, logger);
-    }
-
-    public static CMakeConfigDependentSetting Map(
-        this CMakeConfigDependentSetting self,
-        Func<CMakeExpression?, CMakeExpression?, CMakeExpression?> mapper,
-        CMakeConfigDependentSetting setting,
-        IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
-    {
-        Dictionary<MSBuildProjectConfig, CMakeExpression> mappedValues = [];
-
-        foreach (var projectConfig in projectConfigurations)
+        public CMakeConfigDependentSetting Map(
+            Func<CMakeExpression?, CMakeExpression?, CMakeExpression?> mapper,
+            CMakeConfigDependentSetting setting,
+            IEnumerable<MSBuildProjectConfig> projectConfigurations,
+            ILogger logger)
         {
-            var value1 = self.GetValue(projectConfig);
-            var value2 = setting.GetValue(projectConfig);
-            var mappedValue = mapper(value1, value2);
-            if (mappedValue != null)
-                mappedValues[projectConfig] = mappedValue;
+            Dictionary<MSBuildProjectConfig, CMakeExpression> mappedValues = [];
+
+            foreach (var projectConfig in projectConfigurations)
+            {
+                var value1 = self.GetValue(projectConfig);
+                var value2 = setting.GetValue(projectConfig);
+                var mappedValue = mapper(value1, value2);
+                if (mappedValue != null)
+                    mappedValues[projectConfig] = mappedValue;
+            }
+
+            var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression>(self.SettingName, self.DefaultValue, mappedValues);
+
+            return new(msbuildSetting, projectConfigurations, logger);
         }
 
-        var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression>(self.SettingName, self.DefaultValue, mappedValues);
-
-        return new(msbuildSetting, projectConfigurations, logger);
-    }
-
-    public static CMakeConfigDependentSetting Map(
-        this CMakeConfigDependentSetting self,
-        Func<CMakeExpression?, CMakeExpression?, CMakeExpression?> mapper,
-        MSBuildConfigDependentSetting<CMakeExpression> setting,
-        IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
-    {
-        return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
-    }
-
-    public static CMakeConfigDependentSetting Map(
-        this CMakeConfigDependentSetting self,
-        Func<CMakeExpression?, CMakeExpression[], CMakeExpression?> mapper,
-        CMakeConfigDependentMultiSetting setting,
-        IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
-    {
-        Dictionary<MSBuildProjectConfig, CMakeExpression> mappedValues = [];
-
-        foreach (var projectConfig in projectConfigurations)
+        public CMakeConfigDependentSetting Map(
+            Func<CMakeExpression?, CMakeExpression?, CMakeExpression?> mapper,
+            MSBuildConfigDependentSetting<CMakeExpression> setting,
+            IEnumerable<MSBuildProjectConfig> projectConfigurations,
+            ILogger logger)
         {
-            var value1 = self.GetValue(projectConfig);
-            var value2 = setting.GetValue(projectConfig);
-            var mappedValue = mapper(value1, value2);
-            if (mappedValue != null)
-                mappedValues[projectConfig] = mappedValue;
+            return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
         }
 
-        var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression>(self.SettingName, self.DefaultValue, mappedValues);
-
-        return new(msbuildSetting, projectConfigurations, logger);
-    }
-
-    public static CMakeConfigDependentSetting Map(
-        this CMakeConfigDependentSetting self,
-        Func<CMakeExpression?, CMakeExpression[], CMakeExpression?> mapper,
-        MSBuildConfigDependentSetting<CMakeExpression[]> setting,
-        IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
-    {
-        return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
-    }
-
-    public static CMakeConfigDependentSetting Map(
-        this CMakeConfigDependentSetting self,
-        Func<CMakeExpression?, CMakeExpression?, CMakeExpression?> mapper,
-        MSBuildConfigDependentSetting<string> setting,
-        IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
-    {
-        return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
-    }
-
-    public static CMakeConfigDependentSetting Map(
-        this CMakeConfigDependentSetting self,
-        Func<CMakeExpression?, CMakeExpression[], CMakeExpression?> mapper,
-        MSBuildConfigDependentSetting<string[]> setting,
-        IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
-    {
-        return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
-    }
-
-    public static CMakeConfigDependentMultiSetting Map(
-        this CMakeConfigDependentMultiSetting self,
-        Func<CMakeExpression[], CMakeExpression[]> mapper,
-        IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
-    {
-        Dictionary<MSBuildProjectConfig, CMakeExpression[]> mappedValues = [];
-
-        foreach (var projectConfig in projectConfigurations)
+        public CMakeConfigDependentSetting Map(
+            Func<CMakeExpression?, CMakeExpression[], CMakeExpression?> mapper,
+            CMakeConfigDependentMultiSetting setting,
+            IEnumerable<MSBuildProjectConfig> projectConfigurations,
+            ILogger logger)
         {
-            var value = self.GetValue(projectConfig);
-            var mappedValue = mapper(value);
-            if (mappedValue != null)
-                mappedValues[projectConfig] = mappedValue;
+            Dictionary<MSBuildProjectConfig, CMakeExpression> mappedValues = [];
+
+            foreach (var projectConfig in projectConfigurations)
+            {
+                var value1 = self.GetValue(projectConfig);
+                var value2 = setting.GetValue(projectConfig);
+                var mappedValue = mapper(value1, value2);
+                if (mappedValue != null)
+                    mappedValues[projectConfig] = mappedValue;
+            }
+
+            var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression>(self.SettingName, self.DefaultValue, mappedValues);
+
+            return new(msbuildSetting, projectConfigurations, logger);
         }
 
-        var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression[]>(self.SettingName, self.DefaultValue, mappedValues);
-
-        return new(msbuildSetting, projectConfigurations, logger);
-    }
-
-    public static CMakeConfigDependentMultiSetting Map(
-        this CMakeConfigDependentMultiSetting self,
-        Func<CMakeExpression[], CMakeExpression?, CMakeExpression[]> mapper,
-        CMakeConfigDependentSetting setting,
-        IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
-    {
-        Dictionary<MSBuildProjectConfig, CMakeExpression[]> mappedValues = [];
-
-        foreach (var projectConfig in projectConfigurations)
+        public CMakeConfigDependentSetting Map(
+            Func<CMakeExpression?, CMakeExpression[], CMakeExpression?> mapper,
+            MSBuildConfigDependentSetting<CMakeExpression[]> setting,
+            IEnumerable<MSBuildProjectConfig> projectConfigurations,
+            ILogger logger)
         {
-            var value1 = self.GetValue(projectConfig);
-            var value2 = setting.GetValue(projectConfig);
-            var mappedValue = mapper(value1, value2);
-            if (mappedValue != null)
-                mappedValues[projectConfig] = mappedValue;
+            return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
         }
 
-        var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression[]>(self.SettingName, self.DefaultValue, mappedValues);
-
-        return new(msbuildSetting, projectConfigurations, logger);
-    }
-
-    public static CMakeConfigDependentMultiSetting Map(
-        this CMakeConfigDependentMultiSetting self,
-        Func<CMakeExpression[], CMakeExpression?, CMakeExpression[]> mapper,
-        MSBuildConfigDependentSetting<CMakeExpression> setting,
-        IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
-    {
-        return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
-    }
-
-    public static CMakeConfigDependentMultiSetting Map(
-        this CMakeConfigDependentMultiSetting self,
-        Func<CMakeExpression[], CMakeExpression?, CMakeExpression[]> mapper,
-        MSBuildConfigDependentSetting<string> setting,
-        IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
-    {
-        return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
-    }
-
-    public static CMakeConfigDependentMultiSetting Map(
-        this CMakeConfigDependentMultiSetting self,
-        Func<CMakeExpression[], CMakeExpression[], CMakeExpression[]> mapper,
-        MSBuildConfigDependentSetting<string[]> setting,
-        IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
-    {
-        return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
-    }
-
-    public static CMakeConfigDependentMultiSetting Map(
-        this CMakeConfigDependentMultiSetting self,
-        Func<CMakeExpression[], CMakeExpression[], CMakeExpression[]> mapper,
-        CMakeConfigDependentMultiSetting setting,
-        IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
-    {
-        Dictionary<MSBuildProjectConfig, CMakeExpression[]> mappedValues = [];
-
-        foreach (var projectConfig in projectConfigurations)
+        public CMakeConfigDependentSetting Map(
+            Func<CMakeExpression?, CMakeExpression?, CMakeExpression?> mapper,
+            MSBuildConfigDependentSetting<string> setting,
+            IEnumerable<MSBuildProjectConfig> projectConfigurations,
+            ILogger logger)
         {
-            var value1 = self.GetValue(projectConfig);
-            var value2 = setting.GetValue(projectConfig);
-            var mappedValue = mapper(value1, value2);
-            if (mappedValue != null)
-                mappedValues[projectConfig] = mappedValue;
+            return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
         }
 
-        var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression[]>(self.SettingName, self.DefaultValue, mappedValues);
-
-        return new(msbuildSetting, projectConfigurations, logger);
+        public CMakeConfigDependentSetting Map(
+            Func<CMakeExpression?, CMakeExpression[], CMakeExpression?> mapper,
+            MSBuildConfigDependentSetting<string[]> setting,
+            IEnumerable<MSBuildProjectConfig> projectConfigurations,
+            ILogger logger)
+        {
+            return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
+        }
     }
 
-    public static CMakeConfigDependentMultiSetting Map(
-        this CMakeConfigDependentMultiSetting self,
-        Func<CMakeExpression[], CMakeExpression[], CMakeExpression[]> mapper,
-        MSBuildConfigDependentSetting<CMakeExpression[]> setting,
-        IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
+    extension(CMakeConfigDependentMultiSetting self)
     {
-        return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
+        public CMakeConfigDependentMultiSetting Map(
+            Func<CMakeExpression[], CMakeExpression[]> mapper,
+            IEnumerable<MSBuildProjectConfig> projectConfigurations,
+            ILogger logger)
+        {
+            Dictionary<MSBuildProjectConfig, CMakeExpression[]> mappedValues = [];
+
+            foreach (var projectConfig in projectConfigurations)
+            {
+                var value = self.GetValue(projectConfig);
+                var mappedValue = mapper(value);
+                if (mappedValue != null)
+                    mappedValues[projectConfig] = mappedValue;
+            }
+
+            var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression[]>(self.SettingName, self.DefaultValue, mappedValues);
+
+            return new(msbuildSetting, projectConfigurations, logger);
+        }
+
+        public CMakeConfigDependentMultiSetting Map(
+            Func<CMakeExpression[], CMakeExpression?, CMakeExpression[]> mapper,
+            CMakeConfigDependentSetting setting,
+            IEnumerable<MSBuildProjectConfig> projectConfigurations,
+            ILogger logger)
+        {
+            Dictionary<MSBuildProjectConfig, CMakeExpression[]> mappedValues = [];
+
+            foreach (var projectConfig in projectConfigurations)
+            {
+                var value1 = self.GetValue(projectConfig);
+                var value2 = setting.GetValue(projectConfig);
+                var mappedValue = mapper(value1, value2);
+                if (mappedValue != null)
+                    mappedValues[projectConfig] = mappedValue;
+            }
+
+            var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression[]>(self.SettingName, self.DefaultValue, mappedValues);
+
+            return new(msbuildSetting, projectConfigurations, logger);
+        }
+
+        public CMakeConfigDependentMultiSetting Map(
+            Func<CMakeExpression[], CMakeExpression?, CMakeExpression[]> mapper,
+            MSBuildConfigDependentSetting<CMakeExpression> setting,
+            IEnumerable<MSBuildProjectConfig> projectConfigurations,
+            ILogger logger)
+        {
+            return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
+        }
+
+        public CMakeConfigDependentMultiSetting Map(
+            Func<CMakeExpression[], CMakeExpression?, CMakeExpression[]> mapper,
+            MSBuildConfigDependentSetting<string> setting,
+            IEnumerable<MSBuildProjectConfig> projectConfigurations,
+            ILogger logger)
+        {
+            return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
+        }
+
+        public CMakeConfigDependentMultiSetting Map(
+            Func<CMakeExpression[], CMakeExpression[], CMakeExpression[]> mapper,
+            MSBuildConfigDependentSetting<string[]> setting,
+            IEnumerable<MSBuildProjectConfig> projectConfigurations,
+            ILogger logger)
+        {
+            return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
+        }
+
+        public CMakeConfigDependentMultiSetting Map(
+            Func<CMakeExpression[], CMakeExpression[], CMakeExpression[]> mapper,
+            CMakeConfigDependentMultiSetting setting,
+            IEnumerable<MSBuildProjectConfig> projectConfigurations,
+            ILogger logger)
+        {
+            Dictionary<MSBuildProjectConfig, CMakeExpression[]> mappedValues = [];
+
+            foreach (var projectConfig in projectConfigurations)
+            {
+                var value1 = self.GetValue(projectConfig);
+                var value2 = setting.GetValue(projectConfig);
+                var mappedValue = mapper(value1, value2);
+                if (mappedValue != null)
+                    mappedValues[projectConfig] = mappedValue;
+            }
+
+            var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression[]>(self.SettingName, self.DefaultValue, mappedValues);
+
+            return new(msbuildSetting, projectConfigurations, logger);
+        }
+
+        public CMakeConfigDependentMultiSetting Map(
+            Func<CMakeExpression[], CMakeExpression[], CMakeExpression[]> mapper,
+            MSBuildConfigDependentSetting<CMakeExpression[]> setting,
+            IEnumerable<MSBuildProjectConfig> projectConfigurations,
+            ILogger logger)
+        {
+            return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
+        }
     }
 }
 
 static class EnumerableExtensions
 {
-    public static TSource SingleWithException<TSource>(this IEnumerable<TSource> source, Func<Exception> exception)
+    extension<TSource>(IEnumerable<TSource> source)
     {
-        try
+        public TSource SingleWithException(Func<Exception> exception)
         {
-            return source.Single();
+            try
+            {
+                return source.Single();
+            }
+            catch (InvalidOperationException)
+            {
+                throw exception();
+            }
         }
-        catch (InvalidOperationException)
+
+        public TSource SingleOrDefaultWithException(TSource defaultValue, Func<Exception> exception)
         {
-            throw exception();
+            try
+            {
+                return source.SingleOrDefault(defaultValue);
+            }
+            catch (InvalidOperationException)
+            {
+                throw exception();
+            }
         }
-    }
 
-    public static TSource SingleOrDefaultWithException<TSource>(this IEnumerable<TSource> source, TSource defaultValue, Func<Exception> exception)
-    {
-        try
+        public Dictionary<TKey, TValue> ToDictionaryKeepingLast<TKey, TValue>(Func<TSource, TKey> keySelector, Func<TSource, TValue> valueSelector)
+            where TKey : notnull
         {
-            return source.SingleOrDefault(defaultValue);
+            Dictionary<TKey, TValue> dictionary = [];
+
+            foreach (var item in source)
+                dictionary[keySelector(item)] = valueSelector(item);
+
+            return dictionary;
         }
-        catch (InvalidOperationException)
-        {
-            throw exception();
-        }
-    }
-
-    public static Dictionary<TKey, TValue> ToDictionaryKeepingLast<TSource, TKey, TValue>(
-        this IEnumerable<TSource> source,
-        Func<TSource, TKey> keySelector,
-        Func<TSource, TValue> valueSelector)
-        where TKey : notnull
-    {
-        Dictionary<TKey, TValue> dictionary = [];
-
-        foreach (var item in source)
-            dictionary[keySelector(item)] = valueSelector(item);
-
-        return dictionary;
     }
 }
 
@@ -265,28 +257,31 @@ static class TextWriterExtensions
     const string DefaultForegroundColor = "\x1B[39m\x1B[22m";
     const string DefaultBackgroundColor = "\x1B[49m";
 
-    public static void WriteColored(this TextWriter textWriter, string message, ConsoleColor? background, ConsoleColor? foreground)
+    extension(TextWriter textWriter)
     {
-        var backgroundColor = background.HasValue ? GetBackgroundColorEscapeCode(background.Value) : null;
-        var foregroundColor = foreground.HasValue ? GetForegroundColorEscapeCode(foreground.Value) : null;
+        public void WriteColored(string message, ConsoleColor? background, ConsoleColor? foreground)
+        {
+            var backgroundColor = background.HasValue ? GetBackgroundColorEscapeCode(background.Value) : null;
+            var foregroundColor = foreground.HasValue ? GetForegroundColorEscapeCode(foreground.Value) : null;
 
-        if (backgroundColor != null)
-            textWriter.Write(backgroundColor);
+            if (backgroundColor != null)
+                textWriter.Write(backgroundColor);
 
-        if (foregroundColor != null)
-            textWriter.Write(foregroundColor);
+            if (foregroundColor != null)
+                textWriter.Write(foregroundColor);
 
-        textWriter.Write(message);
+            textWriter.Write(message);
 
-        if (foregroundColor != null)
-            textWriter.Write(DefaultForegroundColor);
-        if (backgroundColor != null)
-            textWriter.Write(DefaultBackgroundColor);
-    }
+            if (foregroundColor != null)
+                textWriter.Write(DefaultForegroundColor);
+            if (backgroundColor != null)
+                textWriter.Write(DefaultBackgroundColor);
+        }
 
-    public static void WriteLineColored(this TextWriter textWriter, string message, ConsoleColor? background, ConsoleColor? foreground)
-    {
-        WriteColored(textWriter, message + Environment.NewLine, background, foreground);
+        public void WriteLineColored(string message, ConsoleColor? background, ConsoleColor? foreground)
+        {
+            WriteColored(textWriter, message + Environment.NewLine, background, foreground);
+        }
     }
 
     static string GetForegroundColorEscapeCode(ConsoleColor color) =>
