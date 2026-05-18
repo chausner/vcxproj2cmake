@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Add support for linker property `AdditionalOptions`.
+
 ### Changed
 
 - Generated CMake target settings are now PRIVATE instead of PUBLIC (except INTERFACE settings which remain INTERFACE).

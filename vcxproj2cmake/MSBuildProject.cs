@@ -25,7 +25,8 @@ class MSBuildProject
     public required MSBuildConfigDependentSetting<string[]> LibraryPath { get; init; }
     public required MSBuildConfigDependentSetting<string[]> AdditionalDependencies { get; init; }
     public required MSBuildConfigDependentSetting<string[]> PreprocessorDefinitions { get; init; }
-    public required MSBuildConfigDependentSetting<string[]> AdditionalOptions { get; init; }
+    public required MSBuildConfigDependentSetting<string[]> AdditionalCompileOptions { get; init; }
+    public required MSBuildConfigDependentSetting<string[]> AdditionalLinkOptions { get; init; }
     public required MSBuildConfigDependentSetting<string> ModuleDefinitionFile { get; init; }
     public required MSBuildConfigDependentSetting<string> CharacterSet { get; init; }
     public required MSBuildConfigDependentSetting<string> UseOfMfc { get; init; }
@@ -250,7 +251,8 @@ class MSBuildProject
         var libraryPath = ParseMultiSetting("LibraryPath", ';', otherSettings, []);
         var additionalDependencies = ParseMultiSetting("AdditionalDependencies", ';', linkerSettings, []);
         var preprocessorDefinitions = ParseMultiSetting("PreprocessorDefinitions", ';', compilerSettings, []);
-        var additionalOptions = ParseMultiSetting("AdditionalOptions", ' ', compilerSettings, []);
+        var additionalCompileOptions = ParseMultiSetting("AdditionalOptions", ' ', compilerSettings, []);
+        var additionalLinkOptions = ParseMultiSetting("AdditionalOptions", ' ', linkerSettings, []);
         var moduleDefinitionFile = ParseSetting("ModuleDefinitionFile", linkerSettings, string.Empty);
         var characterSet = ParseSetting("CharacterSet", otherSettings, "NotSet");
         var useOfMfc = ParseSetting("UseOfMfc", otherSettings, "false");
@@ -303,7 +305,8 @@ class MSBuildProject
             LibraryPath = libraryPath,
             AdditionalDependencies = additionalDependencies,
             PreprocessorDefinitions = preprocessorDefinitions,
-            AdditionalOptions = additionalOptions,
+            AdditionalCompileOptions = additionalCompileOptions,
+            AdditionalLinkOptions = additionalLinkOptions,
             ModuleDefinitionFile = moduleDefinitionFile,
             CharacterSet = characterSet,
             UseOfMfc = useOfMfc,

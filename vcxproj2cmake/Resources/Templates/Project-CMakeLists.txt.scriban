@@ -145,14 +145,26 @@ target_link_libraries({{ project_name | literal }}
 
 {{~ end -}}
 
-{{~ if !options.is_empty ~}}
+{{~ if !compile_options.is_empty ~}}
 target_compile_options({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
-        {{~ for kvp in options.values ~}}
+        {{~ for kvp in compile_options.values ~}}
         {{~ for option in kvp.value ~}}
         {{ get_config_expression kvp.key option }}
         {{~ end ~}}
         {{~ end ~}}     
+)
+
+{{~ end -}}
+
+{{~ if !link_options.is_empty ~}}
+target_link_options({{ project_name | literal }}
+    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
+        {{~ for kvp in link_options.values ~}}
+        {{~ for option in kvp.value ~}}
+        {{ get_config_expression kvp.key option }}
+        {{~ end ~}}
+        {{~ end ~}}
 )
 
 {{~ end -}}

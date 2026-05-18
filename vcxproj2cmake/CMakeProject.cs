@@ -20,7 +20,8 @@ class CMakeProject
     public CMakeConfigDependentMultiSetting LinkerPaths { get; set; }
     public CMakeConfigDependentMultiSetting Libraries { get; set; }
     public CMakeConfigDependentMultiSetting Defines { get; set; }
-    public CMakeConfigDependentMultiSetting Options { get; set; }
+    public CMakeConfigDependentMultiSetting CompileOptions { get; set; }
+    public CMakeConfigDependentMultiSetting LinkOptions { get; set; }
     public OrderedDictionary<string, CMakeExpression> Properties { get; set; }
     public CMakeConfigDependentSetting ModuleDefinitionFile { get; set; }
     public CMakeProjectReference[] ProjectReferences { get; set; }
@@ -59,8 +60,10 @@ class CMakeProject
             .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalDependencies", logger)).ToArray(), supportedProjectConfigurations, logger);
         Defines = new CMakeConfigDependentMultiSetting(project.PreprocessorDefinitions, supportedProjectConfigurations, logger)
             .Map(values => values.Select(value => TranslateMSBuildMacros(value, "PreprocessorDefinitions", logger)).ToArray(), supportedProjectConfigurations, logger);
-        Options = new CMakeConfigDependentMultiSetting(project.AdditionalOptions, supportedProjectConfigurations, logger)
-            .Map(values => values.Select(value => ApplyMsvcCompilerGuard(TranslateMSBuildMacros(value, "AdditionalOptions", logger), settings.Portable)).ToArray(), supportedProjectConfigurations, logger);
+        CompileOptions = new CMakeConfigDependentMultiSetting(project.AdditionalCompileOptions, supportedProjectConfigurations, logger)
+            .Map(values => values.Select(value => ApplyMsvcCompilerGuard(TranslateMSBuildMacros(value, "ClCompile.AdditionalOptions", logger), settings.Portable)).ToArray(), supportedProjectConfigurations, logger);
+        LinkOptions = new CMakeConfigDependentMultiSetting(project.AdditionalLinkOptions, supportedProjectConfigurations, logger)
+            .Map(values => values.Select(value => ApplyMsvcCompilerGuard(TranslateMSBuildMacros(value, "Link.AdditionalOptions", logger), settings.Portable)).ToArray(), supportedProjectConfigurations, logger);
         ModuleDefinitionFile = new CMakeConfigDependentSetting(project.ModuleDefinitionFile, supportedProjectConfigurations, logger)
             .Map(value => value != null ? TranslateAndNormalize(value, "ModuleDefinitionFile", logger) : null, supportedProjectConfigurations, logger);
         ProjectReferences = project.ProjectReferences.Select(path => new CMakeProjectReference { Path = path }).ToArray();
@@ -302,14 +305,14 @@ class CMakeProject
 
     void ApplyDisableSpecificWarnings(MSBuildProject project, bool portable, ILogger logger)
     {
-        Options = Options.Map(
+        CompileOptions = CompileOptions.Map(
             (options, warnings) => [.. options, .. warnings.Select(w => Convert.ToInt32(w.Value)).Select(w => ApplyMsvcCompilerGuard(CMakeExpression.Literal($"/wd{w}"), portable))],
             project.DisableSpecificWarnings, ProjectConfigurations, logger);
     }
 
     void ApplyTreatSpecificWarningsAsErrors(MSBuildProject project, bool portable, ILogger logger)
     {
-        Options = Options.Map(
+        CompileOptions = CompileOptions.Map(
             (options, warnings) => [.. options, .. warnings.Select(w => Convert.ToInt32(w.Value)).Select(w => ApplyMsvcCompilerGuard(CMakeExpression.Literal($"/we{w}"), portable))],
             project.TreatSpecificWarningsAsErrors, ProjectConfigurations, logger);
     }
@@ -334,7 +337,7 @@ class CMakeProject
 
     void ApplyWarningLevel(MSBuildProject project, bool portable, ILogger logger)
     {
-        Options = Options.Map((options, level) => level?.Value switch
+        CompileOptions = CompileOptions.Map((options, level) => level?.Value switch
         {
             "TurnOffAllWarnings" => [.. options, ApplyMsvcCompilerGuard(CMakeExpression.Literal("/W0"), portable)],
             "Level1" => [.. options, ApplyMsvcCompilerGuard(CMakeExpression.Literal("/W1"), portable)],
@@ -348,7 +351,7 @@ class CMakeProject
 
     void ApplyExternalWarningLevel(MSBuildProject project, bool portable, ILogger logger)
     {
-        Options = Options.Map((options, level) => level?.Value switch
+        CompileOptions = CompileOptions.Map((options, level) => level?.Value switch
         {
             "TurnOffAllWarnings" => [.. options, ApplyMsvcCompilerGuard(CMakeExpression.Literal("/external:W0"), portable)],
             "Level1" => [.. options, ApplyMsvcCompilerGuard(CMakeExpression.Literal("/external:W1"), portable)],
@@ -362,7 +365,7 @@ class CMakeProject
 
     void ApplyTreatAngleIncludeAsExternal(MSBuildProject project, bool portable, ILogger logger)
     {
-        Options = Options.Map((options, treatAsExternal) => (treatAsExternal?.Value.ToLowerInvariant()) switch
+        CompileOptions = CompileOptions.Map((options, treatAsExternal) => (treatAsExternal?.Value.ToLowerInvariant()) switch
         {
             "true" => [.. options, ApplyMsvcCompilerGuard(CMakeExpression.Literal("/external:anglebrackets"), portable)],
             "false" or "" or null => options,
