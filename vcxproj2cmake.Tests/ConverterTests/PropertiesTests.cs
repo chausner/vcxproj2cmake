@@ -61,5 +61,59 @@ public partial class ConverterTests
                 )
                 """.TrimEnd(), cmake);
         }
+
+        [Fact]
+        public void Given_TreatLinkerWarningAsErrorsEnabledForAllConfigs_When_Converted_Then_LinkWarningAsErrorPropertyIsSet()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("TreatLinkerWarningAsErrors", "true")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("""
+                set_target_properties(Project PROPERTIES
+                    LINK_WARNING_AS_ERROR LINKER
+                )
+                """.TrimEnd(), cmake);
+        }
+
+        [Fact]
+        public void Given_TreatLinkerWarningAsErrorsEnabledConfigSpecific_When_Converted_Then_LinkWarningAsErrorPropertyIsSetWithGeneratorExpression()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("TreatLinkerWarningAsErrors", debugValue: "true", releaseValue: "false")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("""
+                set_target_properties(Project PROPERTIES
+                    LINK_WARNING_AS_ERROR $<$<CONFIG:Debug>:LINKER>$<$<CONFIG:Release>:OFF>
+                )
+                """.TrimEnd(), cmake);
+        }
     }
 }

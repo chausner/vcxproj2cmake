@@ -9,10 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Add support for linker property `AdditionalOptions`.
+- Add support for linker property `TreatLinkerWarningAsErrors`.
 
 ### Changed
 
 - Generated CMake target settings are now PRIVATE instead of PUBLIC (except INTERFACE settings which remain INTERFACE).
+- Generated CMake files now require CMake 4.0.
 
 ### Fixed
 

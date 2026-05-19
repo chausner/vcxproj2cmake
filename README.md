@@ -37,6 +37,7 @@
   `SubSystem`
   `TargetName`
   `TreatAngleIncludeAsExternal`
+  `TreatLinkerWarningAsErrors`
   `TreatSpecificWarningsAsErrors`
   `TreatWarningAsError`
   `UseOfMfc`
@@ -189,7 +190,7 @@ Running the converter on the solution generates three `CMakeLists.txt` files:
 `ExampleSolution/MathLib/CMakeLists.txt`:
 
 ```cmake
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 4.0)
 project(MathLib LANGUAGES CXX)
 
 add_library(MathLib STATIC)
@@ -219,7 +220,7 @@ target_compile_definitions(MathLib
 `ExampleSolution/App/CMakeLists.txt`:
 
 ```cmake
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 4.0)
 project(App LANGUAGES CXX)
 
 add_executable(App)
@@ -261,7 +262,7 @@ target_compile_options(App
 `ExampleSolution/CMakeLists.txt`:
 
 ```cmake
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 4.0)
 project(ExampleSolution)
 
 add_subdirectory(MathLib)

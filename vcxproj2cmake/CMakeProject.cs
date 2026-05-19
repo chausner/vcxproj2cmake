@@ -81,6 +81,7 @@ class CMakeProject
         ApplyDisableSpecificWarnings(project, settings.Portable, logger);
         ApplyTreatSpecificWarningsAsErrors(project, settings.Portable, logger);
         ApplyTreatWarningAsError(project, logger);
+        ApplyTreatLinkerWarningAsErrors(project, logger);
         ApplyWarningLevel(project, settings.Portable, logger);
         ApplyExternalWarningLevel(project, settings.Portable, logger);
         ApplyTreatAngleIncludeAsExternal(project, settings.Portable, logger);
@@ -333,6 +334,24 @@ class CMakeProject
             return;
 
         Properties["COMPILE_WARNING_AS_ERROR"] = compileWarningAsError;
+    }
+
+    void ApplyTreatLinkerWarningAsErrors(MSBuildProject project, ILogger logger)
+    {
+        var linkWarningAsError = new CMakeConfigDependentSetting(project.TreatLinkerWarningAsErrors, ProjectConfigurations, logger)
+            .Map(value => (value?.Value.ToLowerInvariant()) switch
+            {
+                "true" => CMakeExpression.Literal("LINKER"),
+                "false" or "" or null => CMakeExpression.Literal("OFF"),
+                _ => throw new CatastrophicFailureException($"Invalid value for TreatLinkerWarningAsErrors: {value?.Value}")
+            }, ProjectConfigurations, logger)
+            .ToCMakeExpression();
+
+        // if the setting has its default value, we prefer to not set it at all
+        if (linkWarningAsError.Value == "OFF")
+            return;
+
+        Properties["LINK_WARNING_AS_ERROR"] = linkWarningAsError;
     }
 
     void ApplyWarningLevel(MSBuildProject project, bool portable, ILogger logger)

@@ -25,7 +25,7 @@ public partial class ConverterTests
 
             // Assert
             Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """            
-                cmake_minimum_required(VERSION 3.24)
+                cmake_minimum_required(VERSION 4.0)
                 project(EmptyProject)
 
                 add_executable(EmptyProject)
@@ -98,7 +98,7 @@ public partial class ConverterTests
 
             // Assert
             Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
+                cmake_minimum_required(VERSION 4.0)
                 project(TwoEmptyProjects)
 
                 add_subdirectory(EmptyProject1)
@@ -106,7 +106,7 @@ public partial class ConverterTests
                 """);
 
             Assert.FileHasContent(Path.Combine("EmptyProject1", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
+                cmake_minimum_required(VERSION 4.0)
                 project(EmptyProject1)
 
                 add_executable(EmptyProject1)
@@ -128,7 +128,7 @@ public partial class ConverterTests
                 """);
 
             Assert.FileHasContent(Path.Combine("EmptyProject2", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
+                cmake_minimum_required(VERSION 4.0)
                 project(EmptyProject2)
 
                 add_executable(EmptyProject2)

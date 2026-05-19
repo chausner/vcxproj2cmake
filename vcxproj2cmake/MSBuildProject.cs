@@ -34,6 +34,7 @@ class MSBuildProject
     public required MSBuildConfigDependentSetting<string[]> DisableSpecificWarnings { get; init; }
     public required MSBuildConfigDependentSetting<string[]> TreatSpecificWarningsAsErrors { get; init; }
     public required MSBuildConfigDependentSetting<string> TreatWarningAsError { get; init; }
+    public required MSBuildConfigDependentSetting<string> TreatLinkerWarningAsErrors { get; init; }
     public required MSBuildConfigDependentSetting<string> WarningLevel { get; init; }
     public required MSBuildConfigDependentSetting<string> ExternalWarningLevel { get; init; }
     public required MSBuildConfigDependentSetting<string> TreatAngleIncludeAsExternal { get; init; }
@@ -267,6 +268,7 @@ class MSBuildProject
         var disableSpecificWarnings = ParseMultiSetting("DisableSpecificWarnings", ';', compilerSettings, []);
         var treatSpecificWarningsAsErrors = ParseMultiSetting("TreatSpecificWarningsAsErrors", ';', compilerSettings, []);
         var treatWarningAsError = ParseSetting("TreatWarningAsError", compilerSettings, "false");
+        var treatLinkerWarningAsErrors = ParseSetting("TreatLinkerWarningAsErrors", linkerSettings, "false");
         var warningLevel = ParseSetting("WarningLevel", compilerSettings, string.Empty);
         var externalWarningLevel = ParseSetting("ExternalWarningLevel", compilerSettings, string.Empty);
         var treatAngleIncludeAsExternal = ParseSetting("TreatAngleIncludeAsExternal", compilerSettings, "false");
@@ -314,6 +316,7 @@ class MSBuildProject
             DisableSpecificWarnings = disableSpecificWarnings,
             TreatSpecificWarningsAsErrors = treatSpecificWarningsAsErrors,
             TreatWarningAsError = treatWarningAsError,
+            TreatLinkerWarningAsErrors = treatLinkerWarningAsErrors,
             WarningLevel = warningLevel,
             ExternalWarningLevel = externalWarningLevel,
             TreatAngleIncludeAsExternal = treatAngleIncludeAsExternal,
