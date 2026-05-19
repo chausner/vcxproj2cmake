@@ -3,5 +3,10 @@
   <Project Path="vcxproj2cmake.Tests/vcxproj2cmake.Tests.csproj" />
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
+    <File Path="AGENTS.md" />
+    <File Path="CHANGELOG.md" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+    <File Path="settings.VisualStudio.json" />
   </Folder>
 </Solution>
