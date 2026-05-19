@@ -57,6 +57,12 @@ jobs:
       run: git clone --branch ${{ matrix.ref }} --depth 1 ${{ matrix.repo }} e2e-test/${{ matrix.name }}
     - name: Convert solution
       run: .\vcxproj2cmake.exe --solution e2e-test/${{ matrix.name }}/${{ matrix.sln }}
+    - name: Install latest version of CMake
+      shell: pwsh
+      run: |
+        python -m pip install --upgrade cmake
+        $cmakeBin = python -c "import cmake; print(cmake.CMAKE_BIN_DIR)"
+        $cmakeBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: CMake configure
       run: cmake -S e2e-test/${{ matrix.name }} -B e2e-test/${{ matrix.name }}/build -A x64
     - name: CMake build
