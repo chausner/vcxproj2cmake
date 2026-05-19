@@ -31,6 +31,7 @@ class MSBuildProject
     public required MSBuildConfigDependentSetting<string> CharacterSet { get; init; }
     public required MSBuildConfigDependentSetting<string> UseOfMfc { get; init; }
     public required MSBuildConfigDependentSetting<string> RuntimeLibrary { get; init; }
+    public required MSBuildConfigDependentSetting<string> BasicRuntimeChecks { get; init; }
     public required MSBuildConfigDependentSetting<string[]> DisableSpecificWarnings { get; init; }
     public required MSBuildConfigDependentSetting<string[]> TreatSpecificWarningsAsErrors { get; init; }
     public required MSBuildConfigDependentSetting<string> TreatWarningAsError { get; init; }
@@ -265,6 +266,13 @@ class MSBuildProject
             else
                 return "MultiThreadedDLL";
         }));
+        var basicRuntimeChecks = ParseSettingWithConfigSpecificDefault("BasicRuntimeChecks", compilerSettings, new(projectConfig =>
+        {
+            if (useDebugLibraries.GetEffectiveValue(projectConfig) == "true")
+                return "EnableFastChecks";
+            else
+                return "Default";
+        }));
         var disableSpecificWarnings = ParseMultiSetting("DisableSpecificWarnings", ';', compilerSettings, []);
         var treatSpecificWarningsAsErrors = ParseMultiSetting("TreatSpecificWarningsAsErrors", ';', compilerSettings, []);
         var treatWarningAsError = ParseSetting("TreatWarningAsError", compilerSettings, "false");
@@ -313,6 +321,7 @@ class MSBuildProject
             CharacterSet = characterSet,
             UseOfMfc = useOfMfc,
             RuntimeLibrary = runtimeLibrary,
+            BasicRuntimeChecks = basicRuntimeChecks,
             DisableSpecificWarnings = disableSpecificWarnings,
             TreatSpecificWarningsAsErrors = treatSpecificWarningsAsErrors,
             TreatWarningAsError = treatWarningAsError,

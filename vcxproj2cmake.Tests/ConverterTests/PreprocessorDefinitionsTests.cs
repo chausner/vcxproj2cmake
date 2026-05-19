@@ -108,9 +108,11 @@ public partial class ConverterTests
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
             fileSystem.AddFile(@"ProjectArch.vcxproj", new(TestData.Project()
-                .WithConfigurations(("Debug", "Win32"), ("Debug", "x64"))
+                .WithConfigurations(("Debug", "Win32"), ("Debug", "x64"), ("Release", "Win32"), ("Release", "x64"))
                 .WithItemDefinitionSetting("Debug", "Win32", "ClCompile", "PreprocessorDefinitions", "X86_DEF;%(PreprocessorDefinitions)")
                 .WithItemDefinitionSetting("Debug", "x64", "ClCompile", "PreprocessorDefinitions", "X64_DEF;%(PreprocessorDefinitions)")
+                .WithItemDefinitionSetting("Release", "Win32", "ClCompile", "PreprocessorDefinitions", "X86_DEF;%(PreprocessorDefinitions)")
+                .WithItemDefinitionSetting("Release", "x64", "ClCompile", "PreprocessorDefinitions", "X64_DEF;%(PreprocessorDefinitions)")
                 .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
@@ -125,10 +127,6 @@ public partial class ConverterTests
                 project(ProjectArch)
 
                 add_executable(ProjectArch)
-
-                set_target_properties(ProjectArch PROPERTIES
-                    MSVC_RUNTIME_LIBRARY MultiThreadedDebugDLL
-                )
 
                 target_compile_definitions(ProjectArch
                     PRIVATE

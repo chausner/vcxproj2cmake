@@ -76,6 +76,7 @@ class CMakeProject
         ApplyLanguageStandards(project);
         ApplyAllProjectIncludesArePublic(project, logger);
         ApplyRuntimeLibrary(project, logger);
+        ApplyBasicRuntimeChecks(project, logger);
         ApplyMfcSupport(project, logger);
         ApplyCharacterSetSetting(project, logger);
         ApplyDisableSpecificWarnings(project, settings.Portable, logger);
@@ -260,6 +261,26 @@ class CMakeProject
             msvcRuntimeLibrary = CMakeExpression.Expression("MultiThreaded$<$<CONFIG:Debug>:Debug>");
 
         Properties["MSVC_RUNTIME_LIBRARY"] = msvcRuntimeLibrary;
+    }
+
+    void ApplyBasicRuntimeChecks(MSBuildProject project, ILogger logger)
+    {
+        var msvcRuntimeChecks = new CMakeConfigDependentSetting(project.BasicRuntimeChecks, ProjectConfigurations, logger)
+            .Map(value => value?.Value switch
+            {
+                "StackFrameRuntimeCheck" => CMakeExpression.Literal("StackFrameErrorCheck"),
+                "UninitializedLocalUsageCheck" => CMakeExpression.Literal("UninitializedVariable"),
+                "EnableFastChecks" => CMakeExpression.Literal("StackFrameErrorCheck;UninitializedVariable"),
+                "Default" or "" or null => CMakeExpression.Literal(string.Empty),
+                _ => throw new CatastrophicFailureException($"Invalid value for BasicRuntimeChecks: {value?.Value}")
+            }, ProjectConfigurations, logger)
+            .ToCMakeExpression();
+
+        // if the setting has its default value, we prefer to not set it at all
+        if (msvcRuntimeChecks.Value == "$<$<CONFIG:Debug>:StackFrameErrorCheck;UninitializedVariable>")
+            return;
+
+        Properties["MSVC_RUNTIME_CHECKS"] = msvcRuntimeChecks;
     }
 
     void ApplyCharacterSetSetting(MSBuildProject project, ILogger logger)

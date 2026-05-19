@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Add support for compiler property `BasicRuntimeChecks`.
 - Add support for linker property `AdditionalOptions`.
 - Add support for linker property `TreatLinkerWarningAsErrors`.
 

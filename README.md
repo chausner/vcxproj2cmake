@@ -20,6 +20,7 @@
   `AdditionalLibraryDirectories`
   `AdditionalOptions`
   `AllProjectIncludesArePublic`
+  `BasicRuntimeChecks`
   `CharacterSet`
   `DisableSpecificWarnings`
   `ExternalWarningLevel`
