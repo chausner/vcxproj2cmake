@@ -52,10 +52,6 @@ class CMakeExpression : IComparable, IComparable<CMakeExpression>, IEquatable<CM
                 c == '"' || c == '\\' || // must be escaped inside quotes
                 c == '$';                // variable expansion
 
-            // We prefer to not quote generator expressions since it is not necessary
-            if (Value.StartsWith("$<") && Value.EndsWith(">"))
-                return false;
-
             return Value.Length == 0 || Value.Any(NeedsQuoting);
         }
     }

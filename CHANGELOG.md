@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Generator expressions are now always quoted in generated CMake to avoid issues when they contain spaces or other special characters.
 - Fix definition `_AFXDLL` erroneously being added when `UseOfMfc` is set to "Static".
 - Fix an issue where if `--portable` is used with a C-only project, the generated CMake file would use wrong MSVC compiler guards.
 

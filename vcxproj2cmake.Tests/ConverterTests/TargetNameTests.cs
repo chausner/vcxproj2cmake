@@ -62,7 +62,7 @@ public partial class ConverterTests
             Assert.Contains(
                 """
                 set_target_properties(Project PROPERTIES
-                    OUTPUT_NAME $<$<CONFIG:Debug>:CustomNameDebug>$<$<CONFIG:Release>:CustomNameRelease>
+                    OUTPUT_NAME "$<$<CONFIG:Debug>:CustomNameDebug>$<$<CONFIG:Release>:CustomNameRelease>"
                 )
                 """,
                 cmake);

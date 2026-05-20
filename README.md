@@ -213,8 +213,8 @@ target_include_directories(MathLib
 
 target_compile_definitions(MathLib
     PRIVATE
-        $<$<CONFIG:Debug>:DEBUG>
-        $<$<CONFIG:Release>:NDEBUG>
+        "$<$<CONFIG:Debug>:DEBUG>"
+        "$<$<CONFIG:Release>:NDEBUG>"
 )
 ```
 
@@ -244,8 +244,8 @@ target_include_directories(App
 target_compile_definitions(App
     PRIVATE
         MATHLIB
-        $<$<CONFIG:Debug>:DEBUG>
-        $<$<CONFIG:Release>:NDEBUG>
+        "$<$<CONFIG:Debug>:DEBUG>"
+        "$<$<CONFIG:Release>:NDEBUG>"
 )
 
 target_link_libraries(App
@@ -255,8 +255,8 @@ target_link_libraries(App
 
 target_compile_options(App
     PRIVATE
-        $<$<CONFIG:Debug>:/W4>
-        $<$<CONFIG:Release>:/O2>
+        "$<$<CONFIG:Debug>:/W4>"
+        "$<$<CONFIG:Release>:/O2>"
 )
 ```
 

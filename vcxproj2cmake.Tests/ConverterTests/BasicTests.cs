@@ -36,8 +36,8 @@ public partial class ConverterTests
                         _CONSOLE
                         UNICODE
                         _UNICODE
-                        $<$<CONFIG:Debug>:_DEBUG>
-                        $<$<CONFIG:Release>:NDEBUG>
+                        "$<$<CONFIG:Debug>:_DEBUG>"
+                        "$<$<CONFIG:Release>:NDEBUG>"
                 )
 
                 target_compile_options(EmptyProject
@@ -117,8 +117,8 @@ public partial class ConverterTests
                         _CONSOLE
                         UNICODE
                         _UNICODE
-                        $<$<CONFIG:Debug>:_DEBUG>
-                        $<$<CONFIG:Release>:NDEBUG>
+                        "$<$<CONFIG:Debug>:_DEBUG>"
+                        "$<$<CONFIG:Release>:NDEBUG>"
                 )
 
                 target_compile_options(EmptyProject1
@@ -139,8 +139,8 @@ public partial class ConverterTests
                         _CONSOLE
                         UNICODE
                         _UNICODE
-                        $<$<CONFIG:Debug>:_DEBUG>
-                        $<$<CONFIG:Release>:NDEBUG>
+                        "$<$<CONFIG:Debug>:_DEBUG>"
+                        "$<$<CONFIG:Release>:NDEBUG>"
                 )
 
                 target_compile_options(EmptyProject2

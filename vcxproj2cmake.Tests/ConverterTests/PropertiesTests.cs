@@ -57,7 +57,7 @@ public partial class ConverterTests
 
             Assert.Contains("""
                 set_target_properties(Project PROPERTIES
-                    COMPILE_WARNING_AS_ERROR $<$<CONFIG:Debug>:ON>$<$<CONFIG:Release>:OFF>
+                    COMPILE_WARNING_AS_ERROR "$<$<CONFIG:Debug>:ON>$<$<CONFIG:Release>:OFF>"
                 )
                 """.TrimEnd(), cmake);
         }
@@ -111,7 +111,7 @@ public partial class ConverterTests
 
             Assert.Contains("""
                 set_target_properties(Project PROPERTIES
-                    LINK_WARNING_AS_ERROR $<$<CONFIG:Debug>:LINKER>$<$<CONFIG:Release>:OFF>
+                    LINK_WARNING_AS_ERROR "$<$<CONFIG:Debug>:LINKER>$<$<CONFIG:Release>:OFF>"
                 )
                 """.TrimEnd(), cmake);
         }

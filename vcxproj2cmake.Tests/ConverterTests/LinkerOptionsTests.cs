@@ -61,8 +61,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_link_options(Project
                     PRIVATE
-                        $<$<CXX_COMPILER_ID:MSVC>:foo>
-                        $<$<CXX_COMPILER_ID:MSVC>:bar>
+                        "$<$<CXX_COMPILER_ID:MSVC>:foo>"
+                        "$<$<CXX_COMPILER_ID:MSVC>:bar>"
                 )
                 """.TrimEnd(), cmake);
         }

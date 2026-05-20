@@ -57,8 +57,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_sources(Project
                     PRIVATE
-                        $<$<CONFIG:Debug>:project_debug.def>
-                        $<$<CONFIG:Release>:project_release.def>
+                        "$<$<CONFIG:Debug>:project_debug.def>"
+                        "$<$<CONFIG:Release>:project_release.def>"
                 )
                 """.Trim(), cmake);
         }

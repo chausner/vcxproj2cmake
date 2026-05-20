@@ -61,8 +61,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_compile_options(Project
                     PRIVATE
-                        $<$<CXX_COMPILER_ID:MSVC>:foo>
-                        $<$<CXX_COMPILER_ID:MSVC>:bar>
+                        "$<$<CXX_COMPILER_ID:MSVC>:foo>"
+                        "$<$<CXX_COMPILER_ID:MSVC>:bar>"
                 )
                 """.TrimEnd(), cmake);
         }
@@ -120,8 +120,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_compile_options(Project
                     PRIVATE
-                        $<$<CXX_COMPILER_ID:MSVC>:/wd4100>
-                        $<$<CXX_COMPILER_ID:MSVC>:/wd4200>
+                        "$<$<CXX_COMPILER_ID:MSVC>:/wd4100>"
+                        "$<$<CXX_COMPILER_ID:MSVC>:/wd4200>"
                 )
                 """.TrimEnd(), cmake);
         }
@@ -179,8 +179,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_compile_options(Project
                     PRIVATE
-                        $<$<CXX_COMPILER_ID:MSVC>:/we4800>
-                        $<$<CXX_COMPILER_ID:MSVC>:/we4801>
+                        "$<$<CXX_COMPILER_ID:MSVC>:/we4800>"
+                        "$<$<CXX_COMPILER_ID:MSVC>:/we4801>"
                 )
                 """.TrimEnd(), cmake);
         }
@@ -237,7 +237,7 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_compile_options(Project
                     PRIVATE
-                        $<$<CXX_COMPILER_ID:MSVC>:/W4>
+                        "$<$<CXX_COMPILER_ID:MSVC>:/W4>"
                 )
                 """.TrimEnd(), cmake);
         }
@@ -312,7 +312,7 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_compile_options(Project
                     PRIVATE
-                        $<$<CXX_COMPILER_ID:MSVC>:/external:W2>
+                        "$<$<CXX_COMPILER_ID:MSVC>:/external:W2>"
                 )
                 """.TrimEnd(), cmake);
         }
@@ -387,7 +387,7 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_compile_options(Project
                     PRIVATE
-                        $<$<CXX_COMPILER_ID:MSVC>:/external:anglebrackets>
+                        "$<$<CXX_COMPILER_ID:MSVC>:/external:anglebrackets>"
                 )
                 """.TrimEnd(), cmake);
         }

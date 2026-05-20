@@ -38,10 +38,10 @@ public partial class ConverterTests
                 target_compile_definitions(Project
                     PRIVATE
                         FOO
-                        $<$<CONFIG:Debug>:DEBUG>
-                        $<$<CONFIG:Debug>:VALUE=1>
-                        $<$<CONFIG:Release>:NDEBUG>
-                        $<$<CONFIG:Release>:VALUE=2>
+                        "$<$<CONFIG:Debug>:DEBUG>"
+                        "$<$<CONFIG:Debug>:VALUE=1>"
+                        "$<$<CONFIG:Release>:NDEBUG>"
+                        "$<$<CONFIG:Release>:VALUE=2>"
                 )
                 """);
         }
@@ -130,8 +130,8 @@ public partial class ConverterTests
 
                 target_compile_definitions(ProjectArch
                     PRIVATE
-                        $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:X86_DEF>
-                        $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:X64_DEF>
+                        "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:X86_DEF>"
+                        "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:X64_DEF>"
                 )
                 """);
         }

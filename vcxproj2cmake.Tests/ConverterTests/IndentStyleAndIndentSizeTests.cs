@@ -38,8 +38,8 @@ public partial class ConverterTests
                 {"\t"}{"\t"}_CONSOLE
                 {"\t"}{"\t"}UNICODE
                 {"\t"}{"\t"}_UNICODE
-                {"\t"}{"\t"}$<$<CONFIG:Debug>:_DEBUG>
-                {"\t"}{"\t"}$<$<CONFIG:Release>:NDEBUG>
+                {"\t"}{"\t"}"$<$<CONFIG:Debug>:_DEBUG>"
+                {"\t"}{"\t"}"$<$<CONFIG:Release>:NDEBUG>"
                 )
 
                 target_compile_options(EmptyProject
@@ -78,8 +78,8 @@ public partial class ConverterTests
                     _CONSOLE
                     UNICODE
                     _UNICODE
-                    $<$<CONFIG:Debug>:_DEBUG>
-                    $<$<CONFIG:Release>:NDEBUG>
+                    "$<$<CONFIG:Debug>:_DEBUG>"
+                    "$<$<CONFIG:Release>:NDEBUG>"
                 )
 
                 target_compile_options(EmptyProject

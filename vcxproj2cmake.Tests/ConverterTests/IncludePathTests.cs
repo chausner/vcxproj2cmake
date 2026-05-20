@@ -60,8 +60,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_include_directories(Project
                     PRIVATE
-                        $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/debug>
-                        $<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/release>
+                        "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/debug>"
+                        "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/release>"
                 )
                 """, cmake);
         }
@@ -92,9 +92,9 @@ public partial class ConverterTests
                 target_include_directories(Project
                     PRIVATE
                         "${CMAKE_CURRENT_SOURCE_DIR}/shared"
-                        $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/additionaldebug>
-                        $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/debuginc>
-                        $<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/releaseinc>
+                        "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/additionaldebug>"
+                        "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/debuginc>"
+                        "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/releaseinc>"
                 )
                 """, cmake);
         }

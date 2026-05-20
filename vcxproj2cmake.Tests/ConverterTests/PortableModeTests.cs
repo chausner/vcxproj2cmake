@@ -32,7 +32,7 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_compile_options(Project
                     PRIVATE
-                        $<$<CXX_COMPILER_ID:MSVC>:foo>
+                        "$<$<CXX_COMPILER_ID:MSVC>:foo>"
                 )
                 """.TrimEnd(), cmake);
         }
@@ -62,7 +62,7 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_compile_options(Project
                     PRIVATE
-                        $<$<C_COMPILER_ID:MSVC>:foo>
+                        "$<$<C_COMPILER_ID:MSVC>:foo>"
                 )
                 """.TrimEnd(), cmake);
         }
@@ -92,7 +92,7 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_compile_options(Project
                     PRIVATE
-                        $<$<CXX_COMPILER_ID:MSVC>:foo>
+                        "$<$<CXX_COMPILER_ID:MSVC>:foo>"
                 )
                 """.TrimEnd(), cmake);
         }
@@ -122,7 +122,7 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_compile_options(Project
                     PRIVATE
-                        $<$<CXX_COMPILER_ID:MSVC>:foo>
+                        "$<$<CXX_COMPILER_ID:MSVC>:foo>"
                 )
                 """.TrimEnd(), cmake);
         }

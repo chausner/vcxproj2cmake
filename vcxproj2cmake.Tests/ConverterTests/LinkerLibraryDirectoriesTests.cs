@@ -59,8 +59,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_link_directories(Project
                     PRIVATE
-                        $<$<CONFIG:Debug>:DebugLibs>
-                        $<$<CONFIG:Release>:ReleaseLibs>
+                        "$<$<CONFIG:Debug>:DebugLibs>"
+                        "$<$<CONFIG:Release>:ReleaseLibs>"
                 )
                 """.Trim(), cmake);
         }
@@ -120,9 +120,9 @@ public partial class ConverterTests
                 target_link_directories(Project
                     PRIVATE
                         shared
-                        $<$<CONFIG:Debug>:additionaldebug>
-                        $<$<CONFIG:Debug>:debuglib>
-                        $<$<CONFIG:Release>:releaselib>
+                        "$<$<CONFIG:Debug>:additionaldebug>"
+                        "$<$<CONFIG:Debug>:debuglib>"
+                        "$<$<CONFIG:Release>:releaselib>"
                 )
                 """, cmake);
         }

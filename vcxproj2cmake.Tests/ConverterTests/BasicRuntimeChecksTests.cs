@@ -111,7 +111,7 @@ public partial class ConverterTests
             Assert.Contains(
                 """
                 set_target_properties(Project PROPERTIES
-                    MSVC_RUNTIME_CHECKS $<$<CONFIG:Debug>:StackFrameErrorCheck>$<$<CONFIG:Release>:UninitializedVariable>
+                    MSVC_RUNTIME_CHECKS "$<$<CONFIG:Debug>:StackFrameErrorCheck>$<$<CONFIG:Release>:UninitializedVariable>"
                 )
                 """,
                 cmake);
