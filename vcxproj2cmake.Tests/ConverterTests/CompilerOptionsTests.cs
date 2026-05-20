@@ -68,6 +68,67 @@ public partial class ConverterTests
         }
 
         [Fact]
+        public void Given_AdditionalOptionsWithQuotedArguments_When_Converted_Then_QuotedArgumentsAreNotSplit()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("AdditionalOptions", """/DNAME=&quot;foo bar&quot; /I&quot;C:\My Includes&quot; /O2""")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("""
+                target_compile_options(Project
+                    PRIVATE
+                        "/DNAME=foo bar"
+                        "/IC:\\My Includes"
+                        /O2
+                )
+                """.TrimEnd(), cmake);
+        }
+
+        [Fact]
+        public void Given_AdditionalOptionsWithQuotedArgumentsAndPortableMode_When_Converted_Then_QuotedGuardedArgumentsAreNotSplit()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("AdditionalOptions", """/DNAME=&quot;foo bar&quot; /I&quot;C:\My Includes&quot; /O2""")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")],
+                portable: true);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("""
+                target_compile_options(Project
+                    PRIVATE
+                        "$<$<CXX_COMPILER_ID:MSVC>:/DNAME=foo bar>"
+                        "$<$<CXX_COMPILER_ID:MSVC>:/IC:\\My Includes>"
+                        "$<$<CXX_COMPILER_ID:MSVC>:/O2>"
+                )
+                """.TrimEnd(), cmake);
+        }
+
+        [Fact]
         public void Given_DisableSpecificWarnings_When_Converted_Then_WdOptionsAreWritten()
         {
             // Arrange

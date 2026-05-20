@@ -259,8 +259,8 @@ class MSBuildProject
         var libraryPath = ParseMultiSetting("LibraryPath", ';', otherSettings, []);
         var additionalDependencies = ParseMultiSetting("AdditionalDependencies", ';', linkerSettings, []);
         var preprocessorDefinitions = ParseMultiSetting("PreprocessorDefinitions", ';', compilerSettings, []);
-        var additionalCompileOptions = ParseMultiSetting("AdditionalOptions", ' ', compilerSettings, []);
-        var additionalLinkOptions = ParseMultiSetting("AdditionalOptions", ' ', linkerSettings, []);
+        var additionalCompileOptions = ParseCommandLineOptionSetting(compilerSettings, "AdditionalOptions");
+        var additionalLinkOptions = ParseCommandLineOptionSetting(linkerSettings, "AdditionalOptions");
         var moduleDefinitionFile = ParseSetting("ModuleDefinitionFile", linkerSettings, string.Empty);
         var characterSet = ParseSetting("CharacterSet", otherSettings, "NotSet");
         var useOfMfc = ParseSetting("UseOfMfc", otherSettings, "false");
@@ -403,6 +403,16 @@ class MSBuildProject
             return new(property, defaultValue, settings.GetValueOrDefault(property, []), parser);
         }
 
+        static MSBuildConfigDependentSetting<string[]> ParseCommandLineOptionSetting(Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings, string settingName)
+        {
+            var parser = (string value) => 
+                PathUtils.SplitArguments(value)
+                    .Except([$"%({settingName})", $"$({settingName})"], StringComparer.OrdinalIgnoreCase)
+                    .Select(UnescapeMSBuildValue)
+                    .ToArray();
+
+            return new(settingName, [], settings.GetValueOrDefault(settingName, []), parser);
+        }
     }
 
     static string UnescapeMSBuildValue(string value)

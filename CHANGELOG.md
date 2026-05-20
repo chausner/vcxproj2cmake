@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Add support for MASM assembler files.
 - Add support for `.natvis` files.
 
+### Fixed
+
+- Fix issue where options in `AdditionalOptions` compiler/linker properties would get translated incorrectly if they were quoted and contained spaces.
+
 ## [1.8.0] - 2026-05-22
 
 ### Added
