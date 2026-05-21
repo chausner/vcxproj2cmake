@@ -108,16 +108,14 @@ application has a project reference to `MathLib`.
 
 The top-level solution looks like this:
 
-```text
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MathLib", "MathLib\MathLib.vcxproj", "{4D944B1C-9EBF-4086-AE57-25DDEBF92F0D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "App", "App\App.vcxproj", "{07DC28F8-AB37-42B2-A0C4-82D4766A9166}"
-    ProjectSection(ProjectDependencies) = postProject
-        {4D944B1C-9EBF-4086-AE57-25DDEBF92F0D} = {4D944B1C-9EBF-4086-AE57-25DDEBF92F0D}
-    EndProjectSection
-EndProject
+```xml
+<Solution>
+  <Configurations>
+    <Platform Name="Win32" />
+  </Configurations>
+  <Project Path="App/App.vcxproj" Id="d4f63c17-b31b-4b33-b304-593051868748" />
+  <Project Path="MathLib/MathLib.vcxproj" Id="620c346a-996a-4c2b-8485-4a872433008b" />
+</Solution>
 ```
 
 `MathLib.vcxproj` includes a header and source file. It also demonstrates configuration-specific options:

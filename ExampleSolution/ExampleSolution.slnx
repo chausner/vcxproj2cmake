@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Win32" />
+  </Configurations>
+  <Project Path="App/App.vcxproj" Id="d4f63c17-b31b-4b33-b304-593051868748" />
+  <Project Path="MathLib/MathLib.vcxproj" Id="620c346a-996a-4c2b-8485-4a872433008b" />
+</Solution>
