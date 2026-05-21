@@ -57,7 +57,7 @@ public class ProgramTests
     public void When_InvokedWithArgsSolutionAndAllOptions_Then_ReturnsZero()
     {
         var repoRoot = FindRepoRoot();
-        var sln = Path.Combine(repoRoot, "ExampleSolution", "ExampleSolution.sln");
+        var sln = Path.Combine(repoRoot, "ExampleSolution", "ExampleSolution.slnx");
 
         // Act
         var (_, _, exitCode) = RunProgramMainWithCapturedConsole(
@@ -90,7 +90,7 @@ public class ProgramTests
     public void When_InvokedWithArgsProjectsAndSolution_Then_ReturnsNonZeroAndPrintsError()
     {
         var repoRoot = FindRepoRoot();
-        var sln = Path.Combine(repoRoot, "ExampleSolution", "ExampleSolution.sln");
+        var sln = Path.Combine(repoRoot, "ExampleSolution", "ExampleSolution.slnx");
         var appProj = Path.Combine(repoRoot, "ExampleSolution", "App", "App.vcxproj");
 
         // Act
@@ -108,7 +108,7 @@ public class ProgramTests
     {
         // Arrange
         var repoRoot = FindRepoRoot();
-        var sln = Path.Combine(repoRoot, "ExampleSolution", "ExampleSolution.sln");
+        var sln = Path.Combine(repoRoot, "ExampleSolution", "ExampleSolution.slnx");
 
         // Open the solution file with an exclusive lock to simulate an IOException when trying to read it
         using var fileLock = File.Open(sln, FileMode.Open, FileAccess.Read, FileShare.None);
