@@ -49,27 +49,55 @@ class CMakeProject
 
         OutputName = CMakeExpression.Literal(project.ProjectName);  // may get overridden in ApplyTargetName
         var mergedIncludeDirectories = MergeIncludeDirectories(project, supportedProjectConfigurations);
-        IncludePaths = new CMakeConfigDependentMultiSetting(mergedIncludeDirectories, supportedProjectConfigurations, logger)
-            .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalIncludeDirectories+IncludePath", logger)).ToArray(), supportedProjectConfigurations, logger);
-        PublicIncludePaths = new CMakeConfigDependentMultiSetting(project.PublicIncludeDirectories, supportedProjectConfigurations, logger)
-            .Map(values => values.Select(value => TranslateAndNormalize(value, "PublicIncludeDirectories", logger)).ToArray(), supportedProjectConfigurations, logger);
+        IncludePaths = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
+            mergedIncludeDirectories,
+            values => values.Select(value => TranslateAndNormalize(value, "AdditionalIncludeDirectories+IncludePath", logger)).ToArray(),
+            supportedProjectConfigurations,
+            logger);
+        PublicIncludePaths = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
+            project.PublicIncludeDirectories,
+            values => values.Select(value => TranslateAndNormalize(value, "PublicIncludeDirectories", logger)).ToArray(),
+            supportedProjectConfigurations,
+            logger);
         var mergedLibraryDirectories = MergeLibraryDirectories(project, supportedProjectConfigurations);
-        LinkerPaths = new CMakeConfigDependentMultiSetting(mergedLibraryDirectories, supportedProjectConfigurations, logger)
-            .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalLibraryDirectories+LibraryPath", logger)).ToArray(), supportedProjectConfigurations, logger);
-        Libraries = new CMakeConfigDependentMultiSetting(project.AdditionalDependencies, supportedProjectConfigurations, logger)
-            .Map(values => values.Select(value => TranslateAndNormalize(value, "AdditionalDependencies", logger)).ToArray(), supportedProjectConfigurations, logger);
-        Defines = new CMakeConfigDependentMultiSetting(project.PreprocessorDefinitions, supportedProjectConfigurations, logger)
-            .Map(values => values.Select(value => TranslateMSBuildMacros(value, "PreprocessorDefinitions", logger)).ToArray(), supportedProjectConfigurations, logger);
-        CompileOptions = new CMakeConfigDependentMultiSetting(project.AdditionalCompileOptions, supportedProjectConfigurations, logger)
-            .Map(values => values.Select(value => ApplyMsvcCompilerGuard(TranslateMSBuildMacros(value, "ClCompile.AdditionalOptions", logger), settings.Portable)).ToArray(), supportedProjectConfigurations, logger);
-        LinkOptions = new CMakeConfigDependentMultiSetting(project.AdditionalLinkOptions, supportedProjectConfigurations, logger)
-            .Map(values => values.Select(value => ApplyMsvcCompilerGuard(TranslateMSBuildMacros(value, "Link.AdditionalOptions", logger), settings.Portable)).ToArray(), supportedProjectConfigurations, logger);
-        ModuleDefinitionFile = new CMakeConfigDependentSetting(project.ModuleDefinitionFile, supportedProjectConfigurations, logger)
-            .Map(value => value != null ? TranslateAndNormalize(value, "ModuleDefinitionFile", logger) : null, supportedProjectConfigurations, logger);
+        LinkerPaths = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
+            mergedLibraryDirectories,
+            values => values.Select(value => TranslateAndNormalize(value, "AdditionalLibraryDirectories+LibraryPath", logger)).ToArray(),
+            supportedProjectConfigurations,
+            logger);
+        Libraries = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
+            project.AdditionalDependencies,
+            values => values.Select(value => TranslateAndNormalize(value, "AdditionalDependencies", logger)).ToArray(),
+            supportedProjectConfigurations,
+            logger);
+        Defines = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
+            project.PreprocessorDefinitions,
+            values => values.Select(value => TranslateMSBuildMacros(value, "PreprocessorDefinitions", logger)).ToArray(),
+            supportedProjectConfigurations,
+            logger);
+        CompileOptions = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
+            project.AdditionalCompileOptions,
+            values => values.Select(value => ApplyMsvcCompilerGuard(TranslateMSBuildMacros(value, "ClCompile.AdditionalOptions", logger), settings.Portable)).ToArray(),
+            supportedProjectConfigurations,
+            logger);
+        LinkOptions = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
+            project.AdditionalLinkOptions,
+            values => values.Select(value => ApplyMsvcCompilerGuard(TranslateMSBuildMacros(value, "Link.AdditionalOptions", logger), settings.Portable)).ToArray(),
+            supportedProjectConfigurations,
+            logger);
+        ModuleDefinitionFile = CMakeConfigDependentSetting.FromMSBuildSetting(
+            project.ModuleDefinitionFile,
+            value => value != null ? TranslateAndNormalize(value, "ModuleDefinitionFile", logger) : null,
+            supportedProjectConfigurations,
+            logger);
         ProjectReferences = project.ProjectReferences.Select(path => new CMakeProjectReference { Path = path }).ToArray();
         IsWin32Executable = project.LinkerSubsystem == "Windows";
-        PrecompiledHeaderFile = new CMakeConfigDependentSetting(project.PrecompiledHeaderFile, supportedProjectConfigurations, logger)
-            .Map((file, mode) => mode?.Value == "Use" && file != null ? TranslateAndNormalize(file, "PrecompiledHeaderFile", logger) : null, project.PrecompiledHeader, supportedProjectConfigurations, logger);
+        PrecompiledHeaderFile = CMakeConfigDependentSetting.FromMSBuildSetting(
+            project.PrecompiledHeaderFile,
+            (file, mode) => mode?.Value == "Use" && file != null ? TranslateAndNormalize(file, "PrecompiledHeaderFile", logger) : null,
+            project.PrecompiledHeader,
+            supportedProjectConfigurations,
+            logger);
         Properties = [];
 
         ApplyTargetName(project, logger);
@@ -168,8 +196,11 @@ class CMakeProject
         if (project.TargetName.Values.Count == 0)
             return;
 
-        var targetName = new CMakeConfigDependentSetting(project.TargetName, ProjectConfigurations, logger)
-            .Map(value => value != null ? TranslateMSBuildMacros(value, "TargetName", logger) : null, ProjectConfigurations, logger)
+        var targetName = CMakeConfigDependentSetting.FromMSBuildSetting(
+            project.TargetName,
+            value => value != null ? TranslateMSBuildMacros(value, "TargetName", logger) : null,
+            ProjectConfigurations,
+            logger)
             .ToCMakeExpression();
 
         if (targetName != CMakeExpression.Literal(project.ProjectName))
@@ -265,15 +296,18 @@ class CMakeProject
 
     void ApplyBasicRuntimeChecks(MSBuildProject project, ILogger logger)
     {
-        var msvcRuntimeChecks = new CMakeConfigDependentSetting(project.BasicRuntimeChecks, ProjectConfigurations, logger)
-            .Map(value => value?.Value switch
+        var msvcRuntimeChecks = CMakeConfigDependentSetting.FromMSBuildSetting(
+            project.BasicRuntimeChecks,
+            value => value?.Value switch
             {
                 "StackFrameRuntimeCheck" => CMakeExpression.Literal("StackFrameErrorCheck"),
                 "UninitializedLocalUsageCheck" => CMakeExpression.Literal("UninitializedVariable"),
                 "EnableFastChecks" => CMakeExpression.Literal("StackFrameErrorCheck;UninitializedVariable"),
                 "Default" or "" or null => CMakeExpression.Literal(string.Empty),
                 _ => throw new CatastrophicFailureException($"Invalid value for BasicRuntimeChecks: {value?.Value}")
-            }, ProjectConfigurations, logger)
+            },
+            ProjectConfigurations,
+            logger)
             .ToCMakeExpression();
 
         // if the setting has its default value, we prefer to not set it at all
@@ -305,8 +339,11 @@ class CMakeProject
                 _ => throw new CatastrophicFailureException($"Invalid value for UseOfMfc: {useOfMfc}")
             };
 
-        var mfcFlag = new CMakeConfigDependentSetting(project.UseOfMfc, ProjectConfigurations, logger)
-            .Map(value => TranslateMfcFlag(value), ProjectConfigurations, logger)
+        var mfcFlag = CMakeConfigDependentSetting.FromMSBuildSetting(
+            project.UseOfMfc,
+            value => TranslateMfcFlag(value),
+            ProjectConfigurations,
+            logger)
             .ToCMakeExpression();
 
         if (mfcFlag.Value == "0")
@@ -341,13 +378,16 @@ class CMakeProject
 
     void ApplyTreatWarningAsError(MSBuildProject project, ILogger logger)
     {
-        var compileWarningAsError = new CMakeConfigDependentSetting(project.TreatWarningAsError, ProjectConfigurations, logger)
-            .Map(value => (value?.Value.ToLowerInvariant()) switch
+        var compileWarningAsError = CMakeConfigDependentSetting.FromMSBuildSetting(
+            project.TreatWarningAsError,
+            value => (value?.Value.ToLowerInvariant()) switch
             {
                 "true" => CMakeExpression.Literal("ON"),
                 "false" or "" or null => CMakeExpression.Literal("OFF"),
                 _ => throw new CatastrophicFailureException($"Invalid value for TreatWarningAsError: {value?.Value}")
-            }, ProjectConfigurations, logger)
+            },
+            ProjectConfigurations,
+            logger)
             .ToCMakeExpression();
 
         // if the setting has its default value, we prefer to not set it at all
@@ -359,13 +399,16 @@ class CMakeProject
 
     void ApplyTreatLinkerWarningAsErrors(MSBuildProject project, ILogger logger)
     {
-        var linkWarningAsError = new CMakeConfigDependentSetting(project.TreatLinkerWarningAsErrors, ProjectConfigurations, logger)
-            .Map(value => (value?.Value.ToLowerInvariant()) switch
+        var linkWarningAsError = CMakeConfigDependentSetting.FromMSBuildSetting(
+            project.TreatLinkerWarningAsErrors,
+            value => (value?.Value.ToLowerInvariant()) switch
             {
                 "true" => CMakeExpression.Literal("LINKER"),
                 "false" or "" or null => CMakeExpression.Literal("OFF"),
                 _ => throw new CatastrophicFailureException($"Invalid value for TreatLinkerWarningAsErrors: {value?.Value}")
-            }, ProjectConfigurations, logger)
+            },
+            ProjectConfigurations,
+            logger)
             .ToCMakeExpression();
 
         // if the setting has its default value, we prefer to not set it at all
