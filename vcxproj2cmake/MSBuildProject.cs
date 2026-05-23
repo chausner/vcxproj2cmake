@@ -58,71 +58,63 @@ class MSBuildProject
         projectPath = PathUtils.NormalizePathSeparators(projectPath);
         var absoluteProjectPath = Path.GetFullPath(projectPath);
 
-        var msbuildNamespace = "http://schemas.microsoft.com/developer/msbuild/2003";
-        var clCompileXName = XName.Get("ClCompile", msbuildNamespace);
-        var clIncludeXName = XName.Get("ClInclude", msbuildNamespace);
-        var importGroupXName = XName.Get("ImportGroup", msbuildNamespace);
-        var importXName = XName.Get("Import", msbuildNamespace);
-        var itemDefinitionGroupXName = XName.Get("ItemDefinitionGroup", msbuildNamespace);
-        var itemGroupXName = XName.Get("ItemGroup", msbuildNamespace);
-        var libXName = XName.Get("Lib", msbuildNamespace);
-        var linkLibraryDependenciesXName = XName.Get("LinkLibraryDependencies", msbuildNamespace);
-        var linkXName = XName.Get("Link", msbuildNamespace);
-        var projectConfigurationXName = XName.Get("ProjectConfiguration", msbuildNamespace);
-        var projectReferenceXName = XName.Get("ProjectReference", msbuildNamespace);
-        var projectXName = XName.Get("Project", msbuildNamespace);
-        var propertyGroupXName = XName.Get("PropertyGroup", msbuildNamespace);
-        var qtMocXName = XName.Get("QtMoc", msbuildNamespace);
-        var qtModulesXName = XName.Get("QtModules", msbuildNamespace);
-        var qtRccXName = XName.Get("QtRcc", msbuildNamespace);
-        var qtUicXName = XName.Get("QtUic", msbuildNamespace);
-        var resourceCompileXName = XName.Get("ResourceCompile", msbuildNamespace);
-
         XDocument doc;
 
         using (var fileStream = fileSystem.FileStream.New(projectPath, FileMode.Open, FileAccess.Read, FileShare.Read))
             doc = XDocument.Load(fileStream);
 
-        var projectElement = doc.Element(projectXName)!;
+        var projectElement = doc.Elements().Single(element => element.Name.LocalName == "Project");
 
         var projectConfigurations =
-            projectElement
-                .Elements(itemGroupXName)
-                .SelectMany(group => group.Elements(projectConfigurationXName))
+            ElementsNamed(projectElement, "ItemGroup")
+                .SelectMany(group => ElementsNamed(group, "ProjectConfiguration"))
                 .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
                 .Select(config => new MSBuildProjectConfig(config))
                 .ToList();
 
+        var evaluatedProjects =
+            projectConfigurations.ToDictionary(
+                projectConfig => projectConfig,
+                projectConfig => MSBuildProjectEvaluator.Evaluate(projectElement, projectPath, absoluteProjectPath, projectConfig, fileSystem, logger));
+
+        var evaluatedElements =
+            evaluatedProjects.Values
+                .SelectMany(project => project.Elements)
+                .ToList();
+
         var sourceFiles =
-            projectElement
-                .Elements(itemGroupXName)
+            evaluatedElements
+                .Where(element => element.Name.LocalName == "ItemGroup")
                 .SelectMany(group =>
-                    group.Elements(clCompileXName)
-                    .Concat(group.Elements(resourceCompileXName))
-                    .Concat(group.Elements(qtUicXName))
-                    .Concat(group.Elements(qtRccXName)))
+                    ElementsNamed(group, "ClCompile")
+                    .Concat(ElementsNamed(group, "ResourceCompile"))
+                    .Concat(ElementsNamed(group, "QtUic"))
+                    .Concat(ElementsNamed(group, "QtRcc")))
                 .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
         var headerFiles =
-            projectElement
-                .Elements(itemGroupXName)
-                .SelectMany(group => group.Elements(clIncludeXName))
+            evaluatedElements
+                .Where(element => element.Name.LocalName == "ItemGroup")
+                .SelectMany(group => ElementsNamed(group, "ClInclude"))
                 .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
         var qtMocHeaderFiles =
-            projectElement
-                .Elements(itemGroupXName)
-                .SelectMany(group => group.Elements(qtMocXName))
+            evaluatedElements
+                .Where(element => element.Name.LocalName == "ItemGroup")
+                .SelectMany(group => ElementsNamed(group, "QtMoc"))
                 .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
                 .Where(path => Path.GetExtension(path).ToLowerInvariant() is ".h" or ".hpp" or ".hxx" or ".h++" or ".hh")
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
         var qtModules =
-            projectElement
-                .Elements(propertyGroupXName)
-                .SelectMany(group => group.Elements(qtModulesXName))
+            evaluatedElements
+                .Where(element => element.Name.LocalName == "PropertyGroup")
+                .SelectMany(group => ElementsNamed(group, "QtModules"))
                 .Select(element => element.Value.Trim())
                 .Distinct()
                 .SingleOrDefaultWithException(string.Empty,
@@ -132,29 +124,26 @@ class MSBuildProject
                 .ToArray();
 
         var imports =
-            projectElement
-                .Elements(importXName)
-                .Concat(projectElement.Elements(importGroupXName).SelectMany(group => group.Elements(importXName)))
-                .Select(import => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(import.Attribute("Project")!.Value.Trim())))
+            evaluatedProjects.Values
+                .SelectMany(project => project.Imports)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-        LogWarningsForUnsupportedImports(imports, logger);
-        LogWarningsForDirectoryBuildFiles(absoluteProjectPath, fileSystem, logger);
-        LogWarningsForUnsupportedFileLevelSettings(projectElement, itemGroupXName, logger);
+        LogWarningsForUnsupportedFileLevelSettings(evaluatedElements, logger);
 
         var projectReferences =
-            projectElement
-                .Elements(itemGroupXName)
-                .SelectMany(group => group.Elements(projectReferenceXName))
+            evaluatedElements
+                .Where(element => element.Name.LocalName == "ItemGroup")
+                .SelectMany(group => ElementsNamed(group, "ProjectReference"))
                 .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
                 .Distinct()
                 .ToList();
 
         var linkLibraryDependenciesEnabled =
-            projectElement
-                .Elements(itemDefinitionGroupXName)
-                .SelectMany(group => group.Elements(projectReferenceXName))
-                .SelectMany(element => element.Elements(linkLibraryDependenciesXName))
+            evaluatedElements
+                .Where(element => element.Name.LocalName == "ItemDefinitionGroup")
+                .SelectMany(group => ElementsNamed(group, "ProjectReference"))
+                .SelectMany(element => ElementsNamed(element, "LinkLibraryDependencies"))
                 .Select(element => UnescapeMSBuildValue(element.Value.Trim()))
                 .Select(value => value switch
                 {
@@ -169,21 +158,21 @@ class MSBuildProject
                         "LinkLibraryDependencies property is inconsistent between configurations"));
 
         var requiresQtMoc =
-            projectElement
-            .Elements(itemGroupXName)
-            .SelectMany(group => group.Elements(qtMocXName))
+            evaluatedElements
+            .Where(element => element.Name.LocalName == "ItemGroup")
+            .SelectMany(group => ElementsNamed(group, "QtMoc"))
             .Any();
 
         var requiresQtUic =
-            projectElement
-            .Elements(itemGroupXName)
-            .SelectMany(group => group.Elements(qtUicXName))
+            evaluatedElements
+            .Where(element => element.Name.LocalName == "ItemGroup")
+            .SelectMany(group => ElementsNamed(group, "QtUic"))
             .Any();
 
         var requiresQtRcc =
-            projectElement
-            .Elements(itemGroupXName)
-            .SelectMany(group => group.Elements(qtRccXName))
+            evaluatedElements
+            .Where(element => element.Name.LocalName == "ItemGroup")
+            .SelectMany(group => ElementsNamed(group, "QtRcc"))
             .Any();
 
         Dictionary<string, Dictionary<MSBuildProjectConfig, string>> compilerSettings = [];
@@ -193,27 +182,27 @@ class MSBuildProject
         foreach (var projectConfig in projectConfigurations)
         {
             var itemDefinitionGroups =
-                projectElement
-                    .Elements(itemDefinitionGroupXName)
+                evaluatedProjects[projectConfig].Elements
+                    .Where(element => element.Name.LocalName == "ItemDefinitionGroup")
                     .Where(group => DoesConfigPlatformConditionApply(group, projectConfig))
                     .ToList();
 
             var propertyGroups =
-                projectElement
-                    .Elements(propertyGroupXName)
+                evaluatedProjects[projectConfig].Elements
+                    .Where(element => element.Name.LocalName == "PropertyGroup")
                     .Where(group => DoesConfigPlatformConditionApply(group, projectConfig))
                     .ToList();
 
             var projectConfigCompilerSettings =
                 itemDefinitionGroups
-                .SelectMany(group => group.Elements(clCompileXName))
+                .SelectMany(group => ElementsNamed(group, "ClCompile"))
                 .SelectMany(element => element.Elements())
                 .ToDictionaryKeepingLast(element => element.Name.LocalName, element => element.Value.Trim());
 
             var projectConfigLinkerSettings =
                 itemDefinitionGroups
                 .SelectMany(group => group.Elements())
-                .Where(element => element.Name == linkXName || element.Name == libXName)
+                .Where(element => element.Name.LocalName is "Link" or "Lib")
                 .SelectMany(element => element.Elements())
                 .ToDictionaryKeepingLast(element => element.Name.LocalName, element => element.Value.Trim());
 
@@ -343,13 +332,6 @@ class MSBuildProject
             ConanPackages = conanPackages!
         };
 
-        static bool DoesConfigPlatformConditionApply(XElement element, MSBuildProjectConfig projectConfig)
-        {
-            var condition = element.Attribute("Condition")?.Value;
-            return condition == null ||
-                Regex.IsMatch(condition, $@"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'{Regex.Escape(projectConfig.Name)}'");
-        }
-
         static string? GetCommonSetting(string property, Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings)
         {
             return settings.GetValueOrDefault(property)?.Values
@@ -399,6 +381,14 @@ class MSBuildProject
 
     }
 
+    static bool DoesConfigPlatformConditionApply(XElement element, MSBuildProjectConfig projectConfig)
+    {
+        var condition = element.Attribute("Condition")?.Value;
+        return condition == null ||
+            !Regex.IsMatch(condition, @"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'[^']+'") ||
+            Regex.IsMatch(condition, $@"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'{Regex.Escape(projectConfig.Name)}'");
+    }
+
     static string UnescapeMSBuildValue(string value)
     {
         if (string.IsNullOrEmpty(value) || !value.Contains('%'))
@@ -445,6 +435,9 @@ class MSBuildProject
         "ResourceCompile"
     };
 
+    static IEnumerable<XElement> ElementsNamed(XElement element, string localName)
+        => element.Elements().Where(child => child.Name.LocalName == localName);
+
     static void LogWarningsForUnsupportedImports(IEnumerable<string> imports, ILogger logger)
     {
         var unsupportedImports =
@@ -465,32 +458,11 @@ class MSBuildProject
         }
     }
 
-    static void LogWarningsForDirectoryBuildFiles(string absoluteProjectPath, IFileSystem fileSystem, ILogger logger)
-    {
-        var projectDirectory = fileSystem.Path.GetDirectoryName(absoluteProjectPath);
-        if (string.IsNullOrEmpty(projectDirectory))
-            return;
-
-        for (var currentDirectory = fileSystem.DirectoryInfo.New(projectDirectory);
-            currentDirectory != null;
-            currentDirectory = currentDirectory.Parent)
-        {
-            LogWarningIfFileExists(currentDirectory.File("Directory.Build.props"));
-            LogWarningIfFileExists(currentDirectory.File("Directory.Build.targets"));
-        }
-
-        void LogWarningIfFileExists(IFileInfo file)
-        {
-            if (file.Exists)
-                logger.LogWarning($"Directory.Build.props/targets are unsupported and will not be processed: {file.FullName}");
-        }
-    }
-
-    static void LogWarningsForUnsupportedFileLevelSettings(XElement projectElement, XName itemGroupXName, ILogger logger)
+    static void LogWarningsForUnsupportedFileLevelSettings(IEnumerable<XElement> evaluatedElements, ILogger logger)
     {
         var fileLevelSettings =
-            projectElement
-                .Elements(itemGroupXName)
+            evaluatedElements
+                .Where(element => element.Name.LocalName == "ItemGroup")
                 .SelectMany(group => group.Elements())
                 .Where(element => FileItemElementNames.Contains(element.Name.LocalName))
                 .Select(element => new
@@ -520,4 +492,451 @@ class MSBuildProject
             logger.LogWarning(
                 $"File-level MSBuild settings are unsupported and will not be processed: {fileLevelSetting.FilePath} ({string.Join(", ", fileLevelSetting.SettingNames)})");
     }
+
+    sealed class MSBuildProjectEvaluator
+    {
+        static readonly Regex PropertyReferencePattern = new(@"\$\(([A-Za-z0-9_.-]+)\)", RegexOptions.Compiled);
+        const string GetPathOfFileAbovePrefix = "$([MSBuild]::GetPathOfFileAbove(";
+
+        readonly string absoluteProjectPath;
+        readonly MSBuildProjectConfig projectConfig;
+        readonly IFileSystem fileSystem;
+        readonly ILogger logger;
+        readonly Dictionary<string, string> properties = new(StringComparer.OrdinalIgnoreCase);
+        readonly HashSet<string> importedStandardDirectoryBuildFiles = new(StringComparer.OrdinalIgnoreCase);
+        readonly string projectDirectory;
+
+        public List<XElement> Elements { get; } = [];
+        public List<string> Imports { get; } = [];
+
+        MSBuildProjectEvaluator(
+            string projectPath,
+            string absoluteProjectPath,
+            MSBuildProjectConfig projectConfig,
+            IFileSystem fileSystem,
+            ILogger logger)
+        {
+            this.absoluteProjectPath = absoluteProjectPath;
+            this.projectConfig = projectConfig;
+            this.fileSystem = fileSystem;
+            this.logger = logger;
+
+            projectDirectory = fileSystem.Path.GetDirectoryName(absoluteProjectPath) ?? string.Empty;
+
+            var configAndPlatform = projectConfig.Name.Split('|', 2);
+
+            properties["Configuration"] = configAndPlatform[0];
+            if (configAndPlatform.Length > 1)
+                properties["Platform"] = configAndPlatform[1];
+
+            properties["MSBuildProjectFullPath"] = absoluteProjectPath;
+            properties["MSBuildProjectDirectory"] = projectDirectory;
+            properties["MSBuildProjectDirectoryNoRoot"] = projectDirectory;
+            properties["ProjectDir"] = EnsureTrailingSeparator(projectDirectory);
+            properties["ProjectPath"] = projectPath;
+        }
+
+        public static EvaluatedProject Evaluate(
+            XElement projectElement,
+            string projectPath,
+            string absoluteProjectPath,
+            MSBuildProjectConfig projectConfig,
+            IFileSystem fileSystem,
+            ILogger logger)
+        {
+            var evaluator = new MSBuildProjectEvaluator(projectPath, absoluteProjectPath, projectConfig, fileSystem, logger);
+            evaluator.EvaluateProjectElement(projectElement, absoluteProjectPath, []);
+            return new(evaluator.Elements, evaluator.Imports);
+        }
+
+        void EvaluateProjectElement(XElement projectElement, string currentFilePath, HashSet<string> importStack)
+        {
+            foreach (var child in projectElement.Elements())
+            {
+                if (!DoesConditionApply(child, currentFilePath))
+                    continue;
+
+                switch (child.Name.LocalName)
+                {
+                    case "Import":
+                        EvaluateImport(child, currentFilePath, importStack);
+                        break;
+
+                    case "ImportGroup":
+                        EvaluateImportGroup(child, currentFilePath, importStack);
+                        break;
+
+                    case "PropertyGroup":
+                        Elements.Add(child);
+                        ApplyProperties(child, currentFilePath);
+                        break;
+
+                    default:
+                        Elements.Add(child);
+                        break;
+                }
+            }
+        }
+
+        void EvaluateImportGroup(XElement importGroup, string currentFilePath, HashSet<string> importStack)
+        {
+            foreach (var import in ElementsNamed(importGroup, "Import"))
+            {
+                if (DoesConditionApply(import, currentFilePath))
+                    EvaluateImport(import, currentFilePath, importStack);
+            }
+        }
+
+        void EvaluateImport(XElement import, string currentFilePath, HashSet<string> importStack)
+        {
+            var importProject = import.Attribute("Project")?.Value.Trim();
+            if (string.IsNullOrWhiteSpace(importProject))
+                return;
+
+            importProject = UnescapeMSBuildValue(importProject);
+            Imports.Add(PathUtils.NormalizePathSeparators(importProject));
+
+            var evaluatedImportProject = ExpandValue(importProject, currentFilePath);
+
+            if (IsStandardCppPropsImport(evaluatedImportProject))
+            {
+                EvaluateStandardDirectoryBuildFile("Directory.Build.props", importStack);
+                return;
+            }
+
+            if (IsStandardCppTargetsImport(evaluatedImportProject))
+            {
+                EvaluateStandardDirectoryBuildFile("Directory.Build.targets", importStack);
+                return;
+            }
+
+            var importedFilePath = ResolvePath(evaluatedImportProject, currentFilePath);
+            if (importedFilePath == null || !fileSystem.File.Exists(importedFilePath))
+            {
+                LogWarningsForUnsupportedImports([importProject], logger);
+                return;
+            }
+
+            EvaluateImportedFile(importedFilePath, importStack);
+        }
+
+        void EvaluateStandardDirectoryBuildFile(string fileName, HashSet<string> importStack)
+        {
+            var directoryBuildFile = GetPathOfFileAbove(fileName, projectDirectory, absoluteProjectPath);
+            if (string.IsNullOrEmpty(directoryBuildFile))
+                return;
+
+            if (!importedStandardDirectoryBuildFiles.Add(directoryBuildFile))
+                return;
+
+            EvaluateImportedFile(directoryBuildFile, importStack);
+        }
+
+        void EvaluateImportedFile(string importedFilePath, HashSet<string> importStack)
+        {
+            importedFilePath = fileSystem.Path.GetFullPath(importedFilePath);
+            if (!importStack.Add(importedFilePath))
+                return;
+
+            XDocument importedDocument;
+            using (var fileStream = fileSystem.FileStream.New(importedFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                importedDocument = XDocument.Load(fileStream);
+
+            var importedProjectElement = importedDocument.Elements().SingleOrDefault(element => element.Name.LocalName == "Project");
+            if (importedProjectElement != null)
+                EvaluateProjectElement(importedProjectElement, importedFilePath, importStack);
+
+            importStack.Remove(importedFilePath);
+        }
+
+        void ApplyProperties(XElement propertyGroup, string currentFilePath)
+        {
+            foreach (var property in propertyGroup.Elements())
+            {
+                if (!DoesConditionApply(property, currentFilePath))
+                    continue;
+
+                properties[property.Name.LocalName] = ExpandValue(property.Value.Trim(), currentFilePath);
+            }
+        }
+
+        bool DoesConditionApply(XElement element, string currentFilePath)
+        {
+            var condition = element.Attribute("Condition")?.Value;
+            if (string.IsNullOrWhiteSpace(condition))
+                return true;
+
+            if (!DoesConfigPlatformConditionApply(element, projectConfig))
+                return false;
+
+            return EvaluateCondition(condition, currentFilePath);
+        }
+
+        bool EvaluateCondition(string condition, string currentFilePath)
+        {
+            condition = condition.Trim();
+
+            var andParts = Regex.Split(condition, @"\s+and\s+", RegexOptions.IgnoreCase);
+            if (andParts.Length > 1)
+                return andParts.All(part => EvaluateCondition(part, currentFilePath));
+
+            var orParts = Regex.Split(condition, @"\s+or\s+", RegexOptions.IgnoreCase);
+            if (orParts.Length > 1)
+                return orParts.Any(part => EvaluateCondition(part, currentFilePath));
+
+            if (Regex.IsMatch(condition, @"'\$\(Configuration\)\|\$\(Platform\)'\s*==\s*'[^']+'", RegexOptions.IgnoreCase))
+                return true;
+
+            var existsMatch = Regex.Match(condition, @"^exists\s*\((.*)\)$", RegexOptions.IgnoreCase);
+            if (existsMatch.Success)
+                return FileExists(EvaluateConditionOperand(existsMatch.Groups[1].Value, currentFilePath), currentFilePath);
+
+            var comparisonMatch = Regex.Match(condition, @"^(.*?)\s*(==|!=)\s*(.*?)$");
+            if (comparisonMatch.Success)
+            {
+                var left = EvaluateConditionOperand(comparisonMatch.Groups[1].Value, currentFilePath);
+                var right = EvaluateConditionOperand(comparisonMatch.Groups[3].Value, currentFilePath);
+                var equals = string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+                return comparisonMatch.Groups[2].Value == "==" ? equals : !equals;
+            }
+
+            return true;
+        }
+
+        string EvaluateConditionOperand(string operand, string currentFilePath)
+        {
+            operand = operand.Trim();
+            if ((operand.StartsWith('\'') && operand.EndsWith('\'')) ||
+                (operand.StartsWith('"') && operand.EndsWith('"')))
+            {
+                operand = operand[1..^1];
+            }
+
+            return ExpandValue(operand, currentFilePath);
+        }
+
+        bool FileExists(string path, string currentFilePath)
+        {
+            var resolvedPath = ResolvePath(path, currentFilePath);
+            return resolvedPath != null && fileSystem.File.Exists(resolvedPath);
+        }
+
+        string ExpandValue(string value, string currentFilePath)
+        {
+            value = ExpandMSBuildThisFileProperties(value, currentFilePath);
+            value = ExpandGetPathOfFileAbove(value, currentFilePath);
+            return PropertyReferencePattern.Replace(value, match =>
+            {
+                var propertyName = match.Groups[1].Value;
+                return properties.GetValueOrDefault(propertyName, match.Value);
+            });
+        }
+
+        string ExpandMSBuildThisFileProperties(string value, string currentFilePath)
+        {
+            var currentFileDirectory = fileSystem.Path.GetDirectoryName(currentFilePath) ?? string.Empty;
+            return value
+                .Replace("$(MSBuildThisFileFullPath)", currentFilePath, StringComparison.OrdinalIgnoreCase)
+                .Replace("$(MSBuildThisFileDirectory)", EnsureTrailingSeparator(currentFileDirectory), StringComparison.OrdinalIgnoreCase)
+                .Replace("$(MSBuildThisFile)", fileSystem.Path.GetFileName(currentFilePath), StringComparison.OrdinalIgnoreCase)
+                .Replace("$(MSBuildThisFileName)", fileSystem.Path.GetFileNameWithoutExtension(currentFilePath), StringComparison.OrdinalIgnoreCase)
+                .Replace("$(MSBuildThisFileExtension)", fileSystem.Path.GetExtension(currentFilePath), StringComparison.OrdinalIgnoreCase);
+        }
+
+        string ExpandGetPathOfFileAbove(string value, string currentFilePath)
+        {
+            var index = value.IndexOf(GetPathOfFileAbovePrefix, StringComparison.OrdinalIgnoreCase);
+            while (index >= 0)
+            {
+                var functionEnd = FindGetPathOfFileAboveEnd(value, index);
+                if (functionEnd == null)
+                    break;
+
+                var argumentsStart = index + GetPathOfFileAbovePrefix.Length;
+                var arguments = value[argumentsStart..functionEnd.Value];
+                var replacement = EvaluateGetPathOfFileAbove(arguments, currentFilePath);
+                value = value[..index] + replacement + value[Math.Min(functionEnd.Value + 2, value.Length)..];
+
+                index = value.IndexOf(GetPathOfFileAbovePrefix, index + replacement.Length, StringComparison.OrdinalIgnoreCase);
+            }
+
+            return value;
+        }
+
+        int? FindGetPathOfFileAboveEnd(string value, int functionStart)
+        {
+            var index = functionStart + GetPathOfFileAbovePrefix.Length;
+            var depth = 1;
+            var quote = '\0';
+
+            for (; index < value.Length; index++)
+            {
+                var current = value[index];
+                if (quote != '\0')
+                {
+                    if (current == quote)
+                        quote = '\0';
+                    continue;
+                }
+
+                if (current is '\'' or '"')
+                {
+                    quote = current;
+                    continue;
+                }
+
+                if (current == '$' && index + 1 < value.Length && value[index + 1] == '(')
+                {
+                    index = value.IndexOf(')', index + 2);
+                    if (index < 0)
+                        return null;
+
+                    continue;
+                }
+
+                if (current == '(')
+                    depth++;
+                else if (current == ')' && --depth == 0)
+                    return index;
+            }
+
+            return null;
+        }
+
+        string EvaluateGetPathOfFileAbove(string arguments, string currentFilePath)
+        {
+            var args = SplitArguments(arguments)
+                .Select(argument => ExpandValue(StripQuotes(argument.Trim()), currentFilePath))
+                .ToArray();
+
+            if (args.Length == 0 || string.IsNullOrWhiteSpace(args[0]))
+                return string.Empty;
+
+            var startDirectory = args.Length > 1 && !string.IsNullOrWhiteSpace(args[1])
+                ? args[1]
+                : fileSystem.Path.GetDirectoryName(currentFilePath) ?? string.Empty;
+
+            return GetPathOfFileAbove(args[0], startDirectory, currentFilePath);
+        }
+
+        string GetPathOfFileAbove(string fileName, string startDirectory, string currentFilePath)
+        {
+            var currentDirectory = ResolveDirectory(startDirectory, currentFilePath);
+            if (currentDirectory == null)
+                return string.Empty;
+
+            while (!string.IsNullOrEmpty(currentDirectory))
+            {
+                var candidate = fileSystem.Path.GetFullPath(fileSystem.Path.Combine(currentDirectory, fileName));
+                if (fileSystem.File.Exists(candidate))
+                    return candidate;
+
+                var parent = fileSystem.Path.GetDirectoryName(currentDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                if (string.IsNullOrEmpty(parent) || string.Equals(parent, currentDirectory, StringComparison.OrdinalIgnoreCase))
+                    break;
+
+                currentDirectory = parent;
+            }
+
+            return string.Empty;
+        }
+
+        string? ResolvePath(string path, string currentFilePath)
+        {
+            path = StripQuotes(path.Trim());
+            if (string.IsNullOrWhiteSpace(path) || path.Contains("$("))
+                return null;
+
+            path = PathUtils.NormalizePathSeparators(path);
+            if (fileSystem.Path.IsPathRooted(path))
+                return fileSystem.Path.GetFullPath(path);
+
+            var currentDirectory = fileSystem.Path.GetDirectoryName(currentFilePath);
+            if (string.IsNullOrEmpty(currentDirectory))
+                return null;
+
+            return fileSystem.Path.GetFullPath(fileSystem.Path.Combine(currentDirectory, path));
+        }
+
+        string? ResolveDirectory(string directory, string currentFilePath)
+        {
+            var resolvedPath = ResolvePath(directory, currentFilePath);
+            if (resolvedPath == null)
+                return null;
+
+            return fileSystem.Path.GetFullPath(resolvedPath);
+        }
+
+        static string[] SplitArguments(string arguments)
+        {
+            List<string> result = [];
+            var start = 0;
+            var quote = '\0';
+
+            for (var index = 0; index < arguments.Length; index++)
+            {
+                var current = arguments[index];
+                if (quote != '\0')
+                {
+                    if (current == quote)
+                        quote = '\0';
+                    continue;
+                }
+
+                if (current is '\'' or '"')
+                {
+                    quote = current;
+                    continue;
+                }
+
+                if (current == ',')
+                {
+                    result.Add(arguments[start..index]);
+                    start = index + 1;
+                }
+            }
+
+            result.Add(arguments[start..]);
+            return result.ToArray();
+        }
+
+        static string StripQuotes(string value)
+        {
+            value = value.Trim();
+            if ((value.StartsWith('\'') && value.EndsWith('\'')) ||
+                (value.StartsWith('"') && value.EndsWith('"')))
+            {
+                return value[1..^1];
+            }
+
+            return value;
+        }
+
+        static bool IsStandardCppPropsImport(string importProject)
+        {
+            var fileName = Path.GetFileName(PathUtils.NormalizePathSeparators(importProject));
+            return string.Equals(fileName, "Microsoft.Cpp.props", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(fileName, "Microsoft.Cpp.Default.props", StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool IsStandardCppTargetsImport(string importProject)
+        {
+            var fileName = Path.GetFileName(PathUtils.NormalizePathSeparators(importProject));
+            return string.Equals(fileName, "Microsoft.Cpp.targets", StringComparison.OrdinalIgnoreCase);
+        }
+
+        static string EnsureTrailingSeparator(string directory)
+        {
+            if (string.IsNullOrEmpty(directory) ||
+                directory.EndsWith(Path.DirectorySeparatorChar) ||
+                directory.EndsWith(Path.AltDirectorySeparatorChar))
+            {
+                return directory;
+            }
+
+            return directory + Path.DirectorySeparatorChar;
+        }
+    }
+
+    sealed record EvaluatedProject(List<XElement> Elements, List<string> Imports);
 }

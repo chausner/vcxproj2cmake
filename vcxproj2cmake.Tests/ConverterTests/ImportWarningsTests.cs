@@ -109,7 +109,7 @@ public partial class ConverterTests
         }
 
         [Fact]
-        public void Given_ProjectWithDirectoryBuildFilesInImportSearchPath_When_Converted_Then_LogsWarnings()
+        public void Given_ProjectWithDirectoryBuildFilesInImportSearchPath_When_Converted_Then_LogsNoDirectoryBuildWarnings()
         {
             // Arrange
             var fileSystem = new MockFileSystem();
@@ -133,8 +133,8 @@ public partial class ConverterTests
                 dryRun: true);
 
             // Assert
-            Assert.Contains($"Directory.Build.props/targets are unsupported and will not be processed: {directoryBuildPropsPath}", logger.AllMessageText);
-            Assert.Contains($"Directory.Build.props/targets are unsupported and will not be processed: {directoryBuildTargetsPath}", logger.AllMessageText);
+            Assert.DoesNotContain($"Directory.Build.props/targets are unsupported and will not be processed: {directoryBuildPropsPath}", logger.AllMessageText);
+            Assert.DoesNotContain($"Directory.Build.props/targets are unsupported and will not be processed: {directoryBuildTargetsPath}", logger.AllMessageText);
         }
     }
 }
