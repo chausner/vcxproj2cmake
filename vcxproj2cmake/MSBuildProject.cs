@@ -68,6 +68,7 @@ class MSBuildProject
         var libXName = XName.Get("Lib", msbuildNamespace);
         var linkLibraryDependenciesXName = XName.Get("LinkLibraryDependencies", msbuildNamespace);
         var linkXName = XName.Get("Link", msbuildNamespace);
+        var manifestXName = XName.Get("Manifest", msbuildNamespace);
         var projectConfigurationXName = XName.Get("ProjectConfiguration", msbuildNamespace);
         var projectReferenceXName = XName.Get("ProjectReference", msbuildNamespace);
         var projectXName = XName.Get("Project", msbuildNamespace);
@@ -99,6 +100,7 @@ class MSBuildProject
                 .SelectMany(group =>
                     group.Elements(clCompileXName)
                     .Concat(group.Elements(resourceCompileXName))
+                    .Concat(group.Elements(manifestXName))
                     .Concat(group.Elements(qtUicXName))
                     .Concat(group.Elements(qtRccXName)))
                 .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
@@ -439,6 +441,7 @@ class MSBuildProject
     {
         "ClCompile",
         "ClInclude",
+        "Manifest",
         "QtMoc",
         "QtRcc",
         "QtUic",
