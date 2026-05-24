@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Add support for `.manifest` files.
+- Add support for MASM assembler files.
 
 ## [1.8.0] - 2026-05-22
 

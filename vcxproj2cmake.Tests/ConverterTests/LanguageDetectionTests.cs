@@ -98,5 +98,28 @@ public partial class ConverterTests
 
             Assert.Contains("project(Project LANGUAGES C CXX)", cmake);
         }
+
+        [Fact]
+        public void Given_ProjectWithOnlyMasmFiles_When_Converted_Then_LanguageIsAsmMasm()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItems("MASM", "assembler.asm")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("project(Project LANGUAGES ASM_MASM)", cmake);
+        }
     }
 }

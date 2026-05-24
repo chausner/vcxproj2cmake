@@ -184,6 +184,8 @@ class CMakeProject
             result.Add("C");
         if (sourceFiles.Any(file => Regex.IsMatch(file, @"\.(cpp|cxx|c\+\+|cc)$", RegexOptions.IgnoreCase)))
             result.Add("CXX");
+        if (sourceFiles.Any(file => file.EndsWith(".asm", StringComparison.OrdinalIgnoreCase)))
+            result.Add("ASM_MASM");
 
         if (result.Count == 0)
             logger.LogWarning("Could not detect languages for project");
