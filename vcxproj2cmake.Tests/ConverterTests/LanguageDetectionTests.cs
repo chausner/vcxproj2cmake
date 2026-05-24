@@ -77,6 +77,29 @@ public partial class ConverterTests
         }
 
         [Fact]
+        public void Given_ProjectWithOnlyCxxModuleFiles_When_Converted_Then_LanguageIsCxx()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItems("ClCompile", "math.ixx")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("project(Project LANGUAGES CXX)", cmake);
+        }
+
+        [Fact]
         public void Given_ProjectWithCAndCppFiles_When_Converted_Then_LanguagesAreCAndCxx()
         {
             // Arrange

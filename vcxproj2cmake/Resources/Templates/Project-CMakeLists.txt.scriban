@@ -54,6 +54,18 @@ target_sources({{ project_name | literal }}
 
 {{~ end -}}
 
+{{~ if cxx_module_files | array.size > 0 ~}}
+target_sources({{ project_name | literal }}
+    {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
+        FILE_SET CXX_MODULES
+        FILES
+            {{~ for file in cxx_module_files | array.sort ~}}
+            {{ file }}
+            {{~ end ~}}
+)
+
+{{~ end -}}
+
 {{~ if properties | array.size > 0 ~}}
 set_target_properties({{ project_name | literal }} PROPERTIES
     {{~ for kvp in properties ~}}

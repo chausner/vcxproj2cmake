@@ -14,6 +14,7 @@ class CMakeProject
     public IList<CMakeFindPackage> FindPackages { get; set; }
     public CMakeConfigDependentMultiSetting CompileFeatures { get; set; }
     public CMakeExpression[] SourceFiles { get; set; }
+    public CMakeExpression[] CxxModuleFiles { get; set; }
     public CMakeExpression OutputName { get; set; }
     public CMakeConfigDependentMultiSetting IncludePaths { get; set; }
     public CMakeConfigDependentMultiSetting PublicIncludePaths { get; set; }
@@ -43,9 +44,15 @@ class CMakeProject
         FindPackages = [];
         CompileFeatures = new("CompileFeatures", []);
 
-        var normalizedSourceFiles = project.SourceFiles.Select(value => TranslateAndNormalize(CMakeExpression.Literal(value), "SourceFiles", logger));
+        var normalizedSourceFiles = project.SourceFiles
+            .Where(file => !IsCxxModuleFile(file))
+            .Select(value => TranslateAndNormalize(CMakeExpression.Literal(value), "SourceFiles", logger));
+        var normalizedCxxModuleFiles = project.SourceFiles
+            .Where(IsCxxModuleFile)
+            .Select(value => TranslateAndNormalize(CMakeExpression.Literal(value), "CxxModuleFiles", logger));
         var normalizedHeaderFiles = project.HeaderFiles.Select(value => TranslateAndNormalize(CMakeExpression.Literal(value), "HeaderFiles", logger));
         SourceFiles = normalizedSourceFiles.Concat(includeHeaders ? normalizedHeaderFiles : []).ToArray();
+        CxxModuleFiles = normalizedCxxModuleFiles.ToArray();
 
         OutputName = CMakeExpression.Literal(project.ProjectName);  // may get overridden in ApplyTargetName
         var mergedIncludeDirectories = MergeIncludeDirectories(project, supportedProjectConfigurations);
@@ -182,7 +189,8 @@ class CMakeProject
 
         if (sourceFiles.Any(file => file.EndsWith(".c", StringComparison.OrdinalIgnoreCase)))
             result.Add("C");
-        if (sourceFiles.Any(file => Regex.IsMatch(file, @"\.(cpp|cxx|c\+\+|cc)$", RegexOptions.IgnoreCase)))
+        if (sourceFiles.Any(file => Regex.IsMatch(file, @"\.(cpp|cxx|c\+\+|cc)$", RegexOptions.IgnoreCase)) ||
+            sourceFiles.Any(IsCxxModuleFile))
             result.Add("CXX");
         if (sourceFiles.Any(file => file.EndsWith(".asm", StringComparison.OrdinalIgnoreCase)))
             result.Add("ASM_MASM");
@@ -191,6 +199,11 @@ class CMakeProject
             logger.LogWarning("Could not detect languages for project");
 
         return result.ToArray();
+    }
+
+    static bool IsCxxModuleFile(string file)
+    {
+        return Path.GetExtension(file).ToLowerInvariant() is ".ixx" or ".cppm" or ".cxxm" or ".c++m" or ".ccm" or ".mpp" or ".mxx";
     }
 
     void ApplyTargetName(MSBuildProject project, ILogger logger)
