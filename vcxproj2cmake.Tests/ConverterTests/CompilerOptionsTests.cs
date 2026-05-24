@@ -34,7 +34,7 @@ public partial class ConverterTests
                         foo
                         bar
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -64,7 +64,7 @@ public partial class ConverterTests
                         "$<$<CXX_COMPILER_ID:MSVC>:foo>"
                         "$<$<CXX_COMPILER_ID:MSVC>:bar>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -93,7 +93,7 @@ public partial class ConverterTests
                         /wd4100
                         /wd4200
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -123,7 +123,7 @@ public partial class ConverterTests
                         "$<$<CXX_COMPILER_ID:MSVC>:/wd4100>"
                         "$<$<CXX_COMPILER_ID:MSVC>:/wd4200>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -152,7 +152,7 @@ public partial class ConverterTests
                         /we4800
                         /we4801
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -182,7 +182,7 @@ public partial class ConverterTests
                         "$<$<CXX_COMPILER_ID:MSVC>:/we4800>"
                         "$<$<CXX_COMPILER_ID:MSVC>:/we4801>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -210,7 +210,7 @@ public partial class ConverterTests
                     PRIVATE
                         /W4
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -239,7 +239,7 @@ public partial class ConverterTests
                     PRIVATE
                         "$<$<CXX_COMPILER_ID:MSVC>:/W4>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -285,7 +285,7 @@ public partial class ConverterTests
                     PRIVATE
                         /external:W2
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -314,7 +314,7 @@ public partial class ConverterTests
                     PRIVATE
                         "$<$<CXX_COMPILER_ID:MSVC>:/external:W2>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -360,7 +360,7 @@ public partial class ConverterTests
                     PRIVATE
                         /external:anglebrackets
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -389,7 +389,7 @@ public partial class ConverterTests
                     PRIVATE
                         "$<$<CXX_COMPILER_ID:MSVC>:/external:anglebrackets>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
     }
 }

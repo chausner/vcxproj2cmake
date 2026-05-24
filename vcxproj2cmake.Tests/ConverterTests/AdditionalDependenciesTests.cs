@@ -35,7 +35,7 @@ public partial class ConverterTests
                         Foo.lib
                         Bar.lib
                 )
-                """.Trim(),
+                """,
                 cmake);
         }
 
@@ -66,7 +66,7 @@ public partial class ConverterTests
                         "$<$<CONFIG:Debug>:Foo_d.lib>"
                         "$<$<CONFIG:Release>:Foo.lib>"
                 )
-                """.Trim(),
+                """,
                 cmake);
         }
     }

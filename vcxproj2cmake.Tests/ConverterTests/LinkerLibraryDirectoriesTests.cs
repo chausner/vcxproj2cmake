@@ -33,7 +33,7 @@ public partial class ConverterTests
                     PRIVATE
                         C:/Lib
                 )
-                """.Trim(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -62,7 +62,7 @@ public partial class ConverterTests
                         "$<$<CONFIG:Debug>:DebugLibs>"
                         "$<$<CONFIG:Release>:ReleaseLibs>"
                 )
-                """.Trim(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -91,7 +91,7 @@ public partial class ConverterTests
                         "${CMAKE_CURRENT_SOURCE_DIR}/libs"
                         "${CMAKE_BUILD_TYPE}"
                 )
-                """.Trim(), cmake);
+                """, cmake);
         }
 
         [Fact]

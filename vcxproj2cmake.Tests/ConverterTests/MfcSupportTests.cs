@@ -31,7 +31,7 @@ public partial class ConverterTests
                 set_target_properties(Project PROPERTIES
                     CMAKE_MFC_FLAG 1
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
             Assert.DoesNotContain("_AFXDLL", cmake);
         }
 
@@ -58,13 +58,13 @@ public partial class ConverterTests
                 set_target_properties(Project PROPERTIES
                     CMAKE_MFC_FLAG 2
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
             Assert.Contains("""
                 target_compile_definitions(Project
                     PRIVATE
                         _AFXDLL
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -91,13 +91,13 @@ public partial class ConverterTests
                 set_target_properties(Project PROPERTIES
                     CMAKE_MFC_FLAG "$<$<CONFIG:Debug>:0>$<$<CONFIG:Release>:2>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
             Assert.Contains("""
                 target_compile_definitions(Project
                     PRIVATE
                         "$<$<CONFIG:Release>:_AFXDLL>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -124,13 +124,13 @@ public partial class ConverterTests
                 set_target_properties(Project PROPERTIES
                     CMAKE_MFC_FLAG "$<$<CONFIG:Debug>:1>$<$<CONFIG:Release>:2>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
             Assert.Contains("""
                 target_compile_definitions(Project
                     PRIVATE
                         "$<$<CONFIG:Release>:_AFXDLL>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]

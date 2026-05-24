@@ -34,7 +34,7 @@ public partial class ConverterTests
                         foo
                         bar
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -64,7 +64,7 @@ public partial class ConverterTests
                         "$<$<CXX_COMPILER_ID:MSVC>:foo>"
                         "$<$<CXX_COMPILER_ID:MSVC>:bar>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
     }
 }

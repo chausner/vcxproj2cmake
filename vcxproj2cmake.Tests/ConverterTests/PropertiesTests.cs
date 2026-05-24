@@ -32,7 +32,7 @@ public partial class ConverterTests
                 set_target_properties(Project PROPERTIES
                     COMPILE_WARNING_AS_ERROR ON
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -59,7 +59,7 @@ public partial class ConverterTests
                 set_target_properties(Project PROPERTIES
                     COMPILE_WARNING_AS_ERROR "$<$<CONFIG:Debug>:ON>$<$<CONFIG:Release>:OFF>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -86,7 +86,7 @@ public partial class ConverterTests
                 set_target_properties(Project PROPERTIES
                     LINK_WARNING_AS_ERROR LINKER
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -113,7 +113,7 @@ public partial class ConverterTests
                 set_target_properties(Project PROPERTIES
                     LINK_WARNING_AS_ERROR "$<$<CONFIG:Debug>:LINKER>$<$<CONFIG:Release>:OFF>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
     }
 }

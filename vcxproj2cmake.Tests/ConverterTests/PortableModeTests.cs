@@ -34,7 +34,7 @@ public partial class ConverterTests
                     PRIVATE
                         "$<$<CXX_COMPILER_ID:MSVC>:foo>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -64,7 +64,7 @@ public partial class ConverterTests
                     PRIVATE
                         "$<$<C_COMPILER_ID:MSVC>:foo>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -94,7 +94,7 @@ public partial class ConverterTests
                     PRIVATE
                         "$<$<CXX_COMPILER_ID:MSVC>:foo>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -124,7 +124,7 @@ public partial class ConverterTests
                     PRIVATE
                         "$<$<CXX_COMPILER_ID:MSVC>:foo>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
     }
 }

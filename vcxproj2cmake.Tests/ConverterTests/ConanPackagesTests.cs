@@ -38,7 +38,7 @@ public partial class ConverterTests
                     PRIVATE
                         boost::boost
                 )
-                """.Trim(),
+                """,
                 cmake);
         }
 
@@ -67,7 +67,7 @@ public partial class ConverterTests
                     PRIVATE
                         unknown::unknown
                 )
-                """.Trim(),
+                """,
                 cmake);
         }
 
@@ -98,7 +98,7 @@ public partial class ConverterTests
                         boost::boost
                         fmt::fmt
                 )
-                """.Trim(),
+                """,
                 cmake);
         }
     }
