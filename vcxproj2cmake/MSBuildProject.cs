@@ -70,6 +70,7 @@ class MSBuildProject
         var linkXName = XName.Get("Link", msbuildNamespace);
         var manifestXName = XName.Get("Manifest", msbuildNamespace);
         var masmXName = XName.Get("MASM", msbuildNamespace);
+        var natvisXName = XName.Get("Natvis", msbuildNamespace);
         var projectConfigurationXName = XName.Get("ProjectConfiguration", msbuildNamespace);
         var projectReferenceXName = XName.Get("ProjectReference", msbuildNamespace);
         var projectXName = XName.Get("Project", msbuildNamespace);
@@ -103,6 +104,7 @@ class MSBuildProject
                     .Concat(group.Elements(resourceCompileXName))
                     .Concat(group.Elements(manifestXName))
                     .Concat(group.Elements(masmXName))
+                    .Concat(group.Elements(natvisXName))
                     .Concat(group.Elements(qtUicXName))
                     .Concat(group.Elements(qtRccXName)))
                 .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
@@ -445,6 +447,7 @@ class MSBuildProject
         "ClInclude",
         "Manifest",
         "MASM",
+        "Natvis",
         "QtMoc",
         "QtRcc",
         "QtUic",
