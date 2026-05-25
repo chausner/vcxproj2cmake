@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="Code Coverage">
+        <Configuration>
+          <IncludeTestAssembly>False</IncludeTestAssembly>
+          <ModulePaths>
+            <Exclude>
+              <ModulePath>.*vcxproj2cmake\.Tests\.dll$</ModulePath>
+            </Exclude>
+          </ModulePaths>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

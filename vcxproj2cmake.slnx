@@ -5,6 +5,7 @@
     <File Path=".editorconfig" />
     <File Path="AGENTS.md" />
     <File Path="CHANGELOG.md" />
+    <File Path="CodeCoverage.runsettings" />
     <File Path="LICENSE" />
     <File Path="README.md" />
     <File Path="settings.VisualStudio.json" />

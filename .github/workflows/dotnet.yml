@@ -25,7 +25,7 @@ jobs:
     - name: Build
       run: dotnet build --no-restore --configuration Release
     - name: Test
-      run: dotnet test --no-build --configuration Release --verbosity normal --collect:"Code Coverage"
+      run: dotnet test --no-build --configuration Release --verbosity normal --settings CodeCoverage.runsettings --collect:"Code Coverage"
     - name: Generate test coverage report
       run: |
         dotnet tool install --global dotnet-coverage
