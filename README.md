@@ -3,6 +3,7 @@
 <p align="center"><img src="vcxproj2cmake.webp" alt="Logo" width="200" /></p>
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/chausner/vcxproj2cmake)](https://github.com/chausner/vcxproj2cmake/releases/latest)
+[![Code coverage](https://coveralls.io/repos/github/chausner/vcxproj2cmake/badge.svg?branch=master)](https://coveralls.io/github/chausner/vcxproj2cmake?branch=master)
 [![license](https://img.shields.io/github/license/chausner/vcxproj2cmake.svg)](https://github.com/chausner/vcxproj2cmake/blob/master/LICENSE)
 
 **vcxproj2cmake** is a tool designed to convert Microsoft Visual C++ project files (`.vcxproj`) to equivalent CMake files (`CMakeLists.txt`).

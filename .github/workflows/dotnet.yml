@@ -25,7 +25,11 @@ jobs:
     - name: Build
       run: dotnet build --no-restore --configuration Release
     - name: Test
-      run: dotnet test --no-build --configuration Release --verbosity normal
+      run: dotnet test --no-build --configuration Release --verbosity normal --collect:"Code Coverage"
+    - name: Generate test coverage report
+      run: |
+        dotnet tool install --global dotnet-coverage
+        dotnet-coverage merge "**\*.coverage" --output-format cobertura
     - name: Publish
       if: runner.os == 'Windows'
       run: dotnet publish vcxproj2cmake\vcxproj2cmake.csproj --no-build --configuration Release -p:DebugSymbols=false
@@ -35,6 +39,12 @@ jobs:
       with:
         name: vcxproj2cmake-win-x64
         path: .\vcxproj2cmake\bin\Release\net10.0\win-x64\publish
+    - name: Upload coverage report
+      if: runner.os == 'Windows'
+      uses: actions/upload-artifact@v7
+      with:
+        name: coverage
+        path: .\output.cobertura.xml
 
   e2e-test:
     runs-on: windows-latest
@@ -67,3 +77,17 @@ jobs:
       run: cmake -S e2e-test/${{ matrix.name }} -B e2e-test/${{ matrix.name }}/build -A x64
     - name: CMake build
       run: cmake --build e2e-test/${{ matrix.name }}/build --config Release
+
+  submit-coverage:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Download coverage artifact
+      uses: actions/download-artifact@v8
+      with:
+        name: coverage
+    - name: Coveralls
+      uses: coverallsapp/github-action@v2
+      with:
+        file: ./output.cobertura.xml
+        format: cobertura
