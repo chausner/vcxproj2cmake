@@ -44,7 +44,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: coverage
-        path: .\vcxproj2cmake\vcxproj2cmake\output.cobertura.xml
+        path: .\output.cobertura.xml
 
   e2e-test:
     runs-on: windows-latest
