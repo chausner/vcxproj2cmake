@@ -80,6 +80,7 @@ jobs:
 
   submit-coverage:
     runs-on: ubuntu-latest
+    needs: build
     steps:
     - name: Download coverage artifact
       uses: actions/download-artifact@v8
