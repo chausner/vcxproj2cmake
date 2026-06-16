@@ -69,12 +69,13 @@ jobs:
         name: vcxproj2cmake-win-x64
     - name: Clone ${{ matrix.name }}
       run: git clone --branch ${{ matrix.ref }} --depth 1 ${{ matrix.repo }} e2e-test/${{ matrix.name }}
-    - name: Convert solution
-      if: matrix.sln
-      run: .\vcxproj2cmake.exe --solution e2e-test/${{ matrix.name }}/${{ matrix.sln }}
-    - name: Convert project
-      if: matrix.project
-      run: .\vcxproj2cmake.exe --projects e2e-test/${{ matrix.name }}/${{ matrix.project }}
+    - name: Run vcxproj2cmake
+      run: |
+        if ("${{ matrix.sln }}") {
+          .\vcxproj2cmake.exe --solution "e2e-test/${{ matrix.name }}/${{ matrix.sln }}"
+        } else {
+          .\vcxproj2cmake.exe --projects "e2e-test/${{ matrix.name }}/${{ matrix.project }}"
+        }
     - name: Install latest version of CMake
       shell: pwsh
       run: |
