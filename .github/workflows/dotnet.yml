@@ -57,6 +57,10 @@ jobs:
           repo: https://github.com/m417z/minhook-detours.git
           ref: v1.0.6
           sln: minhook-detours.sln
+        - name: pugixml
+          repo: https://github.com/zeux/pugixml.git
+          ref: v1.16
+          project: scripts\pugixml_vs2026_static.vcxproj
 
     steps:
     - name: Download vcxproj2cmake artifact
@@ -66,7 +70,11 @@ jobs:
     - name: Clone ${{ matrix.name }}
       run: git clone --branch ${{ matrix.ref }} --depth 1 ${{ matrix.repo }} e2e-test/${{ matrix.name }}
     - name: Convert solution
+      if: matrix.sln
       run: .\vcxproj2cmake.exe --solution e2e-test/${{ matrix.name }}/${{ matrix.sln }}
+    - name: Convert project
+      if: matrix.project
+      run: .\vcxproj2cmake.exe --projects e2e-test/${{ matrix.name }}/${{ matrix.project }}
     - name: Install latest version of CMake
       shell: pwsh
       run: |
@@ -74,7 +82,9 @@ jobs:
         $cmakeBin = python -c "import cmake; print(cmake.CMAKE_BIN_DIR)"
         $cmakeBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
     - name: CMake configure
-      run: cmake -S e2e-test/${{ matrix.name }} -B e2e-test/${{ matrix.name }}/build -A x64
+      run: |
+        $cmakeSourceDir = Split-Path "${{ matrix.sln || matrix.project }}"
+        cmake -S "e2e-test/${{ matrix.name }}/$cmakeSourceDir" -B e2e-test/${{ matrix.name }}/build -A x64
     - name: CMake build
       run: cmake --build e2e-test/${{ matrix.name }}/build --config Release
 
