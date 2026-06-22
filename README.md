@@ -33,7 +33,9 @@
   `LinkLibraryDependencies`
   `ModuleDefinitionFile`
   `OpenMPSupport`
+  `PostBuildEvent`
   `PrecompiledHeaderFile`
+  `PreBuildEvent`
   `PreprocessorDefinitions`
   `PublicIncludeDirectories`
   `RuntimeLibrary`

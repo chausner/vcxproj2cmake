@@ -39,6 +39,24 @@ add_library({{ project_name | literal }} INTERFACE)
 {{ fail $"Unsupported CMake target type: {target_type}" }}
 {{~ end ~}}
 
+{{~ if !pre_build_event_command.is_empty ~}}
+add_custom_command(TARGET {{ project_name | literal }} PRE_BUILD
+    {{~ for kvp in pre_build_event_command.values ~}}
+    COMMAND {{ get_config_expression kvp.key kvp.value }}
+    {{~ end ~}}
+)
+
+{{~ end -}}
+
+{{~ if !post_build_event_command.is_empty ~}}
+add_custom_command(TARGET {{ project_name | literal }} POST_BUILD
+    {{~ for kvp in post_build_event_command.values ~}}
+    COMMAND {{ get_config_expression kvp.key kvp.value }}
+    {{~ end ~}}
+)
+
+{{~ end -}}
+
 {{~ if source_files | array.size > 0 || !module_definition_file.is_empty ~}}
 target_sources({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}

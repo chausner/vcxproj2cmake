@@ -28,6 +28,8 @@ class CMakeProject
     public CMakeProjectReference[] ProjectReferences { get; set; }
     public bool IsWin32Executable { get; set; }
     public CMakeConfigDependentSetting PrecompiledHeaderFile { get; set; }
+    public CMakeConfigDependentSetting PreBuildEventCommand { get; set; }
+    public CMakeConfigDependentSetting PostBuildEventCommand { get; set; }
 
     static readonly CMakeExpression[] IgnoredIncludePaths = [
         CMakeExpression.Expression(@"\$(VC_IncludePath)"),
@@ -129,6 +131,16 @@ class CMakeProject
             project.PrecompiledHeader,
             supportedProjectConfigurations,
             logger);
+        PreBuildEventCommand = CMakeConfigDependentSetting.FromMSBuildSetting(
+            project.PreBuildEventCommand,
+            command => command != null ? TranslateMSBuildBuildEventCommand(command, project.ProjectName, "PreBuildEvent", logger) : null,
+            supportedProjectConfigurations,
+            logger);
+        PostBuildEventCommand = CMakeConfigDependentSetting.FromMSBuildSetting(
+            project.PostBuildEventCommand,
+            command => command != null ? TranslateMSBuildBuildEventCommand(command, project.ProjectName, "PostBuildEvent", logger) : null,
+            supportedProjectConfigurations,
+            logger);
         Properties = [];
 
         ApplyTargetName(project, logger);
@@ -184,6 +196,22 @@ class CMakeProject
             return CMakeExpression.Expression(library.Value[..^4]);
         else
             return library;
+    }
+
+    static CMakeExpression TranslateMSBuildBuildEventCommand(CMakeExpression command, string projectName, string settingName, ILogger logger)
+    {
+        var translatedCommand = "cmd /C " + command.Value;
+        translatedCommand = Regex.Replace(translatedCommand, @"\\\$\(OutDir\)[/\\]*", $"$<TARGET_FILE_DIR:{projectName}>/", RegexOptions.IgnoreCase);
+        translatedCommand = Regex.Replace(translatedCommand, @"\\\$\(TargetDir\)[/\\]*", $"$<TARGET_FILE_DIR:{projectName}>/", RegexOptions.IgnoreCase);
+        translatedCommand = Regex.Replace(translatedCommand, @"\\\$\(TargetExt\)", $"$<TARGET_FILE_SUFFIX:{projectName}>", RegexOptions.IgnoreCase);
+        translatedCommand = Regex.Replace(translatedCommand, @"\\\$\(TargetFileName\)", $"$<TARGET_FILE_NAME:{projectName}>", RegexOptions.IgnoreCase);
+        translatedCommand = Regex.Replace(translatedCommand, @"\\\$\(TargetName\)", $"$<TARGET_FILE_BASE_NAME:{projectName}>", RegexOptions.IgnoreCase);
+        translatedCommand = Regex.Replace(translatedCommand, @"\\\$\(TargetPath\)", $"$<TARGET_FILE:{projectName}>", RegexOptions.IgnoreCase);
+        translatedCommand = TranslateMSBuildMacros(CMakeExpression.Expression(translatedCommand), settingName, logger).Value;
+
+        translatedCommand = Regex.Replace(translatedCommand, @"\r?\n", " && ");
+
+        return CMakeExpression.Expression(translatedCommand);
     }
 
     static MSBuildProjectConfig[] FilterSupportedProjectConfigurations(IEnumerable<MSBuildProjectConfig> projectConfigurations, ILogger logger)

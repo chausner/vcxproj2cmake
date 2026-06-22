@@ -46,6 +46,8 @@ class MSBuildProject
     public required MSBuildConfigDependentSetting<string> PrecompiledHeaderFile { get; init; }
     public required MSBuildConfigDependentSetting<string> AllProjectIncludesArePublic { get; init; }
     public required MSBuildConfigDependentSetting<string> OpenMPSupport { get; init; }
+    public required MSBuildConfigDependentSetting<string> PreBuildEventCommand { get; init; }
+    public required MSBuildConfigDependentSetting<string> PostBuildEventCommand { get; init; }
     public required bool RequiresQtMoc { get; init; }
     public required bool RequiresQtUic { get; init; }
     public required bool RequiresQtRcc { get; init; }
@@ -71,6 +73,9 @@ class MSBuildProject
         var manifestXName = XName.Get("Manifest", msbuildNamespace);
         var masmXName = XName.Get("MASM", msbuildNamespace);
         var natvisXName = XName.Get("Natvis", msbuildNamespace);
+        var commandXName = XName.Get("Command", msbuildNamespace);
+        var postBuildEventXName = XName.Get("PostBuildEvent", msbuildNamespace);
+        var preBuildEventXName = XName.Get("PreBuildEvent", msbuildNamespace);
         var projectConfigurationXName = XName.Get("ProjectConfiguration", msbuildNamespace);
         var projectReferenceXName = XName.Get("ProjectReference", msbuildNamespace);
         var projectXName = XName.Get("Project", msbuildNamespace);
@@ -228,6 +233,13 @@ class MSBuildProject
                 .SelectMany(element => element.Elements())
                 .ToDictionaryKeepingLast(element => element.Name.LocalName, element => element.Value.Trim());
 
+            var projectConfigBuildEventSettings =
+                itemDefinitionGroups
+                .SelectMany(group => group.Elements())
+                .Where(element => element.Name == preBuildEventXName || element.Name == postBuildEventXName)
+                .SelectMany(element => element.Elements(commandXName))
+                .ToDictionaryKeepingLast(element => element.Parent!.Name.LocalName, element => element.Value.Trim());
+
             foreach (var setting in projectConfigCompilerSettings)
             {
                 compilerSettings.TryAdd(setting.Key, []);
@@ -241,6 +253,12 @@ class MSBuildProject
             }
 
             foreach (var setting in projectConfigOtherSettings)
+            {
+                otherSettings.TryAdd(setting.Key, []);
+                otherSettings[setting.Key][projectConfig] = setting.Value;
+            }
+
+            foreach (var setting in projectConfigBuildEventSettings)
             {
                 otherSettings.TryAdd(setting.Key, []);
                 otherSettings[setting.Key][projectConfig] = setting.Value;
@@ -290,6 +308,8 @@ class MSBuildProject
         var openMPSupport = ParseSetting("OpenMPSupport", compilerSettings, "false");
         var precompiledHeader = ParseSetting("PrecompiledHeader", compilerSettings, "NotUsing");
         var precompiledHeaderFile = ParseSetting("PrecompiledHeaderFile", compilerSettings, string.Empty);
+        var preBuildEventCommand = ParseSetting("PreBuildEvent", otherSettings, string.Empty);
+        var postBuildEventCommand = ParseSetting("PostBuildEvent", otherSettings, string.Empty);
 
         var conanPackages =
             imports
@@ -342,6 +362,8 @@ class MSBuildProject
             PrecompiledHeaderFile = precompiledHeaderFile,
             AllProjectIncludesArePublic = allProjectIncludesArePublic,
             OpenMPSupport = openMPSupport,
+            PreBuildEventCommand = preBuildEventCommand,
+            PostBuildEventCommand = postBuildEventCommand,
             RequiresQtMoc = requiresQtMoc,
             RequiresQtUic = requiresQtUic,
             RequiresQtRcc = requiresQtRcc,
