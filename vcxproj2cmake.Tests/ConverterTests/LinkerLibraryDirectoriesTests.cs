@@ -126,5 +126,49 @@ public partial class ConverterTests
                 )
                 """, cmake);
         }
+
+        [Fact]
+        public void Given_ProjectWithDefaultLibraryPaths_When_Converted_Then_ValuesAreIgnoredAndNoWarningsAreGenerated()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithProperty("Debug", "Win32", "LibraryPath", "debuglib;$(VC_LibraryPath_x86);$(VC_LibraryPath_x64);$(VC_LibraryPath_ARM);$(VC_LibraryPath_ARM64);$(WindowsSDK_LibraryPath_x86);$(WindowsSDK_LibraryPath_x64);$(WindowsSDK_LibraryPath_ARM);$(WindowsSDK_LibraryPath_ARM64);$(NETFXKitsDir)Lib\\um\\x86;$(NETFXKitsDir)Lib\\um\\x64;$(NETFXKitsDir)Lib\\um\\arm;$(NETFXKitsDir)Lib\\um\\arm64;$(LibraryPath)")
+                .WithProperty("Release", "Win32", "LibraryPath", "releaselib;$(VC_LibraryPath_x86);$(VC_LibraryPath_x64);$(VC_LibraryPath_ARM);$(VC_LibraryPath_ARM64);$(WindowsSDK_LibraryPath_x86);$(WindowsSDK_LibraryPath_x64);$(WindowsSDK_LibraryPath_ARM);$(WindowsSDK_LibraryPath_ARM64);$(NETFXKitsDir)Lib\\um\\x86;$(NETFXKitsDir)Lib\\um\\x64;$(NETFXKitsDir)Lib\\um\\arm;$(NETFXKitsDir)Lib\\um\\arm64;$(LibraryPath)")
+                .Build()));
+
+            var logger = new InMemoryLogger();
+            var converter = new Converter(fileSystem, logger);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("""
+                target_link_directories(Project
+                    PRIVATE
+                        "$<$<CONFIG:Debug>:debuglib>"
+                        "$<$<CONFIG:Release>:releaselib>"
+                )
+                """, cmake);
+
+            Assert.DoesNotContain(@"VC_LibraryPath_x86", logger.AllMessageText);
+            Assert.DoesNotContain(@"VC_LibraryPath_x64", logger.AllMessageText);
+            Assert.DoesNotContain(@"VC_LibraryPath_ARM", logger.AllMessageText);
+            Assert.DoesNotContain(@"VC_LibraryPath_ARM64", logger.AllMessageText);
+            Assert.DoesNotContain(@"WindowsSDK_LibraryPath_x86", logger.AllMessageText);
+            Assert.DoesNotContain(@"WindowsSDK_LibraryPath_x64", logger.AllMessageText);
+            Assert.DoesNotContain(@"WindowsSDK_LibraryPath_ARM", logger.AllMessageText);
+            Assert.DoesNotContain(@"WindowsSDK_LibraryPath_ARM64", logger.AllMessageText);
+            Assert.DoesNotContain(@"$(NETFXKitsDir)Lib\\um\\x86", logger.AllMessageText);
+            Assert.DoesNotContain(@"$(NETFXKitsDir)Lib\\um\\x64", logger.AllMessageText);
+            Assert.DoesNotContain(@"$(NETFXKitsDir)Lib\\um\\arm", logger.AllMessageText);
+            Assert.DoesNotContain(@"$(NETFXKitsDir)Lib\\um\\arm64", logger.AllMessageText);
+        }
     }
 }
