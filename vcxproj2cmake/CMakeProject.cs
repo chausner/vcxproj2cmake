@@ -29,6 +29,24 @@ class CMakeProject
     public bool IsWin32Executable { get; set; }
     public CMakeConfigDependentSetting PrecompiledHeaderFile { get; set; }
 
+    static readonly CMakeExpression[] IgnoredIncludePaths = [
+        CMakeExpression.Expression(@"\$(VC_IncludePath)"),
+        CMakeExpression.Expression(@"\$(WindowsSDK_IncludePath)")];
+
+    static readonly CMakeExpression[] IgnoredLibraryPaths = [
+        CMakeExpression.Expression(@"\$(VC_LibraryPath_x86)"),
+        CMakeExpression.Expression(@"\$(VC_LibraryPath_x64)"),
+        CMakeExpression.Expression(@"\$(VC_LibraryPath_ARM)"),
+        CMakeExpression.Expression(@"\$(VC_LibraryPath_ARM64)"),
+        CMakeExpression.Expression(@"\$(WindowsSDK_LibraryPath_x86)"),
+        CMakeExpression.Expression(@"\$(WindowsSDK_LibraryPath_x64)"),
+        CMakeExpression.Expression(@"\$(WindowsSDK_LibraryPath_ARM)"),
+        CMakeExpression.Expression(@"\$(WindowsSDK_LibraryPath_ARM64)"),
+        CMakeExpression.Expression(@"\$(NETFXKitsDir)Lib\\um\\x86"),
+        CMakeExpression.Expression(@"\$(NETFXKitsDir)Lib\\um\\x64"),
+        CMakeExpression.Expression(@"\$(NETFXKitsDir)Lib\\um\\arm"),
+        CMakeExpression.Expression(@"\$(NETFXKitsDir)Lib\\um\\arm64")];
+
     public CMakeProject(MSBuildProject project, CMakeProjectSettings settings, bool includeHeaders, ConanPackageInfoRepository conanPackageInfoRepository, ILogger logger)
     {
         logger.LogInformation($"Processing project {project.AbsoluteProjectPath}");
@@ -58,7 +76,10 @@ class CMakeProject
         var mergedIncludeDirectories = MergeIncludeDirectories(project, supportedProjectConfigurations);
         IncludePaths = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             mergedIncludeDirectories,
-            values => values.Select(value => TranslateAndNormalize(value, "AdditionalIncludeDirectories+IncludePath", logger)).ToArray(),
+            values => values
+                .Except(IgnoredIncludePaths)
+                .Select(value => TranslateAndNormalize(value, "AdditionalIncludeDirectories+IncludePath", logger))
+                .ToArray(),
             supportedProjectConfigurations,
             logger);
         PublicIncludePaths = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
@@ -69,7 +90,10 @@ class CMakeProject
         var mergedLibraryDirectories = MergeLibraryDirectories(project, supportedProjectConfigurations);
         LinkerPaths = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             mergedLibraryDirectories,
-            values => values.Select(value => TranslateAndNormalize(value, "AdditionalLibraryDirectories+LibraryPath", logger)).ToArray(),
+            values => values
+                .Except(IgnoredLibraryPaths)
+                .Select(value => TranslateAndNormalize(value, "AdditionalLibraryDirectories+LibraryPath", logger))
+                .ToArray(),
             supportedProjectConfigurations,
             logger);
         Libraries = CMakeConfigDependentMultiSetting.FromMSBuildSetting(

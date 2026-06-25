@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Avoid warnings by ignoring certain default values in `IncludePath` and `LibraryPath` MSBuild properties.
+
 ## [1.9.0] - 2026-05-31
 
 ### Added

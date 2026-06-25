@@ -100,6 +100,40 @@ public partial class ConverterTests
         }
 
         [Fact]
+        public void Given_ProjectWithDefaultIncludePaths_When_Converted_Then_ValuesAreIgnoredAndNoWarningsAreGenerated()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithProperty("Debug", "Win32", "IncludePath", "debuginc;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath)")
+                .WithProperty("Release", "Win32", "IncludePath", "releaseinc;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath)")
+                .Build()));
+
+            var logger = new InMemoryLogger();
+            var converter = new Converter(fileSystem, logger);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("""
+                target_include_directories(Project
+                    PRIVATE
+                        "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/debuginc>"
+                        "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/releaseinc>"
+                )
+                """, cmake);
+
+            Assert.DoesNotContain("VC_IncludePath", logger.AllMessageText);
+            Assert.DoesNotContain("WindowsSDK_IncludePath", logger.AllMessageText);
+        }
+
+        [Fact]
         public void Given_ProjectWithPublicIncludeDirectories_When_Converted_Then_InterfacePathsAreWritten()
         {
             // Arrange
