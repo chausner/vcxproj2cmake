@@ -98,7 +98,7 @@ class CMakeProject
             logger);
         Libraries = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             project.AdditionalDependencies,
-            values => values.Select(value => TranslateAndNormalize(value, "AdditionalDependencies", logger)).ToArray(),
+            values => values.Select(value => RemoveLibExtension(TranslateAndNormalize(value, "AdditionalDependencies", logger))).ToArray(),
             supportedProjectConfigurations,
             logger);
         Defines = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
@@ -174,6 +174,16 @@ class CMakeProject
     static CMakeExpression TranslateAndNormalize(CMakeExpression path, string settingName, ILogger logger)
     {
         return CMakeExpression.Expression(PathUtils.NormalizePath(TranslateMSBuildMacros(path, settingName, logger).Value));
+    }
+
+    static CMakeExpression RemoveLibExtension(CMakeExpression library)
+    {
+        bool isPath = library.Value.Contains('/') || library.Value.Contains('\\');
+
+        if (!isPath && library.Value.EndsWith(".lib", StringComparison.OrdinalIgnoreCase))
+            return CMakeExpression.Expression(library.Value[..^4]);
+        else
+            return library;
     }
 
     static MSBuildProjectConfig[] FilterSupportedProjectConfigurations(IEnumerable<MSBuildProjectConfig> projectConfigurations, ILogger logger)

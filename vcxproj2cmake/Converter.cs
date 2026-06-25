@@ -181,7 +181,7 @@ public class Converter
 
             var dependencyTargets = project.GetAllReferencedProjects()
                 .Where(project => project.TargetType is CMakeTargetType.StaticLibrary or CMakeTargetType.SharedLibrary)
-                .Select(project => project.OutputName + CMakeExpression.Literal(".lib"))
+                .SelectMany(project => new[] { project.OutputName, project.OutputName + CMakeExpression.Literal(".lib") })
                 .ToArray();
 
             foreach (var dependencyTarget in dependencyTargets)

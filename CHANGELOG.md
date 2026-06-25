@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Avoid warnings by ignoring certain default values in `IncludePath` and `LibraryPath` MSBuild properties.
 
+### Changed
+
+- When possible, the `.lib` file extension is now omitted for libraries passed to `target_link_libraries`.
+
 ## [1.9.0] - 2026-05-31
 
 ### Added

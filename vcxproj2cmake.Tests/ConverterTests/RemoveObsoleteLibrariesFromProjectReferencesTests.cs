@@ -39,7 +39,7 @@ public partial class ConverterTests
 
                 target_link_libraries(App
                     PRIVATE
-                        Lib.lib
+                        Lib
                 )
                 """);
         }
@@ -81,7 +81,7 @@ public partial class ConverterTests
                 """);
 
             Assert.Contains(
-                "Removing explicit library dependency Lib.lib from project App since LinkLibraryDependencies is enabled.",
+                "Removing explicit library dependency Lib from project App since LinkLibraryDependencies is enabled.",
                 logger.AllMessageText);
         }
 
@@ -123,7 +123,7 @@ public partial class ConverterTests
                 """);
 
             Assert.Contains(
-                "Removing explicit library dependency MyLib.lib from project App since LinkLibraryDependencies is enabled.",
+                "Removing explicit library dependency MyLib from project App since LinkLibraryDependencies is enabled.",
                 logger.AllMessageText);
         }
     }

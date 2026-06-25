@@ -32,8 +32,40 @@ public partial class ConverterTests
                 """
                 target_link_libraries(Project
                     PRIVATE
-                        Foo.lib
-                        Bar.lib
+                        Foo
+                        Bar
+                )
+                """,
+                cmake);
+        }
+
+        [Fact]
+        public void Given_ProjectWithAdditionalDependencyPaths_When_Converted_Then_LibraryPathsKeepFileExtensions()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("AdditionalDependencies", @"Foo.lib;lib/Bar.lib;..\Baz\Baz.lib;%(AdditionalDependencies)")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains(
+                """
+                target_link_libraries(Project
+                    PRIVATE
+                        Foo
+                        lib/Bar.lib
+                        ../Baz/Baz.lib
                 )
                 """,
                 cmake);
@@ -63,8 +95,8 @@ public partial class ConverterTests
                 """
                 target_link_libraries(Project
                     PRIVATE
-                        "$<$<CONFIG:Debug>:Foo_d.lib>"
-                        "$<$<CONFIG:Release>:Foo.lib>"
+                        "$<$<CONFIG:Debug>:Foo_d>"
+                        "$<$<CONFIG:Release>:Foo>"
                 )
                 """,
                 cmake);
