@@ -47,7 +47,14 @@ class MSBuildProject
     public required MSBuildConfigDependentSetting<string> AllProjectIncludesArePublic { get; init; }
     public required MSBuildConfigDependentSetting<string> OpenMPSupport { get; init; }
     public required MSBuildConfigDependentSetting<string> PreBuildEventCommand { get; init; }
+    public required MSBuildConfigDependentSetting<string> PreBuildEventMessage { get; init; }
+    public required MSBuildConfigDependentSetting<string> PreLinkEventCommand { get; init; }
+    public required MSBuildConfigDependentSetting<string> PreLinkEventMessage { get; init; }
     public required MSBuildConfigDependentSetting<string> PostBuildEventCommand { get; init; }
+    public required MSBuildConfigDependentSetting<string> PostBuildEventMessage { get; init; }
+    public required MSBuildConfigDependentSetting<string> PreBuildEventUseInBuild { get; init; }
+    public required MSBuildConfigDependentSetting<string> PreLinkEventUseInBuild { get; init; }
+    public required MSBuildConfigDependentSetting<string> PostBuildEventUseInBuild { get; init; }
     public required bool RequiresQtMoc { get; init; }
     public required bool RequiresQtUic { get; init; }
     public required bool RequiresQtRcc { get; init; }
@@ -74,8 +81,13 @@ class MSBuildProject
         var masmXName = XName.Get("MASM", msbuildNamespace);
         var natvisXName = XName.Get("Natvis", msbuildNamespace);
         var commandXName = XName.Get("Command", msbuildNamespace);
-        var postBuildEventXName = XName.Get("PostBuildEvent", msbuildNamespace);
+        var messageXName = XName.Get("Message", msbuildNamespace);
         var preBuildEventXName = XName.Get("PreBuildEvent", msbuildNamespace);
+        var preLinkEventXName = XName.Get("PreLinkEvent", msbuildNamespace);
+        var postBuildEventXName = XName.Get("PostBuildEvent", msbuildNamespace);
+        var preBuildEventUseInBuildXName = XName.Get("PreBuildEventUseInBuild", msbuildNamespace);
+        var preLinkEventUseInBuildXName = XName.Get("PreLinkEventUseInBuild", msbuildNamespace);
+        var postBuildEventUseInBuildXName = XName.Get("PostBuildEventUseInBuild", msbuildNamespace);
         var projectConfigurationXName = XName.Get("ProjectConfiguration", msbuildNamespace);
         var projectReferenceXName = XName.Get("ProjectReference", msbuildNamespace);
         var projectXName = XName.Get("Project", msbuildNamespace);
@@ -200,6 +212,9 @@ class MSBuildProject
         Dictionary<string, Dictionary<MSBuildProjectConfig, string>> compilerSettings = [];
         Dictionary<string, Dictionary<MSBuildProjectConfig, string>> linkerSettings = [];
         Dictionary<string, Dictionary<MSBuildProjectConfig, string>> otherSettings = [];
+        Dictionary<MSBuildProjectConfig, MSBuildBuildEvent> preBuildEventSettings = [];
+        Dictionary<MSBuildProjectConfig, MSBuildBuildEvent> preLinkEventSettings = [];
+        Dictionary<MSBuildProjectConfig, MSBuildBuildEvent> postBuildEventSettings = [];
 
         foreach (var projectConfig in projectConfigurations)
         {
@@ -233,12 +248,28 @@ class MSBuildProject
                 .SelectMany(element => element.Elements())
                 .ToDictionaryKeepingLast(element => element.Name.LocalName, element => element.Value.Trim());
 
-            var projectConfigBuildEventSettings =
-                itemDefinitionGroups
-                .SelectMany(group => group.Elements())
-                .Where(element => element.Name == preBuildEventXName || element.Name == postBuildEventXName)
-                .SelectMany(element => element.Elements(commandXName))
-                .ToDictionaryKeepingLast(element => element.Parent!.Name.LocalName, element => element.Value.Trim());
+            MSBuildBuildEvent GetBuildEvent(XName elementName)
+            {
+                var command =
+                    itemDefinitionGroups
+                    .SelectMany(group => group.Elements())
+                    .Where(element => element.Name == elementName)
+                    .SelectMany(element => element.Elements(commandXName))
+                    .Select(element => element.Value.Trim())
+                    .LastOrDefault();
+
+                var message =
+                    itemDefinitionGroups
+                    .SelectMany(group => group.Elements())
+                    .Where(element => element.Name == elementName)
+                    .SelectMany(element => element.Elements(messageXName))
+                    .Select(element => element.Value.Trim())
+                    .LastOrDefault();
+
+                return new MSBuildBuildEvent(
+                    command != null ? UnescapeMSBuildValue(command) : null, 
+                    message != null ? UnescapeMSBuildValue(message) : null);
+            }
 
             foreach (var setting in projectConfigCompilerSettings)
             {
@@ -258,11 +289,9 @@ class MSBuildProject
                 otherSettings[setting.Key][projectConfig] = setting.Value;
             }
 
-            foreach (var setting in projectConfigBuildEventSettings)
-            {
-                otherSettings.TryAdd(setting.Key, []);
-                otherSettings[setting.Key][projectConfig] = setting.Value;
-            }
+            preBuildEventSettings[projectConfig] = GetBuildEvent(preBuildEventXName);
+            preLinkEventSettings[projectConfig] = GetBuildEvent(preLinkEventXName);
+            postBuildEventSettings[projectConfig] = GetBuildEvent(postBuildEventXName);
         }
 
         var configurationType = GetCommonSetting("ConfigurationType", otherSettings) ?? "Application";
@@ -308,8 +337,15 @@ class MSBuildProject
         var openMPSupport = ParseSetting("OpenMPSupport", compilerSettings, "false");
         var precompiledHeader = ParseSetting("PrecompiledHeader", compilerSettings, "NotUsing");
         var precompiledHeaderFile = ParseSetting("PrecompiledHeaderFile", compilerSettings, string.Empty);
-        var preBuildEventCommand = ParseSetting("PreBuildEvent", otherSettings, string.Empty);
-        var postBuildEventCommand = ParseSetting("PostBuildEvent", otherSettings, string.Empty);
+        var preBuildEventCommand = new MSBuildConfigDependentSetting<string>("PreBuildEvent", string.Empty, preBuildEventSettings.Select(kvp => (kvp.Key, kvp.Value.Command)).Where(kvp => kvp.Command != null).ToDictionary()!);
+        var preLinkEventCommand = new MSBuildConfigDependentSetting<string>("PreLinkEvent", string.Empty, preLinkEventSettings.Select(kvp => (kvp.Key, kvp.Value.Command)).Where(kvp => kvp.Command != null).ToDictionary()!);
+        var postBuildEventCommand = new MSBuildConfigDependentSetting<string>("PostBuildEvent", string.Empty, postBuildEventSettings.Select(kvp => (kvp.Key, kvp.Value.Command)).Where(kvp => kvp.Command != null).ToDictionary()!);
+        var preBuildEventMessage = new MSBuildConfigDependentSetting<string>("PreBuildEvent", string.Empty, preBuildEventSettings.Select(kvp => (kvp.Key, kvp.Value.Message)).Where(kvp => kvp.Message != null).ToDictionary()!);
+        var preLinkEventMessage = new MSBuildConfigDependentSetting<string>("PreLinkEvent", string.Empty, preLinkEventSettings.Select(kvp => (kvp.Key, kvp.Value.Message)).Where(kvp => kvp.Message != null).ToDictionary()!);
+        var postBuildEventMessage = new MSBuildConfigDependentSetting<string>("PostBuildEvent", string.Empty, postBuildEventSettings.Select(kvp => (kvp.Key, kvp.Value.Message)).Where(kvp => kvp.Message != null).ToDictionary()!);
+        var preBuildEventUseInBuild = ParseSetting("PreBuildEventUseInBuild", otherSettings, "true");
+        var preLinkEventUseInBuild = ParseSetting("PreLinkEventUseInBuild", otherSettings, "true");
+        var postBuildEventUseInBuild = ParseSetting("PostBuildEventUseInBuild", otherSettings, "true");
 
         var conanPackages =
             imports
@@ -363,7 +399,14 @@ class MSBuildProject
             AllProjectIncludesArePublic = allProjectIncludesArePublic,
             OpenMPSupport = openMPSupport,
             PreBuildEventCommand = preBuildEventCommand,
+            PreBuildEventMessage = preBuildEventMessage,
+            PreLinkEventCommand = preLinkEventCommand,
+            PreLinkEventMessage = preLinkEventMessage,
             PostBuildEventCommand = postBuildEventCommand,
+            PostBuildEventMessage = postBuildEventMessage,
+            PreBuildEventUseInBuild = preBuildEventUseInBuild,
+            PreLinkEventUseInBuild = preLinkEventUseInBuild,
+            PostBuildEventUseInBuild = postBuildEventUseInBuild,
             RequiresQtMoc = requiresQtMoc,
             RequiresQtUic = requiresQtUic,
             RequiresQtRcc = requiresQtRcc,
@@ -561,4 +604,9 @@ class MSBuildProject
             logger.LogWarning(
                 $"File-level MSBuild settings are unsupported and will not be processed: {fileLevelSetting.FilePath} ({string.Join(", ", fileLevelSetting.SettingNames)})");
     }
+}
+
+record MSBuildBuildEvent(string? Command, string? Message)
+{
+    public static readonly MSBuildBuildEvent Empty = new(null, null);
 }

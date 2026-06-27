@@ -29,7 +29,11 @@ class CMakeProject
     public bool IsWin32Executable { get; set; }
     public CMakeConfigDependentSetting PrecompiledHeaderFile { get; set; }
     public CMakeConfigDependentSetting PreBuildEventCommand { get; set; }
+    public CMakeConfigDependentSetting PreBuildEventComment { get; set; }
+    public CMakeConfigDependentSetting PreLinkEventCommand { get; set; }
+    public CMakeConfigDependentSetting PreLinkEventComment { get; set; }
     public CMakeConfigDependentSetting PostBuildEventCommand { get; set; }
+    public CMakeConfigDependentSetting PostBuildEventComment { get; set; }
 
     static readonly CMakeExpression[] IgnoredIncludePaths = [
         CMakeExpression.Expression(@"\$(VC_IncludePath)"),
@@ -133,12 +137,38 @@ class CMakeProject
             logger);
         PreBuildEventCommand = CMakeConfigDependentSetting.FromMSBuildSetting(
             project.PreBuildEventCommand,
-            command => command != null ? TranslateMSBuildBuildEventCommand(command, project.ProjectName, "PreBuildEvent", logger) : null,
+            (command, useInBuild) => (useInBuild?.Value ?? "true") == "true" && command != null ? TranslateMSBuildBuildEventCommand(command, project.ProjectName, "PreBuildEvent", logger) : null,
+            project.PreBuildEventUseInBuild,
+            supportedProjectConfigurations,
+            logger);
+        PreBuildEventComment = CMakeConfigDependentSetting.FromMSBuildSetting(
+            project.PreBuildEventMessage,
+            (message, useInBuild) => (useInBuild?.Value ?? "true") == "true" && message != null ? TranslateMSBuildMacros(message, "PreBuildEvent", logger) : null,
+            project.PreBuildEventUseInBuild,
+            supportedProjectConfigurations,
+            logger);
+        PreLinkEventCommand = CMakeConfigDependentSetting.FromMSBuildSetting(
+            project.PreLinkEventCommand,
+            (command, useInBuild) => (useInBuild?.Value ?? "true") == "true" && command != null ? TranslateMSBuildBuildEventCommand(command, project.ProjectName, "PreLinkEvent", logger) : null,
+            project.PreLinkEventUseInBuild,
+            supportedProjectConfigurations,
+            logger);
+        PreLinkEventComment = CMakeConfigDependentSetting.FromMSBuildSetting(
+            project.PreLinkEventMessage,
+            (message, useInBuild) => (useInBuild?.Value ?? "true") == "true" && message != null ? TranslateMSBuildMacros(message, "PreLinkEvent", logger) : null,
+            project.PreLinkEventUseInBuild,
             supportedProjectConfigurations,
             logger);
         PostBuildEventCommand = CMakeConfigDependentSetting.FromMSBuildSetting(
             project.PostBuildEventCommand,
-            command => command != null ? TranslateMSBuildBuildEventCommand(command, project.ProjectName, "PostBuildEvent", logger) : null,
+            (command, useInBuild) => (useInBuild?.Value ?? "true") == "true" && command != null ? TranslateMSBuildBuildEventCommand(command, project.ProjectName, "PostBuildEvent", logger) : null,
+            project.PostBuildEventUseInBuild,
+            supportedProjectConfigurations,
+            logger);
+        PostBuildEventComment = CMakeConfigDependentSetting.FromMSBuildSetting(
+            project.PostBuildEventMessage,
+            (message, useInBuild) => (useInBuild?.Value ?? "true") == "true" && message != null ? TranslateMSBuildMacros(message, "PostBuildEvent", logger) : null,
+            project.PostBuildEventUseInBuild,
             supportedProjectConfigurations,
             logger);
         Properties = [];
