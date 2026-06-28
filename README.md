@@ -34,8 +34,9 @@
   `ModuleDefinitionFile`
   `OpenMPSupport`
   `PostBuildEvent`
-  `PrecompiledHeaderFile`
   `PreBuildEvent`
+  `PrecompiledHeaderFile`
+  `PreLinkEvent`
   `PreprocessorDefinitions`
   `PublicIncludeDirectories`
   `RuntimeLibrary`
