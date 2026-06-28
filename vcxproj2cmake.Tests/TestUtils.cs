@@ -25,23 +25,25 @@ static class MockFileSystemExtensions
     {
         public void CopyCurrentDirectoryToDisk(string destinationDirectory)
         {
-            var currentDirectory = fileSystem.Path.GetFullPath(fileSystem.Directory.GetCurrentDirectory());
+            var currentDirectory = fileSystem.Directory.GetCurrentDirectory();
+            var currentDirectoryInfo = fileSystem.DirectoryInfo.New(currentDirectory);
 
-            foreach (var sourceDirectory in fileSystem.AllDirectories)
+            foreach (var directory in currentDirectoryInfo.EnumerateDirectories("*", SearchOption.AllDirectories))
             {
-                var fullSourceDirectory = fileSystem.Path.GetFullPath(sourceDirectory);
-                var relativeDirectory = Path.GetRelativePath(currentDirectory, fullSourceDirectory);
-                if (!relativeDirectory.StartsWith("..", StringComparison.Ordinal))
-                    Directory.CreateDirectory(Path.Combine(destinationDirectory, relativeDirectory));
+                var relativePath = fileSystem.Path.GetRelativePath(currentDirectory, directory.FullName);
+                var destinationPath = Path.Combine(destinationDirectory, relativePath);
+
+                Directory.CreateDirectory(destinationPath);
             }
 
-            foreach (var sourcePath in fileSystem.AllFiles)
+            foreach (var file in currentDirectoryInfo.EnumerateFiles("*", SearchOption.AllDirectories))
             {
-                var fullSourcePath = fileSystem.Path.GetFullPath(sourcePath);
-                var relativePath = Path.GetRelativePath(currentDirectory, fullSourcePath);
+                var relativePath = fileSystem.Path.GetRelativePath(currentDirectory, file.FullName);
                 var destinationPath = Path.Combine(destinationDirectory, relativePath);
-                Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
-                File.WriteAllBytes(destinationPath, fileSystem.GetFile(sourcePath).Contents);
+
+                using var sourceStream = file.OpenRead();
+                using var destinationStream = File.Create(destinationPath);
+                sourceStream.CopyTo(destinationStream);
             }
         }
     }
