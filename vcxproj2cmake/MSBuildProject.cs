@@ -212,9 +212,8 @@ class MSBuildProject
         Dictionary<string, Dictionary<MSBuildProjectConfig, string>> compilerSettings = [];
         Dictionary<string, Dictionary<MSBuildProjectConfig, string>> linkerSettings = [];
         Dictionary<string, Dictionary<MSBuildProjectConfig, string>> otherSettings = [];
-        Dictionary<MSBuildProjectConfig, MSBuildBuildEvent> preBuildEventSettings = [];
-        Dictionary<MSBuildProjectConfig, MSBuildBuildEvent> preLinkEventSettings = [];
-        Dictionary<MSBuildProjectConfig, MSBuildBuildEvent> postBuildEventSettings = [];
+        Dictionary<string, Dictionary<MSBuildProjectConfig, string>> buildEventCommandSettings = [];
+        Dictionary<string, Dictionary<MSBuildProjectConfig, string>> buildEventMessageSettings = [];
 
         foreach (var projectConfig in projectConfigurations)
         {
@@ -248,28 +247,19 @@ class MSBuildProject
                 .SelectMany(element => element.Elements())
                 .ToDictionaryKeepingLast(element => element.Name.LocalName, element => element.Value.Trim());
 
-            MSBuildBuildEvent GetBuildEvent(XName elementName)
-            {
-                var command =
-                    itemDefinitionGroups
-                    .SelectMany(group => group.Elements())
-                    .Where(element => element.Name == elementName)
-                    .SelectMany(element => element.Elements(commandXName))
-                    .Select(element => element.Value.Trim())
-                    .LastOrDefault();
+            var projectConfigBuildEventCommandSettings =
+                itemDefinitionGroups
+                .SelectMany(group => group.Elements())
+                .Where(element => element.Name == preBuildEventXName || element.Name == preLinkEventXName || element.Name == postBuildEventXName)
+                .SelectMany(element => element.Elements(commandXName))
+                .ToDictionaryKeepingLast(element => element.Parent!.Name.LocalName, element => element.Value.Trim());
 
-                var message =
-                    itemDefinitionGroups
-                    .SelectMany(group => group.Elements())
-                    .Where(element => element.Name == elementName)
-                    .SelectMany(element => element.Elements(messageXName))
-                    .Select(element => element.Value.Trim())
-                    .LastOrDefault();
-
-                return new MSBuildBuildEvent(
-                    command != null ? UnescapeMSBuildValue(command) : null, 
-                    message != null ? UnescapeMSBuildValue(message) : null);
-            }
+            var projectConfigBuildEventMessageSettings =
+                itemDefinitionGroups
+                .SelectMany(group => group.Elements())
+                .Where(element => element.Name == preBuildEventXName || element.Name == preLinkEventXName || element.Name == postBuildEventXName)
+                .SelectMany(element => element.Elements(messageXName))
+                .ToDictionaryKeepingLast(element => element.Parent!.Name.LocalName, element => element.Value.Trim());
 
             foreach (var setting in projectConfigCompilerSettings)
             {
@@ -289,9 +279,17 @@ class MSBuildProject
                 otherSettings[setting.Key][projectConfig] = setting.Value;
             }
 
-            preBuildEventSettings[projectConfig] = GetBuildEvent(preBuildEventXName);
-            preLinkEventSettings[projectConfig] = GetBuildEvent(preLinkEventXName);
-            postBuildEventSettings[projectConfig] = GetBuildEvent(postBuildEventXName);
+            foreach (var setting in projectConfigBuildEventCommandSettings)
+            {
+                buildEventCommandSettings.TryAdd(setting.Key, []);
+                buildEventCommandSettings[setting.Key][projectConfig] = setting.Value;
+            }
+
+            foreach (var setting in projectConfigBuildEventMessageSettings)
+            {
+                buildEventMessageSettings.TryAdd(setting.Key, []);
+                buildEventMessageSettings[setting.Key][projectConfig] = setting.Value;
+            }
         }
 
         var configurationType = GetCommonSetting("ConfigurationType", otherSettings) ?? "Application";
@@ -337,12 +335,12 @@ class MSBuildProject
         var openMPSupport = ParseSetting("OpenMPSupport", compilerSettings, "false");
         var precompiledHeader = ParseSetting("PrecompiledHeader", compilerSettings, "NotUsing");
         var precompiledHeaderFile = ParseSetting("PrecompiledHeaderFile", compilerSettings, string.Empty);
-        var preBuildEventCommand = new MSBuildConfigDependentSetting<string>("PreBuildEvent", string.Empty, preBuildEventSettings.Select(kvp => (kvp.Key, kvp.Value.Command)).Where(kvp => kvp.Command != null).ToDictionary()!);
-        var preLinkEventCommand = new MSBuildConfigDependentSetting<string>("PreLinkEvent", string.Empty, preLinkEventSettings.Select(kvp => (kvp.Key, kvp.Value.Command)).Where(kvp => kvp.Command != null).ToDictionary()!);
-        var postBuildEventCommand = new MSBuildConfigDependentSetting<string>("PostBuildEvent", string.Empty, postBuildEventSettings.Select(kvp => (kvp.Key, kvp.Value.Command)).Where(kvp => kvp.Command != null).ToDictionary()!);
-        var preBuildEventMessage = new MSBuildConfigDependentSetting<string>("PreBuildEvent", string.Empty, preBuildEventSettings.Select(kvp => (kvp.Key, kvp.Value.Message)).Where(kvp => kvp.Message != null).ToDictionary()!);
-        var preLinkEventMessage = new MSBuildConfigDependentSetting<string>("PreLinkEvent", string.Empty, preLinkEventSettings.Select(kvp => (kvp.Key, kvp.Value.Message)).Where(kvp => kvp.Message != null).ToDictionary()!);
-        var postBuildEventMessage = new MSBuildConfigDependentSetting<string>("PostBuildEvent", string.Empty, postBuildEventSettings.Select(kvp => (kvp.Key, kvp.Value.Message)).Where(kvp => kvp.Message != null).ToDictionary()!);
+        var preBuildEventCommand = ParseSetting("PreBuildEvent", buildEventCommandSettings, string.Empty);
+        var preLinkEventCommand = ParseSetting("PreLinkEvent", buildEventCommandSettings, string.Empty);
+        var postBuildEventCommand = ParseSetting("PostBuildEvent", buildEventCommandSettings, string.Empty);
+        var preBuildEventMessage = ParseSetting("PreBuildEvent", buildEventMessageSettings, string.Empty);
+        var preLinkEventMessage = ParseSetting("PreLinkEvent", buildEventMessageSettings, string.Empty);
+        var postBuildEventMessage = ParseSetting("PostBuildEvent", buildEventMessageSettings, string.Empty);
         var preBuildEventUseInBuild = ParseSetting("PreBuildEventUseInBuild", otherSettings, "true");
         var preLinkEventUseInBuild = ParseSetting("PreLinkEventUseInBuild", otherSettings, "true");
         var postBuildEventUseInBuild = ParseSetting("PostBuildEventUseInBuild", otherSettings, "true");
@@ -604,9 +602,4 @@ class MSBuildProject
             logger.LogWarning(
                 $"File-level MSBuild settings are unsupported and will not be processed: {fileLevelSetting.FilePath} ({string.Join(", ", fileLevelSetting.SettingNames)})");
     }
-}
-
-record MSBuildBuildEvent(string? Command, string? Message)
-{
-    public static readonly MSBuildBuildEvent Empty = new(null, null);
 }

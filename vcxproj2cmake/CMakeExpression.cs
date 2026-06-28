@@ -5,10 +5,12 @@ namespace vcxproj2cmake;
 class CMakeExpression : IComparable, IComparable<CMakeExpression>, IEquatable<CMakeExpression>
 {
     public string Value { get; }
+    readonly bool raw;
 
-    CMakeExpression(string value)
+    CMakeExpression(string value, bool raw = false)
     {
         Value = value;
+        this.raw = raw;
     }
 
     public static CMakeExpression Literal(string literal)
@@ -19,6 +21,11 @@ class CMakeExpression : IComparable, IComparable<CMakeExpression>, IEquatable<CM
     public static CMakeExpression Expression(string expression)
     {
         return new CMakeExpression(expression);
+    }
+
+    public static CMakeExpression Raw(string expression)
+    {
+        return new CMakeExpression(expression, raw: true);
     }
 
     static string Escape(string value)
@@ -58,7 +65,9 @@ class CMakeExpression : IComparable, IComparable<CMakeExpression>, IEquatable<CM
 
     public override string ToString()
     {
-        if (NeedsQuoting)
+        if (raw)
+            return Value;
+        else if (NeedsQuoting)
             return $"\"{Value}\"";
         else
             return Value;

@@ -42,11 +42,12 @@ add_library({{ project_name | literal }} INTERFACE)
 {{~ if !pre_build_event_command.is_empty ~}}
 add_custom_command(TARGET {{ project_name | literal }} PRE_BUILD
     {{~ for kvp in pre_build_event_command.values ~}}
-    COMMAND {{ get_config_expression kvp.key kvp.value }}
+    COMMAND {{ get_build_event_command kvp.key kvp.value }}
     {{~ end ~}}
     {{~ for kvp in pre_build_event_comment.values ~}}
     COMMENT {{ get_config_expression kvp.key kvp.value }}
     {{~ end ~}}
+    VERBATIM
 )
 
 {{~ end -}}
@@ -54,11 +55,12 @@ add_custom_command(TARGET {{ project_name | literal }} PRE_BUILD
 {{~ if !pre_link_event_command.is_empty ~}}
 add_custom_command(TARGET {{ project_name | literal }} PRE_LINK
     {{~ for kvp in pre_link_event_command.values ~}}
-    COMMAND {{ get_config_expression kvp.key kvp.value }}
+    COMMAND {{ get_build_event_command kvp.key kvp.value }}
     {{~ end ~}}
     {{~ for kvp in pre_link_event_comment.values ~}}
     COMMENT {{ get_config_expression kvp.key kvp.value }}
     {{~ end ~}}
+    VERBATIM
 )
 
 {{~ end -}}
@@ -66,11 +68,12 @@ add_custom_command(TARGET {{ project_name | literal }} PRE_LINK
 {{~ if !post_build_event_command.is_empty ~}}
 add_custom_command(TARGET {{ project_name | literal }} POST_BUILD
     {{~ for kvp in post_build_event_command.values ~}}
-    COMMAND {{ get_config_expression kvp.key kvp.value }}
+    COMMAND {{ get_build_event_command kvp.key kvp.value }}
     {{~ end ~}}
     {{~ for kvp in post_build_event_comment.values ~}}
     COMMENT {{ get_config_expression kvp.key kvp.value }}
     {{~ end ~}}
+    VERBATIM
 )
 
 {{~ end -}}
