@@ -88,7 +88,8 @@ public class Converter
 
             try
             {
-                cmakeProjects.Add(new CMakeProject(project, new(qtVersion, portable), includeHeaders, conanPackageInfoRepository, logger));
+                string projectName = GetUniqueProjectName(cmakeProjects, project);
+                cmakeProjects.Add(new CMakeProject(project, new(qtVersion, portable), projectName, includeHeaders, conanPackageInfoRepository, logger));
             }
             catch (Exception ex) when (continueOnError)
             {
@@ -115,7 +116,6 @@ public class Converter
 
         var cmakeSolution = solution != null ? new CMakeSolution(solution, cmakeProjects) : null;
 
-        EnsureProjectNamesAreUnique(cmakeProjects);
         ResolveProjectReferences(cmakeProjects, continueOnError, failedProjectPaths);
         RemoveObsoleteLibrariesFromProjectReferences(cmakeProjects);
         AddLibrariesFromProjectReferences(cmakeProjects);
@@ -125,20 +125,17 @@ public class Converter
         cmakeGenerator.Generate(cmakeSolution, cmakeProjects, settings);
     }
 
-    static void EnsureProjectNamesAreUnique(IEnumerable<CMakeProject> projects)
+    static string GetUniqueProjectName(IEnumerable<CMakeProject> projects, MSBuildProject msBuildProject)
     {
-        HashSet<string> assignedNames = [];
+        bool NameExists(string name) => projects.Any(project => project.ProjectName == name);
 
-        foreach (var project in projects)
-        {
-            if (!assignedNames.Add(project.ProjectName))
-            {
-                int i = 2;
-                while (!assignedNames.Add($"{project.ProjectName}{i}"))
-                    i++;
-                project.ProjectName = $"{project.ProjectName}{i}";
-            }
-        }
+        if (!NameExists(msBuildProject.ProjectName))
+            return msBuildProject.ProjectName;
+
+        int i = 2;
+        while (NameExists($"{msBuildProject.ProjectName}{i}"))
+            i++;
+        return $"{msBuildProject.ProjectName}{i}";
     }
 
     void ResolveProjectReferences(IEnumerable<CMakeProject> projects, bool continueOnError, IEnumerable<string> failedProjectPaths)

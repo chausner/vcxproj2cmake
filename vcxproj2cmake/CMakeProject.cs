@@ -6,8 +6,8 @@ namespace vcxproj2cmake;
 class CMakeProject
 {
     public MSBuildProject MSBuildProject { get; }
-    public string AbsoluteProjectPath { get; set; }
-    public string ProjectName { get; set; }
+    public string AbsoluteProjectPath { get; }
+    public string ProjectName { get; }
     public MSBuildProjectConfig[] ProjectConfigurations { get; set; }
     public string[] Languages { get; set; }
     public CMakeTargetType TargetType { get; set; }
@@ -47,7 +47,13 @@ class CMakeProject
         CMakeExpression.Expression(@"\$(NETFXKitsDir)Lib\\um\\arm"),
         CMakeExpression.Expression(@"\$(NETFXKitsDir)Lib\\um\\arm64")];
 
-    public CMakeProject(MSBuildProject project, CMakeProjectSettings settings, bool includeHeaders, ConanPackageInfoRepository conanPackageInfoRepository, ILogger logger)
+    public CMakeProject(
+        MSBuildProject project,
+        CMakeProjectSettings settings,
+        string projectName,
+        bool includeHeaders,
+        ConanPackageInfoRepository conanPackageInfoRepository,
+        ILogger logger)
     {
         logger.LogInformation($"Processing project {project.AbsoluteProjectPath}");
 
@@ -55,7 +61,7 @@ class CMakeProject
 
         MSBuildProject = project;
         AbsoluteProjectPath = project.AbsoluteProjectPath;
-        ProjectName = project.ProjectName;
+        ProjectName = projectName;
         ProjectConfigurations = supportedProjectConfigurations;
         Languages = DetectLanguages(project.SourceFiles, logger);
         TargetType = DetermineTargetType(project);
@@ -150,14 +156,21 @@ class CMakeProject
         ApplyConanPackages(project, conanPackageInfoRepository);
     }
 
-    static CMakeExpression TranslateMSBuildMacros(CMakeExpression value, string settingName, ILogger logger)
+    CMakeExpression TranslateMSBuildMacros(CMakeExpression value, string settingName, ILogger logger)
     {
         string translatedValue = value.Value;
-        translatedValue = Regex.Replace(translatedValue, @"\\\$\(Configuration(Name)?\)", "${CMAKE_BUILD_TYPE}", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(Configuration(Name)?\)", "$<CONFIG>", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(IntDir\)[/\\]*", "${CMAKE_CURRENT_BINARY_DIR}/", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(OutDir\)[/\\]*", $"$<TARGET_FILE_DIR:{ProjectName}>/", RegexOptions.IgnoreCase);
         translatedValue = Regex.Replace(translatedValue, @"\\\$\(ProjectDir\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/", RegexOptions.IgnoreCase);
         translatedValue = Regex.Replace(translatedValue, @"\\\$\(ProjectName\)", "${PROJECT_NAME}", RegexOptions.IgnoreCase);
         translatedValue = Regex.Replace(translatedValue, @"\\\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/", RegexOptions.IgnoreCase);
         translatedValue = Regex.Replace(translatedValue, @"\\\$\(SolutionName\)", "${CMAKE_PROJECT_NAME}", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(TargetDir\)[/\\]*", $"$<TARGET_FILE_DIR:{ProjectName}>/", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(TargetExt\)", $"$<TARGET_FILE_SUFFIX:{ProjectName}>", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(TargetFileName\)", $"$<TARGET_FILE_NAME:{ProjectName}>", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(TargetName\)", $"$<TARGET_FILE_BASE_NAME:{ProjectName}>", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(TargetPath\)", $"$<TARGET_FILE:{ProjectName}>", RegexOptions.IgnoreCase);
 
         var unsupportedMacros = Regex.Matches(translatedValue, @"\\\$\(([A-Za-z0-9_]+)\)");
         if (unsupportedMacros.Count > 0)
@@ -171,7 +184,7 @@ class CMakeProject
         return CMakeExpression.Expression(translatedValue);
     }
 
-    static CMakeExpression TranslateAndNormalize(CMakeExpression path, string settingName, ILogger logger)
+    CMakeExpression TranslateAndNormalize(CMakeExpression path, string settingName, ILogger logger)
     {
         return CMakeExpression.Expression(PathUtils.NormalizePath(TranslateMSBuildMacros(path, settingName, logger).Value));
     }

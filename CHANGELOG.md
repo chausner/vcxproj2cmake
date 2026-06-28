@@ -9,10 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Avoid warnings by ignoring certain default values in `IncludePath` and `LibraryPath` MSBuild properties.
+- Add support for MSBuild macros `IntDir`, `OutDir`, `TargetDir`, `TargetExt`, `TargetFileName`, `TargetName` and `TargetPath`.
 
 ### Changed
 
 - When possible, the `.lib` file extension is now omitted for libraries passed to `target_link_libraries`.
+- MSBuild macros `Configuration` and `ConfigurationName` are now translated to `$<CONFIG>`.
 
 ## [1.9.0] - 2026-05-31
 
