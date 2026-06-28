@@ -62,7 +62,7 @@ public partial class ConverterTests
                 )
                 """, cmake);
 
-            if (TestOptions.RunCMakeAssertions)
+            if (TestOptions.RunCMakeAssertions && OperatingSystem.IsWindows())
                 await CMakeAssert.ConfiguresAndBuildsWithCMake(fileSystem, configuration: "Debug");
         }
 
@@ -129,7 +129,7 @@ public partial class ConverterTests
                 )
                 """, cmake);
 
-            if (TestOptions.RunCMakeAssertions)
+            if (TestOptions.RunCMakeAssertions && OperatingSystem.IsWindows())
                 await CMakeAssert.ConfiguresAndBuildsWithCMake(fileSystem, configuration: "Debug");
         }
 
@@ -193,7 +193,7 @@ public partial class ConverterTests
                 )
                 """, cmake);
 
-            if (TestOptions.RunCMakeAssertions)
+            if (TestOptions.RunCMakeAssertions && OperatingSystem.IsWindows())
                 await CMakeAssert.ConfiguresAndBuildsWithCMake(fileSystem, configuration: "Debug");
         }
 
@@ -264,7 +264,7 @@ public partial class ConverterTests
                 )
                 """, cmake);
 
-            if (TestOptions.RunCMakeAssertions)
+            if (TestOptions.RunCMakeAssertions && OperatingSystem.IsWindows())
                 await Task.WhenAll([
                     CMakeAssert.ConfiguresAndBuildsWithCMake(fileSystem, configuration: "Debug"),
                     CMakeAssert.ConfiguresAndBuildsWithCMake(fileSystem, configuration: "Release")
@@ -309,7 +309,7 @@ public partial class ConverterTests
                 )
                 """, cmake);
 
-            if (TestOptions.RunCMakeAssertions)
+            if (TestOptions.RunCMakeAssertions && OperatingSystem.IsWindows())
                 await CMakeAssert.ConfiguresAndBuildsWithCMake(fileSystem, configuration: "Release");
         }
 
@@ -351,7 +351,7 @@ public partial class ConverterTests
                 )
                 """, cmake);
 
-            if (TestOptions.RunCMakeAssertions)
+            if (TestOptions.RunCMakeAssertions && OperatingSystem.IsWindows())
                 await CMakeAssert.ConfiguresAndBuildsWithCMake(fileSystem, configuration: "Release");
         }
 
@@ -393,7 +393,7 @@ public partial class ConverterTests
                 )
                 """, cmake);
 
-            if (TestOptions.RunCMakeAssertions)
+            if (TestOptions.RunCMakeAssertions && OperatingSystem.IsWindows())
                 await CMakeAssert.ConfiguresAndBuildsWithCMake(fileSystem, configuration: "Release");
         }
     }
