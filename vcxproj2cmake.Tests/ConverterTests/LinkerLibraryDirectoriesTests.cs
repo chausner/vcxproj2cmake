@@ -89,7 +89,7 @@ public partial class ConverterTests
                 target_link_directories(Project
                     PRIVATE
                         "${CMAKE_CURRENT_SOURCE_DIR}/libs"
-                        "${CMAKE_BUILD_TYPE}"
+                        "$<CONFIG>"
                 )
                 """, cmake);
         }
