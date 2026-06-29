@@ -198,6 +198,81 @@ public partial class ConverterTests
         }
 
         [Fact]
+        public async Task Given_ConfigSpecificBuildEventsWithShellPaths_When_Converted_Then_GeneratorExpressionsAreUsed()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItems("ClCompile", "main.cpp")
+                .WithRawXml("""
+                    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+                        <PreBuildEvent>
+                            <Command>echo Building Debug</Command>
+                        </PreBuildEvent>
+                        <PreLinkEvent>
+                            <Command>echo Linking Debug</Command>
+                        </PreLinkEvent>
+                        <PostBuildEvent>
+                            <Command>copy "$(TargetPath)" "$(ProjectDir)bin\Debug_$(TargetFileName)"</Command>
+                        </PostBuildEvent>
+                    </ItemDefinitionGroup>
+                    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+                        <PreBuildEvent>
+                            <Command>echo Building Release</Command>
+                        </PreBuildEvent>
+                        <PreLinkEvent>
+                            <Command>echo Linking Release</Command>
+                        </PreLinkEvent>
+                        <PostBuildEvent>
+                            <Command>copy "$(TargetPath)" "$(ProjectDir)bin\Release_$(TargetFileName)"</Command>
+                        </PostBuildEvent>
+                    </ItemDefinitionGroup>
+                    """)
+                .Build()));
+            fileSystem.AddFile(@"main.cpp", new("int main() { return 0; }"));
+            fileSystem.AddDirectory(@"bin");
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("""
+                add_custom_command(TARGET Project PRE_BUILD
+                    COMMAND cmd /C "$<$<CONFIG:Debug>:echo Building Debug>"
+                    COMMAND cmd /C "$<$<CONFIG:Release>:echo Building Release>"
+                    VERBATIM
+                )
+                """, cmake);
+            Assert.Contains("""
+                add_custom_command(TARGET Project PRE_LINK
+                    COMMAND cmd /C "$<$<CONFIG:Debug>:echo Linking Debug>"
+                    COMMAND cmd /C "$<$<CONFIG:Release>:echo Linking Release>"
+                    VERBATIM
+                )
+                """, cmake);
+            Assert.Contains("""
+                add_custom_command(TARGET Project POST_BUILD
+                    COMMAND cmd /C "$<$<CONFIG:Debug>:copy $<SHELL_PATH:$<TARGET_FILE:Project>> $<SHELL_PATH:${CMAKE_CURRENT_SOURCE_DIR}/bin/Debug_$<TARGET_FILE_NAME:Project>>>"
+                    COMMAND cmd /C "$<$<CONFIG:Release>:copy $<SHELL_PATH:$<TARGET_FILE:Project>> $<SHELL_PATH:${CMAKE_CURRENT_SOURCE_DIR}/bin/Release_$<TARGET_FILE_NAME:Project>>>"
+                    VERBATIM
+                )
+                """, cmake);
+
+            if (TestOptions.RunCMakeAssertions && OperatingSystem.IsWindows())
+                await Task.WhenAll([
+                    CMakeAssert.ConfiguresAndBuildsWithCMake(fileSystem, configuration: "Debug"),
+                    CMakeAssert.ConfiguresAndBuildsWithCMake(fileSystem, configuration: "Release")
+                ]);
+        }
+
+        [Fact]
         public async Task Given_ConfigSpecificBuildEvents_When_Converted_Then_GeneratorExpressionsAreUsed()
         {
             // Arrange
