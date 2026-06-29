@@ -149,7 +149,7 @@ class CMakeProject
             logger);
         PreBuildEventComment = CMakeConfigDependentSetting.FromMSBuildSetting(
             project.PreBuildEventMessage,
-            (message, useInBuild) => (useInBuild?.Value ?? "true") == "true" && message != null ? TranslateMSBuildBuildEventMessage(message, "PreBuildEvent.Message", logger) : null,
+            (message, useInBuild) => (useInBuild?.Value ?? "true") == "true" && message != null ? TranslateMSBuildMacros(message, "PreBuildEvent.Message", logger) : null,
             project.PreBuildEventUseInBuild,
             supportedProjectConfigurations,
             logger);
@@ -161,7 +161,7 @@ class CMakeProject
             logger);
         PreLinkEventComment = CMakeConfigDependentSetting.FromMSBuildSetting(
             project.PreLinkEventMessage,
-            (message, useInBuild) => (useInBuild?.Value ?? "true") == "true" && message != null ? TranslateMSBuildBuildEventMessage(message, "PreLinkEvent.Message", logger) : null,
+            (message, useInBuild) => (useInBuild?.Value ?? "true") == "true" && message != null ? TranslateMSBuildMacros(message, "PreLinkEvent.Message", logger) : null,
             project.PreLinkEventUseInBuild,
             supportedProjectConfigurations,
             logger);
@@ -173,7 +173,7 @@ class CMakeProject
             logger);
         PostBuildEventComment = CMakeConfigDependentSetting.FromMSBuildSetting(
             project.PostBuildEventMessage,
-            (message, useInBuild) => (useInBuild?.Value ?? "true") == "true" && message != null ? TranslateMSBuildBuildEventMessage(message, "PostBuildEvent.Message", logger) : null,
+            (message, useInBuild) => (useInBuild?.Value ?? "true") == "true" && message != null ? TranslateMSBuildMacros(message, "PostBuildEvent.Message", logger) : null,
             project.PostBuildEventUseInBuild,
             supportedProjectConfigurations,
             logger);
@@ -200,37 +200,30 @@ class CMakeProject
 
     CMakeExpression TranslateMSBuildMacros(CMakeExpression value, string settingName, ILogger logger)
     {
-        return CMakeExpression.Expression(TranslateMSBuildMacros(value.Value, settingName, escaped: true, logger));
-    }
+        string translatedValue = value.Value;
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(Configuration(Name)?\)", "$<CONFIG>", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(IntDir\)[/\\]*", "${CMAKE_CURRENT_BINARY_DIR}/", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(OutDir\)[/\\]*", $"$<TARGET_FILE_DIR:{ProjectName}>/", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(ProjectDir\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(ProjectName\)", "${PROJECT_NAME}", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(SolutionName\)", "${CMAKE_PROJECT_NAME}", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(TargetDir\)[/\\]*", $"$<TARGET_FILE_DIR:{ProjectName}>/", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(TargetExt\)", $"$<TARGET_FILE_SUFFIX:{ProjectName}>", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(TargetFileName\)", $"$<TARGET_FILE_NAME:{ProjectName}>", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(TargetName\)", $"$<TARGET_FILE_BASE_NAME:{ProjectName}>", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(TargetPath\)", $"$<TARGET_FILE:{ProjectName}>", RegexOptions.IgnoreCase);
 
-    string TranslateMSBuildMacros(string value, string settingName, bool escaped, ILogger logger)
-    {
-        string escapePrefix = escaped ? @"\\" : string.Empty;
-
-        string translatedValue = value;
-        translatedValue = Regex.Replace(translatedValue, escapePrefix + @"\$\(Configuration(Name)?\)", "$<CONFIG>", RegexOptions.IgnoreCase);
-        translatedValue = Regex.Replace(translatedValue, escapePrefix + @"\$\(IntDir\)[/\\]*", "${CMAKE_CURRENT_BINARY_DIR}/", RegexOptions.IgnoreCase);
-        translatedValue = Regex.Replace(translatedValue, escapePrefix + @"\$\(OutDir\)[/\\]*", $"$<TARGET_FILE_DIR:{ProjectName}>/", RegexOptions.IgnoreCase);
-        translatedValue = Regex.Replace(translatedValue, escapePrefix + @"\$\(ProjectDir\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/", RegexOptions.IgnoreCase);
-        translatedValue = Regex.Replace(translatedValue, escapePrefix + @"\$\(ProjectName\)", "${PROJECT_NAME}", RegexOptions.IgnoreCase);
-        translatedValue = Regex.Replace(translatedValue, escapePrefix + @"\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/", RegexOptions.IgnoreCase);
-        translatedValue = Regex.Replace(translatedValue, escapePrefix + @"\$\(SolutionName\)", "${CMAKE_PROJECT_NAME}", RegexOptions.IgnoreCase);
-        translatedValue = Regex.Replace(translatedValue, escapePrefix + @"\$\(TargetDir\)[/\\]*", $"$<TARGET_FILE_DIR:{ProjectName}>/", RegexOptions.IgnoreCase);
-        translatedValue = Regex.Replace(translatedValue, escapePrefix + @"\$\(TargetExt\)", $"$<TARGET_FILE_SUFFIX:{ProjectName}>", RegexOptions.IgnoreCase);
-        translatedValue = Regex.Replace(translatedValue, escapePrefix + @"\$\(TargetFileName\)", $"$<TARGET_FILE_NAME:{ProjectName}>", RegexOptions.IgnoreCase);
-        translatedValue = Regex.Replace(translatedValue, escapePrefix + @"\$\(TargetName\)", $"$<TARGET_FILE_BASE_NAME:{ProjectName}>", RegexOptions.IgnoreCase);
-        translatedValue = Regex.Replace(translatedValue, escapePrefix + @"\$\(TargetPath\)", $"$<TARGET_FILE:{ProjectName}>", RegexOptions.IgnoreCase);
-
-        var unsupportedMacros = Regex.Matches(translatedValue, escapePrefix + @"\$\(([A-Za-z0-9_]+)\)");
+        var unsupportedMacros = Regex.Matches(translatedValue, @"\\\$\(([A-Za-z0-9_]+)\)");
         if (unsupportedMacros.Count > 0)
         {
             var unsupportedMacroNames = unsupportedMacros.Select(match => match.Groups[1].Value);
-            logger.LogWarning($"Setting {settingName} with value \"{value}\" contains unsupported MSBuild macros/properties: {string.Join(", ", unsupportedMacroNames)}");
+            logger.LogWarning($"Setting {settingName} with value {value} contains unsupported MSBuild macros/properties: {string.Join(", ", unsupportedMacroNames)}");
 
-            translatedValue = Regex.Replace(translatedValue, escapePrefix + @"\$\(([A-Za-z0-9_]+)\)", "${$1}");
+            translatedValue = Regex.Replace(translatedValue, @"\\\$\(([A-Za-z0-9_]+)\)", "${$1}");
         }
 
-        return translatedValue;
+        return CMakeExpression.Expression(translatedValue);
     }
 
     CMakeExpression TranslateAndNormalize(CMakeExpression path, string settingName, ILogger logger)
@@ -250,48 +243,44 @@ class CMakeProject
 
     CMakeExpression TranslateMSBuildBuildEventCommand(CMakeExpression command, string settingName, ILogger logger)
     {
-        var translatedCommand = UnescapeCMakeLiteral(command.Value);
-        translatedCommand = TranslateMSBuildMacros(translatedCommand, settingName, escaped: false, logger);
+        var translatedMacros = TranslateMSBuildMacros(command, settingName, logger);
+        var translatedCommand = CMakeExpression.Unescape(translatedMacros.Value);
 
+        // replace newlines with &&
         translatedCommand = Regex.Replace(translatedCommand, @"\s*\r?\n\s*", " && ");
+
+        // replace backslashes followed by $< or ${ with forward slashes
         translatedCommand = Regex.Replace(translatedCommand, @"\\(?=\$<|\$\{)", "/");
+
         translatedCommand = WrapCMakePathsInShellPathGeneratorExpression(translatedCommand);
 
         return CMakeExpression.Expression(translatedCommand);
     }
 
-    CMakeExpression TranslateMSBuildBuildEventMessage(CMakeExpression message, string settingName, ILogger logger)
-    {
-        var translatedMessage = UnescapeCMakeLiteral(message.Value);
-        translatedMessage = TranslateMSBuildMacros(translatedMessage, settingName, escaped: false, logger);
-
-        return CMakeExpression.Expression(translatedMessage);
-    }
-
-    static string UnescapeCMakeLiteral(string value)
-    {
-        return value
-            .Replace(@"\\", @"\")
-            .Replace("\\\"", "\"")
-            .Replace(@"\n", "\n")
-            .Replace(@"\r", "\r")
-            .Replace(@"\t", "\t")
-            .Replace(@"\$", "$");
-    }
-
     static string WrapCMakePathsInShellPathGeneratorExpression(string command)
     {
-        return Regex.Replace(command, "\"([^\"]+)\"", match =>
+        bool IsPath(string value)
+        {
+            string[] PathExpressions = [
+                "${CMAKE_CURRENT_BINARY_DIR}",
+                "${CMAKE_CURRENT_SOURCE_DIR}",
+                "${CMAKE_SOURCE_DIR}",
+                "$<TARGET_FILE_DIR:",
+                "$<TARGET_FILE:"];
+
+            return PathExpressions.Any(expr => value.Contains(expr));
+        }
+        
+        return Regex.Replace(command, """
+            "((?:\\"|[^"])*)"
+            """, match =>
         {
             var value = match.Groups[1].Value;
-            if (value.StartsWith("$<SHELL_PATH:", StringComparison.Ordinal))
-                return match.Value;
-            if (!value.Contains("$<TARGET_", StringComparison.Ordinal) &&
-                !value.Contains("${CMAKE_CURRENT_SOURCE_DIR}", StringComparison.Ordinal) &&
-                !value.Contains("${CMAKE_SOURCE_DIR}", StringComparison.Ordinal))
-                return match.Value;
 
-            return $"\"$<SHELL_PATH:{value}>\"";
+            if (IsPath(value))
+                return $"\"$<SHELL_PATH:{value}>\"";
+            else
+                return match.Value;
         });
     }
 
