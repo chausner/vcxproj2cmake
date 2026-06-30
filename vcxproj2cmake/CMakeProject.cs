@@ -278,7 +278,7 @@ class CMakeProject
             var value = match.Groups[1].Value;
 
             if (IsPath(value))
-                return $"\"$<SHELL_PATH:{value}>\"";
+                return $"\"$<SHELL_PATH:{PathUtils.NormalizePath(value)}>\"";
             else
                 return match.Value;
         });
