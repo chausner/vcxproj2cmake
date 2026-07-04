@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <EnvironmentVariables>
+      <RUN_CMAKE_ASSERTIONS>1</RUN_CMAKE_ASSERTIONS>
+    </EnvironmentVariables>
+  </RunConfiguration>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="Code Coverage">
+        <Configuration>
+          <IncludeTestAssembly>False</IncludeTestAssembly>
+          <ModulePaths>
+            <Exclude>
+              <ModulePath>.*vcxproj2cmake\.Tests\.dll$</ModulePath>
+            </Exclude>
+          </ModulePaths>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
