@@ -94,7 +94,7 @@ public partial class ConverterTests
                         "/IC:\\My Includes"
                         /O2
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -125,7 +125,7 @@ public partial class ConverterTests
                         "$<$<CXX_COMPILER_ID:MSVC>:/IC:\\My Includes>"
                         "$<$<CXX_COMPILER_ID:MSVC>:/O2>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]

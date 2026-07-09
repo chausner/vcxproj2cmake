@@ -94,7 +94,7 @@ public partial class ConverterTests
                         "/MANIFESTINPUT:C:\\app manifest.xml"
                         /DEBUG
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -125,7 +125,7 @@ public partial class ConverterTests
                         "$<$<CXX_COMPILER_ID:MSVC>:/MANIFESTINPUT:C:\\app manifest.xml>"
                         "$<$<CXX_COMPILER_ID:MSVC>:/DEBUG>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
     }
 }
