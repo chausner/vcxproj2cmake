@@ -101,5 +101,36 @@ public partial class ConverterTests
                 """,
                 cmake);
         }
+
+        [Fact]
+        public void Given_ProjectWithDefaultAdditionalDependencies_When_Converted_Then_ValuesAreIgnoredAndNoWarningsAreGenerated()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("AdditionalDependencies", "Foo.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)")
+                .Build()));
+
+            var logger = new InMemoryLogger();
+            var converter = new Converter(fileSystem, logger);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("""
+                target_link_libraries(Project
+                    PRIVATE
+                        Foo
+                )
+                """, cmake);
+
+            Assert.DoesNotContain("CoreLibraryDependencies", logger.AllMessageText);
+        }
     }
 }
