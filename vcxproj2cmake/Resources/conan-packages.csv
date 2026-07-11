@@ -6,6 +6,7 @@ acado,ACADO,ACADO::ACADO
 ade,ade,ade
 aggeom-agg,agg,
 alembic,Alembic,Alembic::Alembic
+amf-headers,AMF,AMF::AMF
 amgcl,amgcl,amgcl::amgcl
 amqp-cpp,amqpcpp,amqpcpp
 andreasbuhr-cppcoro,cppcoro,cppcoro::cppcoro
@@ -67,6 +68,7 @@ bit-lite,bit-lite,nonstd::bit-lite
 bitflags,bitflags,bitflags::bitflags
 bitserializer,bitserializer,
 bitsery,Bitsery,Bitsery::bitsery
+blake3,blake3,BLAKE3::blake3
 blaze,blaze,blaze::blaze
 blend2d,blend2d,blend2d::blend2d
 bmx,bmx,
@@ -74,6 +76,7 @@ boolean-lite,boolean-lite,nonstd::boolean-lite
 boost,Boost,
 boost-ext-ut,ut,
 boost-leaf,boost-leaf,boost::leaf
+boringssl,OpenSSL,
 bullet3,Bullet,Bullet::Bullet
 bx,bx,bx::bx
 byte-lite,byte-lite,nonstd::byte-lite
@@ -100,10 +103,12 @@ charls,charls,charls
 cista,cista,cista::cista
 civetweb,civetweb,
 cjson,cJSON,
+clblast,CLBlast,clblast
 clhep,CLHEP,
 cli11,CLI11,CLI11::CLI11
 clickhouse-cpp,,clickhouse-cpp-lib::clickhouse-cpp-lib
 clipp,clipp,clipp::clipp
+cloudini,cloudini,cloudini::cloudini
 cluestering,CLUEstering,CLUEstering::CLUEstering
 cmaes,libcmaes,libcmaes::cmaes
 cminpack,,cminpack
@@ -206,9 +211,10 @@ fast_float,FastFloat,FastFloat::fast_float
 fast-cdr,fastcdr,fastcdr
 fast-dds,fastdds,fastdds
 fast-dds-gen,fastddsgen,fastddsgen::fastddsgen
-fastnoise2,FastNoise2,FastNoise2::FastNoise
+fastnoise2,FastNoise2,
 fastpfor,FastPFOR,FastPFOR::FastPFOR
 fbgemm,fbgemmLibrary,fbgemm
+fcarouge-kalman,fcarouge-kalman,fcarouge-kalman::kalman
 fcl,fcl,fcl
 fixed_math,fixed_math,fixed_math::fixed_math
 fixed-containers,fixed_containers,fixed_containers::fixed_containers
@@ -253,7 +259,7 @@ glbinding,glbinding,glbinding::glbinding-aux
 glew,,GLEW::GLEW
 glfw,glfw3,glfw
 gli,gli,gli
-glm,glm,glm::glm
+glm,glm,glm::glm-header-only
 glog,glog,glog::glog
 glslang,glslang,glslang::_glslang-do-not-use
 gm2calc,GM2Calc,GM2Calc::GM2Calc
@@ -311,8 +317,10 @@ json-c,json-c,json-c::json-c
 json-schema-validator,nlohmann_json_schema_validator,nlohmann_json_schema_validator
 jsoncons,jsoncons,jsoncons::jsoncons
 jsoncpp,jsoncpp,JsonCpp::JsonCpp
+jsrl,jsrl,jsrl::jsrl
 jthread-lite,jthread-lite,nonstd::jthread-lite
 jwt-cpp,jwt-cpp,jwt-cpp::jwt-cpp
+kahip,KaHIP,KaHIP::kahip
 kainjow-mustache,kainjow_mustache,kainjow_mustache::kainjow_mustache
 kangaru,kangaru,kangaru
 kdalgorithms,KDAlgorithms,KDAB::kdalgorithms
@@ -330,6 +338,7 @@ lexbor,lexbor,
 libaec,libaec,
 libaesgm,Aesgm,Aesgm::Aesgm
 libalsa,ALSA,ALSA::ALSA
+libaom-av1,AOM,AOM::aom
 libarchive,LibArchive,LibArchive::LibArchive
 libassert,libassert,libassert::assert
 libatomic_ops,Atomic_ops,Atomic_ops::atomic_ops_gpl
@@ -375,6 +384,7 @@ libmediainfo,MediaInfoLib,mediainfo
 libmeshb,libMeshb,libMeshb::Meshb.7
 libmorton,libmorton,libmorton::libmorton
 libnabo,libnabo,libnabo::nabo
+libnetconf2,LibNETCONF2,
 libnfs,libnfs,libnfs::libnfs
 libpng,PNG,PNG::PNG
 libpointmatcher,libpointmatcher,
@@ -427,6 +437,7 @@ log4cxx,log4cxx,log4cxx
 logr,logr,
 loguru,loguru,loguru::loguru
 luau,Luau,Luau::Luau
+lunarlog,LunarLog,LunarLog::LunarLog
 lyra,lyra,bfg::lyra
 lz4,lz4,
 lzham,lzham,lzham::lzham
@@ -445,7 +456,6 @@ mbits-mstch,mbits-mstch,mbits::mstch
 mbits-semver,mbits-semver,mbits::semver
 mbits-utfconv,mbits-utfconv,mbits::utfconv
 md4c,md4c,md4c::md4c-html
-md4qt,md4qt,md4qt::md4qt
 mdns,mdns,mdns::mdns
 mdnsresponder,DNSSD,DNSSD::DNSSD
 mdspan,mdspan,std::mdspan
@@ -516,11 +526,12 @@ octo-wildcardmatching-cpp,octo-wildcardmatching-cpp,octo::octo-wildcardmatching-
 octomap,octomap,
 odbc,ODBC,ODBC::ODBC
 ode,ode,ODE::ODE
+ogdf,,OGDF
 ogg,Ogg,Ogg::ogg
 ogre,OGRE,
 omath,omath,omath::omath
 onedpl,ParallelSTL,pstl::ParallelSTL
-onetbb,TBB,TBB::TBB
+onetbb,TBB,
 oniguruma,oniguruma,oniguruma::onig
 onnx,ONNX,
 onnxruntime,onnxruntime,onnxruntime::onnxruntime
@@ -561,6 +572,7 @@ openxlsx,OpenXLSX,OpenXLSX::OpenXLSX
 optimlib,OptimLib,OptimLib::OptimLib
 optional-lite,optional-lite,nonstd::optional-lite
 opus,Opus,Opus::opus
+or-tools,ortools,
 orcania,Orcania,
 osqp,osqp,osqp::osqp
 ouster_sdk,OusterSDK,OusterSDK::OusterSDK
@@ -625,11 +637,14 @@ rectanglebinpack,RectangleBinPack,RectangleBinPack::RectangleBinPack
 redboltz-mqtt_cpp,mqtt_cpp,mqtt_cpp::mqtt_cpp
 redis-plus-plus,redis++,
 redradist-icc,icc,icc::icc
+reduct-cpp,ReductCpp,reductcpp
 reflect-cpp,reflectcpp,reflectcpp::reflectcpp
 replxx,replxx,replxx::replxx
 resource_pool,,elsid::resource_pool
 restinio,restinio,restinio::restinio
 ring-span-lite,ring-span-lite,
+ripper37-libbase,libbase,
+rmlui,RmlUi,RmlUi::RmlUi
 roaring,roaring,roaring::roaring
 robin-hood-hashing,robin_hood,robin_hood::robin_hood
 rocksdb,RocksDB,
@@ -637,6 +652,7 @@ rpclib,rpclib,rpclib::rpc
 rtmidi,RtMidi,RtMidi::rtmidi
 rttr,rttr,
 ruby,Ruby,Ruby::Ruby
+ruckig,ruckig,ruckig::ruckig
 rusty-cpp,,rusty-cpp
 rwindegger-bigint23,bigint23,bigint23::bigint23
 s2geometry,s2,s2::s2
@@ -753,6 +769,8 @@ tsl-sparse-map,tsl-sparse-map,tsl::sparse_map
 tuplet,tuplet,tuplet::tuplet
 tweenerspp,tweeners,tweeners::tweeners
 tweeny,tweeny,tweeny
+typecast-c,typecast,typecast::typecast
+uhd,uhd,uhd::uhd
 ulfius,Ulfius,
 uni-algo,uni-algo,uni-algo::uni-algo
 units,units,units::units
@@ -775,15 +793,18 @@ vsg,vsg,vsg::vsg
 vulkan-headers,VulkanHeaders,
 vulkan-loader,VulkanLoader,Vulkan::Loader
 vulkan-memory-allocator,VulkanMemoryAllocator,GPUOpen::VulkanMemoryAllocator
+vulkan-utility-libraries,VulkanUtilityLibraries,
 wavelet_buffer,wavelet_buffer,wavelet_buffer::wavelet_buffer
 websocketpp,websocketpp,websocketpp::websocketpp
 wg21-linear_algebra,wg21_linear_algebra,wg21_linear_algebra::wg21_linear_algebra
 wil,wil,WIL::WIL
 wildmidi,WildMidi,WildMidi::libwildmidi
+wintoast,WinToast,WinToast::WinToast
 wise_enum,WiseEnum,WiseEnum::wise_enum
 wslay,wslay,
 wt,wt,
 wxwidgets,wxWidgets,wxWidgets::wxWidgets
+xalan-c,XalanC,
 xapian-core,xapian,
 xbyak,xbyak,xbyak::xbyak
 xerces-c,XercesC,XercesC::XercesC

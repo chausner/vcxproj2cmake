@@ -65,7 +65,10 @@ internal class InMemoryLogger : ILogger
 
 static class CMakeAssert
 {
-    public static async Task ConfiguresAndBuildsWithCMake(MockFileSystem fileSystem, string? architecture = null, string? configuration = null)
+    public static async Task<(ProcessOutput ConfigureOutput, ProcessOutput BuildOutput)> ConfiguresAndBuildsWithCMake(
+        MockFileSystem fileSystem, 
+        string? architecture = null, 
+        string? configuration = null)
     {
         if (!await CanRunCMake())
             Assert.Skip("CMake is not available on PATH.");
@@ -82,13 +85,15 @@ static class CMakeAssert
             if (architecture != null)
                 configureArgs.AddRange(["-A", architecture]);
 
-            await RunCMake(configureArgs, sourceDir);
+            var configureOutput = await RunCMake(configureArgs, sourceDir);
 
             var buildArgs = new List<string> { "--build", buildDir };
             if (configuration != null)
                 buildArgs.AddRange(["--config", configuration]);
 
-            await RunCMake(buildArgs, sourceDir);
+            var buildOutput = await RunCMake(buildArgs, sourceDir);
+
+            return (configureOutput, buildOutput);
         }
         finally
         {
@@ -111,7 +116,7 @@ static class CMakeAssert
 
     static Task<bool> CanRunCMake() => canRunCMake.Value;
 
-    static async Task RunCMake(IEnumerable<string> arguments, string workingDirectory)
+    static async Task<ProcessOutput> RunCMake(IEnumerable<string> arguments, string workingDirectory)
     {
         using var process = new Process();
         process.StartInfo.FileName = "cmake";
@@ -134,5 +139,9 @@ static class CMakeAssert
             {output}
             {error}
             """);
+
+        return new ProcessOutput(output, error);
     }
 }
+
+record ProcessOutput(string Stdout, string Stderr);

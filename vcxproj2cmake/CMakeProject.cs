@@ -53,6 +53,9 @@ class CMakeProject
         CMakeExpression.Expression(@"\$(NETFXKitsDir)Lib\\um\\arm"),
         CMakeExpression.Expression(@"\$(NETFXKitsDir)Lib\\um\\arm64")];
 
+    static readonly CMakeExpression[] IgnoredLibraries = [
+        CMakeExpression.Expression(@"\$(CoreLibraryDependencies)")];
+
     public CMakeProject(
         MSBuildProject project,
         CMakeProjectSettings settings,
@@ -110,7 +113,10 @@ class CMakeProject
             logger);
         Libraries = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             project.AdditionalDependencies,
-            values => values.Select(value => RemoveLibExtension(TranslateAndNormalize(value, "AdditionalDependencies", logger))).ToArray(),
+            values => values
+                .Except(IgnoredLibraries)
+                .Select(value => RemoveLibExtension(TranslateAndNormalize(value, "AdditionalDependencies", logger)))
+                .ToArray(),
             supportedProjectConfigurations,
             logger);
         Defines = CMakeConfigDependentMultiSetting.FromMSBuildSetting(

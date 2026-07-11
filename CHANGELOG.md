@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Avoid warnings by ignoring certain default values in `AdditionalDependencies` MSBuild property.
+
+## [1.10.0] - 2026-07-03
+
+### Added
+
 - Avoid warnings by ignoring certain default values in `IncludePath` and `LibraryPath` MSBuild properties.
 - Add support for MSBuild macros `IntDir`, `OutDir`, `TargetDir`, `TargetExt`, `TargetFileName`, `TargetName` and `TargetPath`.
 
@@ -15,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - When possible, the `.lib` file extension is now omitted for libraries passed to `target_link_libraries`.
 - MSBuild macros `Configuration` and `ConfigurationName` are now translated to `$<CONFIG>`.
+- Update list of Conan package metadata.
 
 ## [1.9.0] - 2026-05-31
 
@@ -166,7 +173,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 First stable release.
 
-[unreleased]: https://github.com/chausner/vcxproj2cmake/compare/v1.9.0...HEAD
+[unreleased]: https://github.com/chausner/vcxproj2cmake/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.6.0...v1.7.0
