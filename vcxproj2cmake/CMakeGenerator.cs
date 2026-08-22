@@ -81,6 +81,9 @@ class CMakeGenerator
 
         var result = cmakeListsTemplate.Render(context);
 
+        if (model is CMakeProject project)
+            result = result.Replace(Config.CompilerArchitectureIdVariablePlaceholder, GetCompilerArchitectureIdVariable(project), StringComparison.Ordinal);
+
         if (settings.IndentStyle != IndentStyle.Spaces || settings.IndentSize != 4)
             result = ApplyIndentation(result, settings.IndentStyle, settings.IndentSize);
 
@@ -97,6 +100,16 @@ class CMakeGenerator
 
             fileSystem.File.WriteAllText(destinationPath, result);
         }
+    }
+
+    static string GetCompilerArchitectureIdVariable(CMakeProject project)
+    {
+        if (project.Languages.Contains("CXX"))
+            return "CMAKE_CXX_COMPILER_ARCHITECTURE_ID";
+        if (project.Languages.Contains("C"))
+            return "CMAKE_C_COMPILER_ARCHITECTURE_ID";
+
+        return "CMAKE_CXX_COMPILER_ARCHITECTURE_ID";
     }
 
     static string ApplyIndentation(string text, IndentStyle indentStyle, int indentSize)
