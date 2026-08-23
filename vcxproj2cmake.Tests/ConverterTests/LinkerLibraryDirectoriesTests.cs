@@ -73,7 +73,7 @@ public partial class ConverterTests
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
             fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
-                .WithClCompileSetting("AdditionalLibraryDirectories", "$(TargetDir)generated;$(IntDir)cache")
+                .WithLinkSetting("AdditionalLibraryDirectories", "$(TargetDir)generated;$(IntDir)cache")
                 .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
