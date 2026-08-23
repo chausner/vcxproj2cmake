@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-08-23
+
 ### Added
 
 - Avoid warnings by ignoring certain default values in `AdditionalDependencies` MSBuild property.
@@ -180,7 +182,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 First stable release.
 
-[unreleased]: https://github.com/chausner/vcxproj2cmake/compare/v1.10.0...HEAD
+[unreleased]: https://github.com/chausner/vcxproj2cmake/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.7.0...v1.8.0
