@@ -9,17 +9,8 @@ using System.Text.RegularExpressions;
 
 namespace vcxproj2cmake;
 
-class CMakeGenerator
+class CMakeGenerator(IFileSystem fileSystem, ILogger logger)
 {
-    readonly IFileSystem fileSystem;
-    readonly ILogger logger;
-
-    public CMakeGenerator(IFileSystem fileSystem, ILogger logger)
-    {
-        this.fileSystem = fileSystem;
-        this.logger = logger;
-    }
-
     public void Generate(CMakeSolution? solution, IEnumerable<CMakeProject> projects, CMakeGeneratorSettings settings)
     {
         var projectCMakeListsTemplate = LoadTemplate("vcxproj2cmake.Resources.Templates.Project-CMakeLists.txt.scriban");

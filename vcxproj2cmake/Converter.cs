@@ -3,17 +3,8 @@ using System.IO.Abstractions;
 
 namespace vcxproj2cmake;
 
-public class Converter
+public class Converter(IFileSystem fileSystem, ILogger logger)
 {
-    readonly IFileSystem fileSystem;
-    readonly ILogger logger;
-
-    public Converter(IFileSystem fileSystem, ILogger logger)
-    {
-        this.fileSystem = fileSystem;
-        this.logger = logger;
-    }
-
     public void Convert(
         List<FileInfo>? projectFiles = null,
         FileInfo? solutionFile = null,
