@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Avoid warnings by ignoring certain default values in `AdditionalDependencies` MSBuild property.
+- Explicitly specified include paths that are already implicitly specified via transitive dependencies are now ignored.
 
 ### Fixed
 

@@ -184,13 +184,8 @@ class CMakeGenerator(IFileSystem fileSystem, ILogger logger)
     static CMakeExpression PrependRelativePathsWithCMakeCurrentSourceDir(CMakeExpression normalizedPath)
     {
         var path = normalizedPath.Value;
-        var isAbsolutePath = Path.IsPathRooted(path);
-
-        // if a path starts with a CMake variable or generator expression, we just assume that it resolves to an absolute path
-        isAbsolutePath |= path.StartsWith("${");
-        isAbsolutePath |= path.StartsWith("$<");
-
-        if (!isAbsolutePath)
+        
+        if (!PathUtils.IsCMakePathAbsolute(path))
             if (path == ".")
                 return CMakeExpression.Expression("${CMAKE_CURRENT_SOURCE_DIR}");
             else
