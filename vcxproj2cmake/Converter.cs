@@ -188,12 +188,19 @@ public class Converter(IFileSystem fileSystem, ILogger logger)
     {
         foreach (var project in cmakeProjects)
         {
-            if (!project.MSBuildProject.LinkLibraryDependenciesEnabled)
-                continue;
-
             foreach (var projectRef in ProjectDependencyUtils.OrderProjectReferencesByDependencies(project.ProjectReferences, cmakeProjects))
-                if (projectRef.Project!.TargetType is CMakeTargetType.StaticLibrary or CMakeTargetType.SharedLibrary)
-                    project.Libraries.AppendValue(Config.CommonConfig, CMakeExpression.Literal(projectRef.Project.ProjectName));
+            {
+                if (projectRef.Project!.TargetType == CMakeTargetType.Executable)
+                    continue;
+
+                var libraries = project.TargetType is CMakeTargetType.StaticLibrary or CMakeTargetType.SharedLibrary
+                    ? project.PublicLibraries
+                    : project.Libraries;
+                var referencedTarget = CMakeExpression.Literal(projectRef.Project.ProjectName);
+
+                if (!libraries.Values.TryGetValue(Config.CommonConfig, out var commonLibraries) || !commonLibraries.Contains(referencedTarget))
+                    libraries.AppendValue(Config.CommonConfig, referencedTarget);
+            }
         }
     }
 }

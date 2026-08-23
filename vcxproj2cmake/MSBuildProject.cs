@@ -96,6 +96,106 @@ class MSBuildProject
                 .Select(config => new MSBuildProjectConfig(config))
                 .ToList();
 
+        Dictionary<string, Dictionary<MSBuildProjectConfig, string>> compilerSettings = [];
+        Dictionary<string, Dictionary<MSBuildProjectConfig, string>> linkerSettings = [];
+        Dictionary<string, Dictionary<MSBuildProjectConfig, string>> otherSettings = [];
+
+        foreach (var projectConfig in projectConfigurations)
+        {
+            var itemDefinitionGroups =
+                projectElement
+                    .Elements(itemDefinitionGroupXName)
+                    .Where(group => DoesConfigPlatformConditionApply(group, projectConfig))
+                    .ToList();
+
+            var propertyGroups =
+                projectElement
+                    .Elements(propertyGroupXName)
+                    .Where(group => DoesConfigPlatformConditionApply(group, projectConfig))
+                    .ToList();
+
+            var projectConfigCompilerSettings =
+                itemDefinitionGroups
+                .SelectMany(group => group.Elements(clCompileXName))
+                .SelectMany(element => element.Elements())
+                .ToDictionaryKeepingLast(element => element.Name.LocalName, element => element.Value.Trim());
+
+            var projectConfigLinkerSettings =
+                itemDefinitionGroups
+                .SelectMany(group => group.Elements())
+                .Where(element => element.Name == linkXName || element.Name == libXName)
+                .SelectMany(element => element.Elements())
+                .ToDictionaryKeepingLast(element => element.Name.LocalName, element => element.Value.Trim());
+
+            var projectConfigOtherSettings =
+                propertyGroups
+                .SelectMany(element => element.Elements())
+                .ToDictionaryKeepingLast(element => element.Name.LocalName, element => element.Value.Trim());
+
+            foreach (var setting in projectConfigCompilerSettings)
+            {
+                compilerSettings.TryAdd(setting.Key, []);
+                compilerSettings[setting.Key][projectConfig] = setting.Value;
+            }
+
+            foreach (var setting in projectConfigLinkerSettings)
+            {
+                linkerSettings.TryAdd(setting.Key, []);
+                linkerSettings[setting.Key][projectConfig] = setting.Value;
+            }
+
+            foreach (var setting in projectConfigOtherSettings)
+            {
+                otherSettings.TryAdd(setting.Key, []);
+                otherSettings[setting.Key][projectConfig] = setting.Value;
+            }
+        }
+
+        var configurationType = GetCommonSetting("ConfigurationType", otherSettings) ?? "Application";
+        var languageStandard = GetCommonSetting("LanguageStandard", compilerSettings) ?? "Default";
+        var languageStandardC = GetCommonSetting("LanguageStandard_C", compilerSettings) ?? "Default";
+        string? linkerSubsystem = GetCommonSetting("SubSystem", linkerSettings);
+
+        var targetName = ParseSetting("TargetName", otherSettings, Path.GetFileNameWithoutExtension(projectPath));
+        var additionalIncludeDirectories = ParseMultiSetting("AdditionalIncludeDirectories", ';', compilerSettings, []);
+        var includePath = ParseMultiSetting("IncludePath", ';', otherSettings, []);
+        var publicIncludeDirectories = ParseMultiSetting("PublicIncludeDirectories", ';', otherSettings, []);
+        var additionalLibraryDirectories = ParseMultiSetting("AdditionalLibraryDirectories", ';', linkerSettings, []);
+        var libraryPath = ParseMultiSetting("LibraryPath", ';', otherSettings, []);
+        var additionalDependencies = ParseMultiSetting("AdditionalDependencies", ';', linkerSettings, []);
+        var preprocessorDefinitions = ParseMultiSetting("PreprocessorDefinitions", ';', compilerSettings, []);
+        var additionalCompileOptions = ParseCommandLineOptionSetting(compilerSettings, "AdditionalOptions");
+        var additionalLinkOptions = ParseCommandLineOptionSetting(linkerSettings, "AdditionalOptions");
+        var moduleDefinitionFile = ParseSetting("ModuleDefinitionFile", linkerSettings, string.Empty);
+        var characterSet = ParseSetting("CharacterSet", otherSettings, "NotSet");
+        var useOfMfc = ParseSetting("UseOfMfc", otherSettings, "false");
+        var useDebugLibraries = ParseSetting("UseDebugLibraries", otherSettings, "false");
+        var runtimeLibrary = ParseSettingWithConfigSpecificDefault("RuntimeLibrary", compilerSettings, new(projectConfig =>
+        {
+            if (useDebugLibraries.GetEffectiveValue(projectConfig) == "true")
+                return "MultiThreadedDebugDLL";
+            else
+                return "MultiThreadedDLL";
+        }));
+        var basicRuntimeChecks = ParseSettingWithConfigSpecificDefault("BasicRuntimeChecks", compilerSettings, new(projectConfig =>
+        {
+            if (useDebugLibraries.GetEffectiveValue(projectConfig) == "true")
+                return "EnableFastChecks";
+            else
+                return "Default";
+        }));
+        var disableSpecificWarnings = ParseMultiSetting("DisableSpecificWarnings", ';', compilerSettings, []);
+        var treatSpecificWarningsAsErrors = ParseMultiSetting("TreatSpecificWarningsAsErrors", ';', compilerSettings, []);
+        var treatWarningAsError = ParseSetting("TreatWarningAsError", compilerSettings, "false");
+        var treatLinkerWarningAsErrors = ParseSetting("TreatLinkerWarningAsErrors", linkerSettings, "false");
+        var warningLevel = ParseSetting("WarningLevel", compilerSettings, string.Empty);
+        var externalWarningLevel = ParseSetting("ExternalWarningLevel", compilerSettings, string.Empty);
+        var treatAngleIncludeAsExternal = ParseSetting("TreatAngleIncludeAsExternal", compilerSettings, "false");
+        var allProjectIncludesArePublic = ParseSetting("AllProjectIncludesArePublic", otherSettings, "false");
+        var openMPSupport = ParseSetting("OpenMPSupport", compilerSettings, "false");
+        var precompiledHeader = ParseSetting("PrecompiledHeader", compilerSettings, "NotUsing");
+        var precompiledHeaderFile = ParseSetting("PrecompiledHeaderFile", compilerSettings, string.Empty);
+
         var sourceFiles =
             projectElement
                 .Elements(itemGroupXName)
@@ -170,7 +270,7 @@ class MSBuildProject
                         $"Invalid value for LinkLibraryDependencies: {value}")
                 })
                 .Distinct()
-                .SingleOrDefaultWithException(true,
+                .SingleOrDefaultWithException(configurationType != "StaticLibrary",
                     () => throw new CatastrophicFailureException(
                         "LinkLibraryDependencies property is inconsistent between configurations"));
 
@@ -192,105 +292,6 @@ class MSBuildProject
             .SelectMany(group => group.Elements(qtRccXName))
             .Any();
 
-        Dictionary<string, Dictionary<MSBuildProjectConfig, string>> compilerSettings = [];
-        Dictionary<string, Dictionary<MSBuildProjectConfig, string>> linkerSettings = [];
-        Dictionary<string, Dictionary<MSBuildProjectConfig, string>> otherSettings = [];
-
-        foreach (var projectConfig in projectConfigurations)
-        {
-            var itemDefinitionGroups =
-                projectElement
-                    .Elements(itemDefinitionGroupXName)
-                    .Where(group => DoesConfigPlatformConditionApply(group, projectConfig))
-                    .ToList();
-
-            var propertyGroups =
-                projectElement
-                    .Elements(propertyGroupXName)
-                    .Where(group => DoesConfigPlatformConditionApply(group, projectConfig))
-                    .ToList();
-
-            var projectConfigCompilerSettings =
-                itemDefinitionGroups
-                .SelectMany(group => group.Elements(clCompileXName))
-                .SelectMany(element => element.Elements())
-                .ToDictionaryKeepingLast(element => element.Name.LocalName, element => element.Value.Trim());
-
-            var projectConfigLinkerSettings =
-                itemDefinitionGroups
-                .SelectMany(group => group.Elements())
-                .Where(element => element.Name == linkXName || element.Name == libXName)
-                .SelectMany(element => element.Elements())
-                .ToDictionaryKeepingLast(element => element.Name.LocalName, element => element.Value.Trim());
-
-            var projectConfigOtherSettings =
-                propertyGroups
-                .SelectMany(element => element.Elements())
-                .ToDictionaryKeepingLast(element => element.Name.LocalName, element => element.Value.Trim());
-
-            foreach (var setting in projectConfigCompilerSettings)
-            {
-                compilerSettings.TryAdd(setting.Key, []);
-                compilerSettings[setting.Key][projectConfig] = setting.Value;
-            }
-
-            foreach (var setting in projectConfigLinkerSettings)
-            {
-                linkerSettings.TryAdd(setting.Key, []);
-                linkerSettings[setting.Key][projectConfig] = setting.Value;
-            }
-
-            foreach (var setting in projectConfigOtherSettings)
-            {
-                otherSettings.TryAdd(setting.Key, []);
-                otherSettings[setting.Key][projectConfig] = setting.Value;
-            }
-        }
-
-        var configurationType = GetCommonSetting("ConfigurationType", otherSettings) ?? "Application";
-        var languageStandard = GetCommonSetting("LanguageStandard", compilerSettings) ?? "Default";
-        var languageStandardC = GetCommonSetting("LanguageStandard_C", compilerSettings) ?? "Default";
-
-        var targetName = ParseSetting("TargetName", otherSettings, Path.GetFileNameWithoutExtension(projectPath));
-        var additionalIncludeDirectories = ParseMultiSetting("AdditionalIncludeDirectories", ';', compilerSettings, []);
-        var includePath = ParseMultiSetting("IncludePath", ';', otherSettings, []);
-        var publicIncludeDirectories = ParseMultiSetting("PublicIncludeDirectories", ';', otherSettings, []);
-        var additionalLibraryDirectories = ParseMultiSetting("AdditionalLibraryDirectories", ';', linkerSettings, []);
-        var libraryPath = ParseMultiSetting("LibraryPath", ';', otherSettings, []);
-        var additionalDependencies = ParseMultiSetting("AdditionalDependencies", ';', linkerSettings, []);
-        var preprocessorDefinitions = ParseMultiSetting("PreprocessorDefinitions", ';', compilerSettings, []);
-        var additionalCompileOptions = ParseCommandLineOptionSetting(compilerSettings, "AdditionalOptions");
-        var additionalLinkOptions = ParseCommandLineOptionSetting(linkerSettings, "AdditionalOptions");
-        var moduleDefinitionFile = ParseSetting("ModuleDefinitionFile", linkerSettings, string.Empty);
-        var characterSet = ParseSetting("CharacterSet", otherSettings, "NotSet");
-        var useOfMfc = ParseSetting("UseOfMfc", otherSettings, "false");
-        var useDebugLibraries = ParseSetting("UseDebugLibraries", otherSettings, "false");
-        var runtimeLibrary = ParseSettingWithConfigSpecificDefault("RuntimeLibrary", compilerSettings, new(projectConfig =>
-        {
-            if (useDebugLibraries.GetEffectiveValue(projectConfig) == "true")
-                return "MultiThreadedDebugDLL";
-            else
-                return "MultiThreadedDLL";
-        }));
-        var basicRuntimeChecks = ParseSettingWithConfigSpecificDefault("BasicRuntimeChecks", compilerSettings, new(projectConfig =>
-        {
-            if (useDebugLibraries.GetEffectiveValue(projectConfig) == "true")
-                return "EnableFastChecks";
-            else
-                return "Default";
-        }));
-        var disableSpecificWarnings = ParseMultiSetting("DisableSpecificWarnings", ';', compilerSettings, []);
-        var treatSpecificWarningsAsErrors = ParseMultiSetting("TreatSpecificWarningsAsErrors", ';', compilerSettings, []);
-        var treatWarningAsError = ParseSetting("TreatWarningAsError", compilerSettings, "false");
-        var treatLinkerWarningAsErrors = ParseSetting("TreatLinkerWarningAsErrors", linkerSettings, "false");
-        var warningLevel = ParseSetting("WarningLevel", compilerSettings, string.Empty);
-        var externalWarningLevel = ParseSetting("ExternalWarningLevel", compilerSettings, string.Empty);
-        var treatAngleIncludeAsExternal = ParseSetting("TreatAngleIncludeAsExternal", compilerSettings, "false");
-        var allProjectIncludesArePublic = ParseSetting("AllProjectIncludesArePublic", otherSettings, "false");
-        var openMPSupport = ParseSetting("OpenMPSupport", compilerSettings, "false");
-        var precompiledHeader = ParseSetting("PrecompiledHeader", compilerSettings, "NotUsing");
-        var precompiledHeaderFile = ParseSetting("PrecompiledHeaderFile", compilerSettings, string.Empty);
-
         var conanPackages =
             imports
                 .Select(import =>
@@ -300,8 +301,6 @@ class MSBuildProject
                 })
                 .Where(packageName => packageName != null)
                 .ToArray();
-
-        string? linkerSubsystem = GetCommonSetting("SubSystem", linkerSettings);
 
         return new MSBuildProject
         {

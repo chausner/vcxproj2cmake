@@ -20,6 +20,7 @@ class CMakeProject
     public CMakeConfigDependentMultiSetting PublicIncludePaths { get; set; }
     public CMakeConfigDependentMultiSetting LinkerPaths { get; set; }
     public CMakeConfigDependentMultiSetting Libraries { get; set; }
+    public CMakeConfigDependentMultiSetting PublicLibraries { get; set; }
     public CMakeConfigDependentMultiSetting Defines { get; set; }
     public CMakeConfigDependentMultiSetting CompileOptions { get; set; }
     public CMakeConfigDependentMultiSetting LinkOptions { get; set; }
@@ -113,6 +114,7 @@ class CMakeProject
                 .ToArray(),
             supportedProjectConfigurations,
             logger);
+        PublicLibraries = new("PublicLibraries", []);
         Defines = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             project.PreprocessorDefinitions,
             values => values.Select(value => TranslateMSBuildMacros(value, "PreprocessorDefinitions", logger)).ToArray(),
