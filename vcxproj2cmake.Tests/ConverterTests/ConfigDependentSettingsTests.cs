@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace vcxproj2cmake.Tests;
@@ -11,6 +12,8 @@ public partial class ConverterTests
         [Fact]
         public void Given_LinkerPathsWithoutCondition_When_Converted_Then_TargetLinkDirectoriesAdded()
         {
+            Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Absolute Windows paths are currently broken on non-Windows platforms");
+
             // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
@@ -39,6 +42,8 @@ public partial class ConverterTests
         [Fact]
         public void Given_LinkerPathsSameForAllConfigs_When_Converted_Then_TargetLinkDirectoriesAdded()
         {
+            Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Absolute Windows paths are currently broken on non-Windows platforms");
+
             // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
