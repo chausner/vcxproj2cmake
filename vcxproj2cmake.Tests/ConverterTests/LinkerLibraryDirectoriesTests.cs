@@ -37,6 +37,64 @@ public partial class ConverterTests
         }
 
         [Fact]
+        public void Given_ProjectWithRelativeLinkerDirectories_When_Converted_Then_PathsArePrefixed()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("AdditionalLibraryDirectories", "libs;..\\shared")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("""
+                target_link_directories(Project
+                    PRIVATE
+                        "${CMAKE_CURRENT_SOURCE_DIR}/libs"
+                        "${CMAKE_CURRENT_SOURCE_DIR}/../shared"
+                )
+                """, cmake);
+        }
+
+        [Fact]
+        public void Given_ProjectWithOutputMacroLinkerDirectories_When_Converted_Then_GeneratorExpressionPathsAreNotPrefixed()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("AdditionalLibraryDirectories", "$(TargetDir)generated;$(IntDir)cache")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("""
+                target_link_directories(Project
+                    PRIVATE
+                        "$<TARGET_FILE_DIR:Project>/generated"
+                        "${CMAKE_CURRENT_BINARY_DIR}/cache"
+                )
+                """, cmake);
+        }
+
+        [Fact]
         public void Given_LinkerPathsDifferentPerConfig_When_Converted_Then_GeneratorExpressionsUsed()
         {
             // Arrange
@@ -59,8 +117,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_link_directories(Project
                     PRIVATE
-                        "$<$<CONFIG:Debug>:DebugLibs>"
-                        "$<$<CONFIG:Release>:ReleaseLibs>"
+                        "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/DebugLibs>"
+                        "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/ReleaseLibs>"
                 )
                 """, cmake);
         }
@@ -119,10 +177,10 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_link_directories(Project
                     PRIVATE
-                        shared
-                        "$<$<CONFIG:Debug>:additionaldebug>"
-                        "$<$<CONFIG:Debug>:debuglib>"
-                        "$<$<CONFIG:Release>:releaselib>"
+                        "${CMAKE_CURRENT_SOURCE_DIR}/shared"
+                        "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/additionaldebug>"
+                        "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/debuglib>"
+                        "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/releaselib>"
                 )
                 """, cmake);
         }
@@ -152,8 +210,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_link_directories(Project
                     PRIVATE
-                        "$<$<CONFIG:Debug>:debuglib>"
-                        "$<$<CONFIG:Release>:releaselib>"
+                        "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/debuglib>"
+                        "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/releaselib>"
                 )
                 """, cmake);
 

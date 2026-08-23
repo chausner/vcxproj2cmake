@@ -138,7 +138,7 @@ target_link_directories({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
         {{~ for kvp in linker_paths.values ~}}
         {{~ for path in kvp.value ~}}
-        {{ get_config_expression kvp.key path }}
+        {{ get_config_expression kvp.key (path | prepend_relative_paths_with_cmake_current_source_dir) }}
         {{~ end ~}}  
         {{~ end ~}}      
 )

@@ -91,7 +91,7 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_link_directories(Project
                     PRIVATE
-                        SupportedLib
+                        "${CMAKE_CURRENT_SOURCE_DIR}/SupportedLib"
                 )
                 """, cmake);
             Assert.DoesNotContain("$<$<CONFIG:Debug>:", cmake);
@@ -122,8 +122,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_link_directories(Project
                     PRIVATE
-                        "$<$<CONFIG:Debug>:DebugLibs>"
-                        "$<$<CONFIG:Release>:ReleaseLibs>"
+                        "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/DebugLibs>"
+                        "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/ReleaseLibs>"
                 )
                 """, cmake);
         }
@@ -153,8 +153,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_link_directories(Project
                     PRIVATE
-                        "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:Win32Lib>"
-                        "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:X64Lib>"
+                        "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:${CMAKE_CURRENT_SOURCE_DIR}/Win32Lib>"
+                        "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:${CMAKE_CURRENT_SOURCE_DIR}/X64Lib>"
                 )
                 """, cmake);
         }
@@ -237,8 +237,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_link_directories(Project
                     PRIVATE
-                        "$<$<CONFIG:Debug>:DebugLib2>"
-                        "$<$<CONFIG:Release>:Libs2>"
+                        "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/DebugLib2>"
+                        "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/Libs2>"
                 )
                 """, cmake);
             Assert.DoesNotContain("DebugLib1", cmake);

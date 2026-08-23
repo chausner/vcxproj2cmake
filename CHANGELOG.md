@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Architecture-dependent values in C-only projects are now translated using `CMAKE_C_COMPILER_ARCHITECTURE_ID`.
 - Fixed an issue where in certain cases, linking of project references may not be converted correctly.
+- Relative paths in `AdditionalLibraryDirectories` MSBuild property are now prefixed with `${CMAKE_CURRENT_SOURCE_DIR}`.
 
 ## [1.10.0] - 2026-07-03
 
