@@ -234,6 +234,8 @@ class CMakeProject
                 "Application" => CMakeTargetType.Executable,
                 "StaticLibrary" => CMakeTargetType.StaticLibrary,
                 "DynamicLibrary" => CMakeTargetType.SharedLibrary,
+                "Utility" => throw new CatastrophicFailureException("Utility projects are only supported if they contain C/C++ headers only"),
+                "Makefile" => throw new CatastrophicFailureException("Makefile projects are not supported"),
                 _ => throw new CatastrophicFailureException($"ConfigurationType property is unsupported: {project.ConfigurationType}")
             };
     }
