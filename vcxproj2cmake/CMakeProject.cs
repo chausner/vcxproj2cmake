@@ -170,6 +170,10 @@ class CMakeProject
         translatedValue = Regex.Replace(translatedValue, @"\\\$\(Configuration(Name)?\)", "$<CONFIG>", RegexOptions.IgnoreCase);
         translatedValue = Regex.Replace(translatedValue, @"\\\$\(IntDir\)[/\\]*", "${CMAKE_CURRENT_BINARY_DIR}/", RegexOptions.IgnoreCase);
         translatedValue = Regex.Replace(translatedValue, @"\\\$\(OutDir\)[/\\]*", $"$<TARGET_FILE_DIR:{ProjectName}>/", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(MSBuildProjectDirectory\)([/\\]*)", match => "${CMAKE_CURRENT_SOURCE_DIR}" + (match.Groups[1].Length > 0 ? "/" : string.Empty), RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(MSBuildProjectName\)", "${PROJECT_NAME}", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(MSBuildThisFileDirectory\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(MSBuildThisFileName\)", "${PROJECT_NAME}", RegexOptions.IgnoreCase);
         translatedValue = Regex.Replace(translatedValue, @"\\\$\(ProjectDir\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/", RegexOptions.IgnoreCase);
         translatedValue = Regex.Replace(translatedValue, @"\\\$\(ProjectName\)", "${PROJECT_NAME}", RegexOptions.IgnoreCase);
         translatedValue = Regex.Replace(translatedValue, @"\\\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/", RegexOptions.IgnoreCase);

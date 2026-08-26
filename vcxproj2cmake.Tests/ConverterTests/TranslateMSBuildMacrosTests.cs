@@ -19,13 +19,15 @@ public partial class ConverterTests
                 .WithItems("ClCompile",
                     "$(ConFIGuration).cpp",
                     "$(ConFIGurationName).cpp",
+                    "$(MSBuildThisFileDirectory)SomeFile.cpp",
+                    "$(MSBuildProjectDirectory)\\ProjectDirectory.cpp",
                     "$(ProJECtDir)SomeFile.cpp",
                     "$(ProJECtName).cpp",
                     "$(SolUTIonDir)SomeFile.cpp",
                     "$(SolUTIonName).cpp")
                 .WithClCompileSetting(
                     "PreprocessorDefinitions",
-                    "OUT_DIR=$(OutDir);TARGET_DIR=$(TargetDir);TARGET_EXT=$(TargetExt);TARGET_FILE_NAME=$(TargetFileName);TARGET_NAME=$(TargetName);TARGET_PATH=$(TargetPath)")
+                    "PROJECT_DIR=$(MSBuildProjectDirectory);PROJECT_NAME=$(MSBuildProjectName);THIS_FILE_DIR=$(MSBuildThisFileDirectory);THIS_FILE_NAME=$(MSBuildThisFileName);OUT_DIR=$(OutDir);TARGET_DIR=$(TargetDir);TARGET_EXT=$(TargetExt);TARGET_FILE_NAME=$(TargetFileName);TARGET_NAME=$(TargetName);TARGET_PATH=$(TargetPath)")
                 .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
@@ -39,6 +41,8 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_sources(Project
                     PRIVATE
+                        "${CMAKE_CURRENT_SOURCE_DIR}/ProjectDirectory.cpp"
+                        "${CMAKE_CURRENT_SOURCE_DIR}/SomeFile.cpp"
                         "${CMAKE_CURRENT_SOURCE_DIR}/SomeFile.cpp"
                         "${CMAKE_PROJECT_NAME}.cpp"
                         "${CMAKE_SOURCE_DIR}/SomeFile.cpp"
@@ -50,6 +54,10 @@ public partial class ConverterTests
             Assert.Contains("""
                 target_compile_definitions(Project
                     PRIVATE
+                        "PROJECT_DIR=${CMAKE_CURRENT_SOURCE_DIR}"
+                        "PROJECT_NAME=${PROJECT_NAME}"
+                        "THIS_FILE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/"
+                        "THIS_FILE_NAME=${PROJECT_NAME}"
                         "OUT_DIR=$<TARGET_FILE_DIR:Project>/"
                         "TARGET_DIR=$<TARGET_FILE_DIR:Project>/"
                         "TARGET_EXT=$<TARGET_FILE_SUFFIX:Project>"

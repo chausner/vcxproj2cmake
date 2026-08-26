@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Add support for MSBuild macros `MSBuildProjectDirectory`, `MSBuildProjectName`, `MSBuildThisFileDirectory` and `MSBuildThisFileName`.
+
 ### Changed
 
 - Made error messages for unsupported Utility and Makefile projects more explicit.
