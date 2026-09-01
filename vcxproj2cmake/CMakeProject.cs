@@ -30,6 +30,8 @@ class CMakeProject
     public bool IsWin32Executable { get; set; }
     public CMakeConfigDependentSetting PrecompiledHeaderFile { get; set; }
 
+    readonly MSBuildProjectConfig? defaultProjectConfiguration;
+
     static readonly CMakeExpression[] IgnoredIncludePaths = [
         CMakeExpression.Expression(@"\$(VC_IncludePath)"),
         CMakeExpression.Expression(@"\$(WindowsSDK_IncludePath)")];
@@ -62,6 +64,14 @@ class CMakeProject
         logger.LogInformation($"Processing project {project.AbsoluteProjectPath}");
 
         var supportedProjectConfigurations = FilterSupportedProjectConfigurations(project.ProjectConfigurations, logger);
+        
+        if (settings.DefaultConfiguration != null)
+        {
+            defaultProjectConfiguration = project.ProjectConfigurations.FirstOrDefault(config => config.Name == settings.DefaultConfiguration);
+            if (defaultProjectConfiguration == null)
+                throw new CatastrophicFailureException($"Default project configuration '{settings.DefaultConfiguration}' is invalid. " +
+                    $"Valid configurations are: {string.Join(", ", project.ProjectConfigurations.Select(config => config.Name))}");
+        }
 
         MSBuildProject = project;
         AbsoluteProjectPath = project.AbsoluteProjectPath;
@@ -91,12 +101,14 @@ class CMakeProject
                 .Select(value => TranslateAndNormalize(value, "AdditionalIncludeDirectories+IncludePath", logger))
                 .ToArray(),
             supportedProjectConfigurations,
-            logger);
+            logger,
+            defaultProjectConfiguration);
         PublicIncludePaths = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             project.PublicIncludeDirectories,
             values => values.Select(value => TranslateAndNormalize(value, "PublicIncludeDirectories", logger)).ToArray(),
             supportedProjectConfigurations,
-            logger);
+            logger,
+            defaultProjectConfiguration);
         var mergedLibraryDirectories = MergeLibraryDirectories(project, supportedProjectConfigurations);
         LinkerPaths = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             mergedLibraryDirectories,
@@ -105,7 +117,8 @@ class CMakeProject
                 .Select(value => TranslateAndNormalize(value, "AdditionalLibraryDirectories+LibraryPath", logger))
                 .ToArray(),
             supportedProjectConfigurations,
-            logger);
+            logger,
+            defaultProjectConfiguration);
         Libraries = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             project.AdditionalDependencies,
             values => values
@@ -113,28 +126,33 @@ class CMakeProject
                 .Select(value => RemoveLibExtension(TranslateAndNormalize(value, "AdditionalDependencies", logger)))
                 .ToArray(),
             supportedProjectConfigurations,
-            logger);
+            logger,
+            defaultProjectConfiguration);
         PublicLibraries = new("PublicLibraries", []);
         Defines = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             project.PreprocessorDefinitions,
             values => values.Select(value => TranslateMSBuildMacros(value, "PreprocessorDefinitions", logger)).ToArray(),
             supportedProjectConfigurations,
-            logger);
+            logger,
+            defaultProjectConfiguration);
         CompileOptions = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             project.AdditionalCompileOptions,
             values => values.Select(value => ApplyMsvcCompilerGuard(TranslateMSBuildMacros(value, "ClCompile.AdditionalOptions", logger), settings.Portable)).ToArray(),
             supportedProjectConfigurations,
-            logger);
+            logger,
+            defaultProjectConfiguration);
         LinkOptions = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             project.AdditionalLinkOptions,
             values => values.Select(value => ApplyMsvcCompilerGuard(TranslateMSBuildMacros(value, "Link.AdditionalOptions", logger), settings.Portable)).ToArray(),
             supportedProjectConfigurations,
-            logger);
+            logger,
+            defaultProjectConfiguration);
         ModuleDefinitionFile = CMakeConfigDependentSetting.FromMSBuildSetting(
             project.ModuleDefinitionFile,
             value => value != null ? TranslateAndNormalize(value, "ModuleDefinitionFile", logger) : null,
             supportedProjectConfigurations,
-            logger);
+            logger,
+            defaultProjectConfiguration);
         ProjectReferences = project.ProjectReferences.Select(path => new CMakeProjectReference { Path = path }).ToArray();
         IsWin32Executable = project.LinkerSubsystem == "Windows";
         PrecompiledHeaderFile = CMakeConfigDependentSetting.FromMSBuildSetting(
@@ -142,7 +160,8 @@ class CMakeProject
             (file, mode) => mode?.Value == "Use" && file != null ? TranslateAndNormalize(file, "PrecompiledHeaderFile", logger) : null,
             project.PrecompiledHeader,
             supportedProjectConfigurations,
-            logger);
+            logger,
+            defaultProjectConfiguration);
         Properties = [];
 
         ApplyTargetName(project, logger);
@@ -276,7 +295,8 @@ class CMakeProject
             project.TargetName,
             value => value != null ? TranslateMSBuildMacros(value, "TargetName", logger) : null,
             ProjectConfigurations,
-            logger)
+            logger,
+            defaultProjectConfiguration)
             .ToCMakeExpression();
 
         if (targetName != CMakeExpression.Literal(project.ProjectName))
@@ -357,7 +377,7 @@ class CMakeProject
 
     void ApplyRuntimeLibrary(MSBuildProject project, ILogger logger)
     {
-        var msvcRuntimeLibrary = new CMakeConfigDependentSetting(project.RuntimeLibrary, ProjectConfigurations, logger).ToCMakeExpression();
+        var msvcRuntimeLibrary = new CMakeConfigDependentSetting(project.RuntimeLibrary, ProjectConfigurations, logger, defaultProjectConfiguration).ToCMakeExpression();
 
         // if the setting has its default value, we prefer to not set it at all
         if (msvcRuntimeLibrary.Value == "$<$<CONFIG:Debug>:MultiThreadedDebugDLL>$<$<CONFIG:Release>:MultiThreadedDLL>")
@@ -383,7 +403,8 @@ class CMakeProject
                 _ => throw new CatastrophicFailureException($"Invalid value for BasicRuntimeChecks: {value?.Value}")
             },
             ProjectConfigurations,
-            logger)
+            logger,
+            defaultProjectConfiguration)
             .ToCMakeExpression();
 
         // if the setting has its default value, we prefer to not set it at all
@@ -419,7 +440,8 @@ class CMakeProject
             project.UseOfMfc,
             value => TranslateMfcFlag(value),
             ProjectConfigurations,
-            logger)
+            logger,
+            defaultProjectConfiguration)
             .ToCMakeExpression();
 
         if (mfcFlag.Value == "0")
@@ -463,7 +485,8 @@ class CMakeProject
                 _ => throw new CatastrophicFailureException($"Invalid value for TreatWarningAsError: {value?.Value}")
             },
             ProjectConfigurations,
-            logger)
+            logger,
+            defaultProjectConfiguration)
             .ToCMakeExpression();
 
         // if the setting has its default value, we prefer to not set it at all
@@ -484,7 +507,8 @@ class CMakeProject
                 _ => throw new CatastrophicFailureException($"Invalid value for TreatLinkerWarningAsErrors: {value?.Value}")
             },
             ProjectConfigurations,
-            logger)
+            logger,
+            defaultProjectConfiguration)
             .ToCMakeExpression();
 
         // if the setting has its default value, we prefer to not set it at all
@@ -639,7 +663,7 @@ class CMakeProject
     }
 }
 
-record CMakeProjectSettings(int? QtVersion, bool Portable);
+record CMakeProjectSettings(int? QtVersion, bool Portable, string? DefaultConfiguration = null);
 
 enum CMakeTargetType
 {

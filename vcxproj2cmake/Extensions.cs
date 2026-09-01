@@ -23,7 +23,7 @@ static class ConfigDependentSettingExtensions
 
             var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression>(self.SettingName, self.DefaultValue, mappedValues);
 
-            return new(msbuildSetting, projectConfigurations, logger);
+            return new(msbuildSetting, projectConfigurations, logger, self.DefaultProjectConfiguration);
         }
 
         public CMakeConfigDependentSetting Map(
@@ -45,7 +45,7 @@ static class ConfigDependentSettingExtensions
 
             var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression>(self.SettingName, self.DefaultValue, mappedValues);
 
-            return new(msbuildSetting, projectConfigurations, logger);
+            return new(msbuildSetting, projectConfigurations, logger, self.DefaultProjectConfiguration);
         }
 
         public CMakeConfigDependentSetting Map(
@@ -54,7 +54,7 @@ static class ConfigDependentSettingExtensions
             IEnumerable<MSBuildProjectConfig> projectConfigurations,
             ILogger logger)
         {
-            return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
+            return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger, self.DefaultProjectConfiguration), projectConfigurations, logger);
         }
 
         public CMakeConfigDependentSetting Map(
@@ -76,7 +76,7 @@ static class ConfigDependentSettingExtensions
 
             var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression>(self.SettingName, self.DefaultValue, mappedValues);
 
-            return new(msbuildSetting, projectConfigurations, logger);
+            return new(msbuildSetting, projectConfigurations, logger, self.DefaultProjectConfiguration);
         }
 
         public CMakeConfigDependentSetting Map(
@@ -85,7 +85,7 @@ static class ConfigDependentSettingExtensions
             IEnumerable<MSBuildProjectConfig> projectConfigurations,
             ILogger logger)
         {
-            return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
+            return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger, self.DefaultProjectConfiguration), projectConfigurations, logger);
         }
 
         public CMakeConfigDependentSetting Map(
@@ -94,7 +94,7 @@ static class ConfigDependentSettingExtensions
             IEnumerable<MSBuildProjectConfig> projectConfigurations,
             ILogger logger)
         {
-            return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
+            return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger, self.DefaultProjectConfiguration), projectConfigurations, logger);
         }
 
         public CMakeConfigDependentSetting Map(
@@ -103,16 +103,17 @@ static class ConfigDependentSettingExtensions
             IEnumerable<MSBuildProjectConfig> projectConfigurations,
             ILogger logger)
         {
-            return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
+            return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger, self.DefaultProjectConfiguration), projectConfigurations, logger);
         }
 
         public static CMakeConfigDependentSetting FromMSBuildSetting(
             MSBuildConfigDependentSetting<string> settings,
             Func<CMakeExpression?, CMakeExpression?> mapper,
             IEnumerable<MSBuildProjectConfig> projectConfigurations,
-            ILogger logger)
+            ILogger logger,
+            MSBuildProjectConfig? defaultProjectConfiguration = null)
         {
-            return new CMakeConfigDependentSetting(settings, projectConfigurations, logger)
+            return new CMakeConfigDependentSetting(settings, projectConfigurations, logger, defaultProjectConfiguration)
                 .Map(mapper, projectConfigurations, logger);
         }
 
@@ -121,9 +122,10 @@ static class ConfigDependentSettingExtensions
             Func<CMakeExpression?, CMakeExpression?, CMakeExpression?> mapper,
             MSBuildConfigDependentSetting<string> otherSetting,
             IEnumerable<MSBuildProjectConfig> projectConfigurations,
-            ILogger logger)
+            ILogger logger,
+            MSBuildProjectConfig? defaultProjectConfiguration = null)
         {
-            return new CMakeConfigDependentSetting(settings, projectConfigurations, logger)
+            return new CMakeConfigDependentSetting(settings, projectConfigurations, logger, defaultProjectConfiguration)
                 .Map(mapper, otherSetting, projectConfigurations, logger);
         }
     }
@@ -147,7 +149,7 @@ static class ConfigDependentSettingExtensions
 
             var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression[]>(self.SettingName, self.DefaultValue, mappedValues);
 
-            return new(msbuildSetting, projectConfigurations, logger);
+            return new(msbuildSetting, projectConfigurations, logger, self.DefaultProjectConfiguration);
         }
 
         public CMakeConfigDependentMultiSetting Map(
@@ -169,7 +171,7 @@ static class ConfigDependentSettingExtensions
 
             var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression[]>(self.SettingName, self.DefaultValue, mappedValues);
 
-            return new(msbuildSetting, projectConfigurations, logger);
+            return new(msbuildSetting, projectConfigurations, logger, self.DefaultProjectConfiguration);
         }
 
         public CMakeConfigDependentMultiSetting Map(
@@ -178,7 +180,7 @@ static class ConfigDependentSettingExtensions
             IEnumerable<MSBuildProjectConfig> projectConfigurations,
             ILogger logger)
         {
-            return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
+            return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger, self.DefaultProjectConfiguration), projectConfigurations, logger);
         }
 
         public CMakeConfigDependentMultiSetting Map(
@@ -187,7 +189,7 @@ static class ConfigDependentSettingExtensions
             IEnumerable<MSBuildProjectConfig> projectConfigurations,
             ILogger logger)
         {
-            return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
+            return self.Map(mapper, new CMakeConfigDependentSetting(setting, projectConfigurations, logger, self.DefaultProjectConfiguration), projectConfigurations, logger);
         }
 
         public CMakeConfigDependentMultiSetting Map(
@@ -196,7 +198,7 @@ static class ConfigDependentSettingExtensions
             IEnumerable<MSBuildProjectConfig> projectConfigurations,
             ILogger logger)
         {
-            return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
+            return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger, self.DefaultProjectConfiguration), projectConfigurations, logger);
         }
 
         public CMakeConfigDependentMultiSetting Map(
@@ -218,7 +220,7 @@ static class ConfigDependentSettingExtensions
 
             var msbuildSetting = new MSBuildConfigDependentSetting<CMakeExpression[]>(self.SettingName, self.DefaultValue, mappedValues);
 
-            return new(msbuildSetting, projectConfigurations, logger);
+            return new(msbuildSetting, projectConfigurations, logger, self.DefaultProjectConfiguration);
         }
 
         public CMakeConfigDependentMultiSetting Map(
@@ -227,16 +229,17 @@ static class ConfigDependentSettingExtensions
             IEnumerable<MSBuildProjectConfig> projectConfigurations,
             ILogger logger)
         {
-            return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger), projectConfigurations, logger);
+            return self.Map(mapper, new CMakeConfigDependentMultiSetting(setting, projectConfigurations, logger, self.DefaultProjectConfiguration), projectConfigurations, logger);
         }
 
         public static CMakeConfigDependentMultiSetting FromMSBuildSetting(
             MSBuildConfigDependentSetting<string[]> settings,
             Func<CMakeExpression[], CMakeExpression[]> mapper,
             IEnumerable<MSBuildProjectConfig> projectConfigurations,
-            ILogger logger)
+            ILogger logger,
+            MSBuildProjectConfig? defaultProjectConfiguration = null)
         {
-            return new CMakeConfigDependentMultiSetting(settings, projectConfigurations, logger)
+            return new CMakeConfigDependentMultiSetting(settings, projectConfigurations, logger, defaultProjectConfiguration)
                 .Map(mapper, projectConfigurations, logger);
         }
 
@@ -245,9 +248,10 @@ static class ConfigDependentSettingExtensions
             Func<CMakeExpression[], CMakeExpression[], CMakeExpression[]> mapper,
             MSBuildConfigDependentSetting<string[]> otherSetting,
             IEnumerable<MSBuildProjectConfig> projectConfigurations,
-            ILogger logger)
+            ILogger logger,
+            MSBuildProjectConfig? defaultProjectConfiguration = null)
         {
-            return new CMakeConfigDependentMultiSetting(settings, projectConfigurations, logger)
+            return new CMakeConfigDependentMultiSetting(settings, projectConfigurations, logger, defaultProjectConfiguration)
                 .Map(mapper, otherSetting, projectConfigurations, logger);
         }
     }

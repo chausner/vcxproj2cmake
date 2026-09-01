@@ -41,6 +41,7 @@ public class ProgramTests
         var (_, _, exitCode) = RunProgramMainWithCapturedConsole(
             "--projects", appProj, mathLibProj,
             "--qt-version", "6",
+            "--default-configuration", "Debug|Win32",
             "--portable",
             "--include-headers",
             "--enable-standalone-project-builds",
@@ -63,6 +64,7 @@ public class ProgramTests
         var (_, _, exitCode) = RunProgramMainWithCapturedConsole(
             "--solution", sln,
             "--qt-version", "5",
+            "--default-configuration", "Debug|Win32",
             "--include-headers",
             "--enable-standalone-project-builds",
             "--indent-style", "Spaces",

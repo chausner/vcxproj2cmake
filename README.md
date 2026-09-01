@@ -93,6 +93,7 @@ as well as a top-level `CMakeLists.txt` file in the same directory as the soluti
 | `--include-headers`                  | Includes header files in the list of CMake target sources set via `target_sources`, allowing IDEs to display them as part of the project. |
 | `--enable-standalone-project-builds` | Adds extra CMake commands to generated project `CMakeLists.txt` files so the projects can be configured independently of the top‑level solution. |
 | `--qt-version`                       | Specifies the Qt version used by any project that depends on Qt. |
+| `--default-configuration`            | For properties whose configuration-specific values would otherwise be ignored, uses the value from the specified build configuration for all configurations. |
 | `--portable`                         | Wraps MSVC‑specific CMake settings in generator expressions so they are ignored when using non‑MSVC compilers. |
 | `--indent-style` / `--indent-size`   | Customizes indentation style and size in generated CMake files. |
 | `--dry-run`                          | Prints generated CMake files to the console instead of writing them to disk. |

@@ -15,7 +15,8 @@ public class Converter(IFileSystem fileSystem, ILogger logger)
         IndentStyle indentStyle = IndentStyle.Spaces,
         int indentSize = 4,
         bool dryRun = false,
-        bool continueOnError = false)
+        bool continueOnError = false,
+        string? defaultConfiguration = null)
     {
         if ((projectFiles == null || projectFiles.Count == 0) && solutionFile == null)
             throw new ArgumentException($"Either {nameof(projectFiles)} or {nameof(solutionFile)} must be provided.");
@@ -80,7 +81,7 @@ public class Converter(IFileSystem fileSystem, ILogger logger)
             try
             {
                 string projectName = GetUniqueProjectName(cmakeProjects, project);
-                cmakeProjects.Add(new CMakeProject(project, new(qtVersion, portable), projectName, includeHeaders, conanPackageInfoRepository, logger));
+                cmakeProjects.Add(new CMakeProject(project, new(qtVersion, portable, defaultConfiguration), projectName, includeHeaders, conanPackageInfoRepository, logger));
             }
             catch (Exception ex) when (continueOnError)
             {

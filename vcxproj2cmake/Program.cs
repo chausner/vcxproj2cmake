@@ -37,6 +37,12 @@ public static class Program
             Description = "Qt version (required for Qt projects)"
         }.AcceptOnlyFromAmong("5", "6");
 
+        var defaultConfigurationOption = new Option<string?>("--default-configuration")
+        {
+            Description = "Use the specified build configuration's value when configuration-specific property values would otherwise be ignored",
+            HelpName = "name"
+        };
+
         var portableOption = new Option<bool>("--portable")
         {
             Description = "Guard generated MSVC-specific CMake settings so they are inactive for other compilers"
@@ -86,6 +92,7 @@ public static class Program
         rootCommand.Options.Add(projectsOption);
         rootCommand.Options.Add(solutionOption);
         rootCommand.Options.Add(qtVersionOption);
+        rootCommand.Options.Add(defaultConfigurationOption);
         rootCommand.Options.Add(portableOption);
         rootCommand.Options.Add(includeHeadersOption);
         rootCommand.Options.Add(enableStandaloneProjectBuildsOption);
@@ -111,6 +118,7 @@ public static class Program
                 var projects = parseResult.GetValue(projectsOption);
                 var solution = parseResult.GetValue(solutionOption);
                 var qtVersion = parseResult.GetValue(qtVersionOption);
+                var defaultConfiguration = parseResult.GetValue(defaultConfigurationOption);
                 var portable = parseResult.GetValue(portableOption);
                 var includeHeaders = parseResult.GetValue(includeHeadersOption);
                 var enableStandaloneProjectBuilds = parseResult.GetValue(enableStandaloneProjectBuildsOption);
@@ -119,7 +127,7 @@ public static class Program
                 var dryRun = parseResult.GetValue(dryRunOption);
                 var continueOnError = parseResult.GetValue(continueOnErrorOption);
                 var logLevel = parseResult.GetValue(logLevelOption);
-                Run(projects, solution, qtVersion, portable, includeHeaders, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError, logLevel);
+                Run(projects, solution, qtVersion, defaultConfiguration, portable, includeHeaders, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError, logLevel);
             });
 
         try
@@ -140,6 +148,7 @@ public static class Program
         List<FileInfo>? projects,
         FileInfo? solution,
         int? qtVersion,
+        string? defaultConfiguration,
         bool portable,
         bool includeHeaders,
         bool enableStandaloneProjectBuilds,
@@ -152,7 +161,7 @@ public static class Program
         logger = CreateLogger(logLevel);
 
         var converter = new Converter(new FileSystem(), logger);
-        converter.Convert(projects, solution, qtVersion, portable, includeHeaders, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError);
+        converter.Convert(projects, solution, qtVersion, portable, includeHeaders, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError, defaultConfiguration);
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "The application registers a concrete console formatter without binding formatter options from configuration.")]

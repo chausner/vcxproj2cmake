@@ -194,6 +194,64 @@ public partial class ConverterTests
         }
 
         [Fact]
+        public void Given_DefaultConfiguration_When_LinkerPathsDifferPerConfigAndPlatform_Then_DefaultConfigurationValueUsedForAllConfigurations()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithConfigurations(("Debug", "Win32"), ("Debug", "x64"), ("Release", "Win32"), ("Release", "x64"))
+                .WithItemDefinitionSetting("Debug", "Win32", "Link", "AdditionalLibraryDirectories", "DebugWin32")
+                .WithItemDefinitionSetting("Debug", "x64", "Link", "AdditionalLibraryDirectories", "DebugX64")
+                .WithItemDefinitionSetting("Release", "Win32", "Link", "AdditionalLibraryDirectories", "ReleaseWin32")
+                .WithItemDefinitionSetting("Release", "x64", "Link", "AdditionalLibraryDirectories", "ReleaseX64")
+                .Build()));
+
+            var logger = new InMemoryLogger();
+            var converter = new Converter(fileSystem, logger);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")],
+                defaultConfiguration: "Debug|x64");
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("""
+                target_link_directories(Project
+                    PRIVATE
+                        "${CMAKE_CURRENT_SOURCE_DIR}/DebugX64"
+                )
+                """, cmake);
+
+            Assert.DoesNotContain("ignored because they are specific to certain build configurations", logger.AllMessageText);
+        }
+
+        [Fact]
+        public void Given_InvalidDefaultConfiguration_When_Converted_Then_ThrowsWithValidConfigurations()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project().Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            var exception = Assert.Throws<CatastrophicFailureException>(() => converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")],
+                defaultConfiguration: "Invalid|Win32"));
+
+            // Assert
+            Assert.Equal(
+                "Default project configuration 'Invalid|Win32' is invalid. Valid configurations are: Debug|Win32, Release|Win32",
+                exception.Message);
+        }
+
+        [Fact]
         public void Given_LinkerPathsOverwrittenMultipleTimes_When_Converted_Then_LastValueUsed()
         {
             // Arrange

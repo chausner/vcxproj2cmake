@@ -7,18 +7,21 @@ record CMakeConfigDependentSetting
     public OrderedDictionary<Config, CMakeExpression> Values { get; }
     public string SettingName { get; }
     public CMakeExpression DefaultValue { get; }
+    public MSBuildProjectConfig? DefaultProjectConfiguration { get; }
 
     public CMakeConfigDependentSetting(string settingName, CMakeExpression defaultValue)
     {
         Values = [];
         SettingName = settingName;
         DefaultValue = defaultValue;
+        DefaultProjectConfiguration = null;
     }
 
     public CMakeConfigDependentSetting(
         MSBuildConfigDependentSetting<CMakeExpression> settings,
         IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
+        ILogger logger,
+        MSBuildProjectConfig? defaultProjectConfiguration = null)
     {
         static bool HasContent(CMakeExpression? expression) => expression != null && expression.Value != string.Empty;
 
@@ -29,6 +32,7 @@ record CMakeConfigDependentSetting
             Values = [];
             SettingName = settings.SettingName;
             DefaultValue = settings.DefaultValue;
+            DefaultProjectConfiguration = defaultProjectConfiguration;
             return;
         }
 
@@ -60,29 +64,51 @@ record CMakeConfigDependentSetting
                 values[config] = filteredValues!;
         }
 
-        Values = values;
         SettingName = settings.SettingName;
-        DefaultValue = settings.DefaultValue;
 
         var skippedSettings = filteredSettingValues.Select(kvp => kvp.Value)
             .Where(HasContent)
             .Except(values.Values)
             .ToArray();
         if (skippedSettings.Length > 0)
-            logger.LogWarning($"The following values for setting {settings.SettingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings)}");
+        {
+            if (defaultProjectConfiguration != null)
+            {
+                var defaultValue = settings.Values.GetValueOrDefault(defaultProjectConfiguration, settings.DefaultValue);
+                Values = HasContent(defaultValue)
+                    ? new OrderedDictionary<Config, CMakeExpression> { [Config.CommonConfig] = defaultValue }
+                    : [];
+                DefaultValue = defaultValue;
+            }
+            else
+            {
+                Values = values;
+                DefaultValue = settings.DefaultValue;
+                logger.LogWarning($"The following values for setting {settings.SettingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings)}. To use one configuration's value for all configurations, specify --default-configuration <name>.");
+            }
+        }
+        else
+        {
+            Values = values;
+            DefaultValue = settings.DefaultValue;
+        }
+
+        DefaultProjectConfiguration = defaultProjectConfiguration;
     }
 
     public CMakeConfigDependentSetting(
         MSBuildConfigDependentSetting<string> settings,
         IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
+        ILogger logger,
+        MSBuildProjectConfig? defaultProjectConfiguration = null)
         : this(
             new MSBuildConfigDependentSetting<CMakeExpression>(
                 settings.SettingName,
                 CMakeExpression.Literal(settings.DefaultValue ?? string.Empty),
                 settings.Values.ToDictionary(kvp => kvp.Key, kvp => CMakeExpression.Literal(kvp.Value))),
             projectConfigurations,
-            logger)
+            logger,
+            defaultProjectConfiguration)
     {
     }
 
@@ -107,18 +133,21 @@ record CMakeConfigDependentMultiSetting
     public OrderedDictionary<Config, CMakeExpression[]> Values { get; }
     public string SettingName { get; }
     public CMakeExpression[] DefaultValue { get; }
+    public MSBuildProjectConfig? DefaultProjectConfiguration { get; }
 
     public CMakeConfigDependentMultiSetting(string settingName, CMakeExpression[] defaultValue)
     {
         Values = [];
         SettingName = settingName;
         DefaultValue = defaultValue;
+        DefaultProjectConfiguration = null;
     }
 
     public CMakeConfigDependentMultiSetting(
         MSBuildConfigDependentSetting<CMakeExpression[]> settings,
         IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
+        ILogger logger,
+        MSBuildProjectConfig? defaultProjectConfiguration = null)
     {
         var filteredSettingValues = settings.Values.Where(kvp => projectConfigurations.Contains(kvp.Key)).ToArray();
 
@@ -127,6 +156,7 @@ record CMakeConfigDependentMultiSetting
             Values = [];
             SettingName = settings.SettingName;
             DefaultValue = settings.DefaultValue;
+            DefaultProjectConfiguration = defaultProjectConfiguration;
             return;
         }
 
@@ -159,22 +189,43 @@ record CMakeConfigDependentMultiSetting
                 values[config] = filteredValues;
         }
 
-        Values = values;
         SettingName = settings.SettingName;
-        DefaultValue = settings.DefaultValue;
 
         var skippedSettings = filteredSettingValues.Select(kvp => kvp.Value)
             .SelectMany(s => s)
             .Except(values.Values.SelectMany(s => s))
             .ToArray();
         if (skippedSettings.Length > 0)
-            logger.LogWarning($"The following values for setting {settings.SettingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings)}");
+        {
+            if (defaultProjectConfiguration != null)
+            {
+                var defaultValue = settings.Values.GetValueOrDefault(defaultProjectConfiguration, settings.DefaultValue);
+                Values = defaultValue.Length > 0
+                    ? new OrderedDictionary<Config, CMakeExpression[]> { [Config.CommonConfig] = defaultValue }
+                    : [];
+                DefaultValue = defaultValue;
+            }
+            else
+            {
+                Values = values;
+                DefaultValue = settings.DefaultValue;
+                logger.LogWarning($"The following values for setting {settings.SettingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings)}. To use one configuration's value for all configurations, specify --default-configuration <name>.");
+            }
+        }
+        else
+        {
+            Values = values;
+            DefaultValue = settings.DefaultValue;
+        }
+
+        DefaultProjectConfiguration = defaultProjectConfiguration;
     }
 
     public CMakeConfigDependentMultiSetting(
         MSBuildConfigDependentSetting<string[]> settings,
         IEnumerable<MSBuildProjectConfig> projectConfigurations,
-        ILogger logger)
+        ILogger logger,
+        MSBuildProjectConfig? defaultProjectConfiguration = null)
         : this(
             new MSBuildConfigDependentSetting<CMakeExpression[]>(
                 settings.SettingName,
@@ -183,7 +234,8 @@ record CMakeConfigDependentMultiSetting
                     kvp => kvp.Key,
                     kvp => kvp.Value.Select(value => CMakeExpression.Literal(value)).ToArray())),
             projectConfigurations,
-            logger)
+            logger,
+            defaultProjectConfiguration)
     {
     }
 
