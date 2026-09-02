@@ -18,6 +18,7 @@ class MSBuildProject
     public required string[] SourceFiles { get; init; }
     public required string[] HeaderFiles { get; init; }
     public required MSBuildConfigDependentSetting<string> TargetName { get; init; }
+    public required MSBuildConfigDependentSetting<string> OutDir { get; init; }
     public required MSBuildConfigDependentSetting<string[]> AdditionalIncludeDirectories { get; init; }
     public required MSBuildConfigDependentSetting<string[]> IncludePath { get; init; }
     public required MSBuildConfigDependentSetting<string[]> PublicIncludeDirectories { get; init; }
@@ -157,6 +158,7 @@ class MSBuildProject
         string? linkerSubsystem = GetCommonSetting("SubSystem", linkerSettings);
 
         var targetName = ParseSetting("TargetName", otherSettings, Path.GetFileNameWithoutExtension(projectPath));
+        var outDir = ParseSetting("OutDir", otherSettings, string.Empty);
         var additionalIncludeDirectories = ParseMultiSetting("AdditionalIncludeDirectories", ';', compilerSettings, []);
         var includePath = ParseMultiSetting("IncludePath", ';', otherSettings, []);
         var publicIncludeDirectories = ParseMultiSetting("PublicIncludeDirectories", ';', otherSettings, []);
@@ -313,6 +315,7 @@ class MSBuildProject
             SourceFiles = sourceFiles.ToArray(),
             HeaderFiles = headerFiles.Concat(qtMocHeaderFiles).ToArray(),
             TargetName = targetName,
+            OutDir = outDir,
             AdditionalIncludeDirectories = additionalIncludeDirectories,
             IncludePath = includePath,
             PublicIncludeDirectories = publicIncludeDirectories,

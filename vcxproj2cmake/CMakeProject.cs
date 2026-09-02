@@ -146,6 +146,7 @@ class CMakeProject
         Properties = [];
 
         ApplyTargetName(project, logger);
+        ApplyOutDir(project, logger);
         ApplyLanguageStandards(project);
         ApplyAllProjectIncludesArePublic(project, logger);
         ApplyRuntimeLibrary(project, logger);
@@ -322,6 +323,41 @@ class CMakeProject
                 .ToArray();
 
         return new("AdditionalLibraryDirectories+LibraryPath", defaultValue, values);
+    }
+
+    void ApplyOutDir(MSBuildProject project, ILogger logger)
+    {
+        var outDirSetting = new CMakeConfigDependentSetting(project.OutDir, ProjectConfigurations, logger)
+            .Map(value =>
+            {
+                if (value == null || value.Value.Length == 0)
+                    return null;
+                return TranslateAndNormalize(value, "OutDir", logger);
+            }, ProjectConfigurations, logger);
+
+        if (outDirSetting.IsEmpty)
+            return;
+
+        var outputDirectory = outDirSetting.ToCMakeExpression();
+
+        switch (TargetType)
+        {
+            case CMakeTargetType.Executable:
+                Properties["RUNTIME_OUTPUT_DIRECTORY"] = outputDirectory;
+                break;
+            case CMakeTargetType.StaticLibrary:
+                Properties["ARCHIVE_OUTPUT_DIRECTORY"] = outputDirectory;
+                break;
+            case CMakeTargetType.SharedLibrary:
+                Properties["RUNTIME_OUTPUT_DIRECTORY"] = outputDirectory; // .dll on Windows
+                Properties["LIBRARY_OUTPUT_DIRECTORY"] = outputDirectory; // .lib import library on Windows
+                Properties["ARCHIVE_OUTPUT_DIRECTORY"] = outputDirectory; // .so/.dylib on Linux/macOS
+                break;
+            case CMakeTargetType.InterfaceLibrary:
+                break;
+            default:
+                throw new CatastrophicFailureException($"Unsupported CMake target type: {TargetType}");
+        }
     }
 
     void ApplyLanguageStandards(MSBuildProject project)
