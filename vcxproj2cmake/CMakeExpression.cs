@@ -21,7 +21,7 @@ class CMakeExpression : IComparable, IComparable<CMakeExpression>, IEquatable<CM
         return new CMakeExpression(expression);
     }
 
-    static string Escape(string value)
+    public static string Escape(string value)
     {
         var sb = new StringBuilder(value.Length);
 
@@ -36,6 +36,36 @@ class CMakeExpression : IComparable, IComparable<CMakeExpression>, IEquatable<CM
                 '$' => "\\$",   // variable expansion
                 _ => c.ToString()
             });
+
+        return sb.ToString();
+    }
+
+    public static string Unescape(string value)
+    {
+        var sb = new StringBuilder(value.Length);
+
+        for (int i = 0; i < value.Length; i++)
+        {
+            char c = value[i];
+            if (c == '\\' && i + 1 < value.Length)
+            {
+                sb.Append(value[i + 1] switch
+                {
+                    '\\' => "\\",
+                    '\"' => "\"",
+                    'n' => "\n",
+                    'r' => "\r",
+                    't' => "\t",
+                    '$' => "$",
+                    _ => value.Substring(i, 2)
+                });
+                i++;
+            }
+            else
+            {
+                sb.Append(c);
+            }
+        }
 
         return sb.ToString();
     }
