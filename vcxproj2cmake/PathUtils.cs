@@ -117,4 +117,28 @@ static class PathUtils
 
         return result.ToArray();
     }
+
+    public static bool IsCMakePathAbsolute(string path)
+    {
+        // if a path starts with a CMake variable or generator expression, we just assume that it resolves to an absolute path
+        return path.StartsWith("${") || path.StartsWith("$<") || Path.IsPathFullyQualified(path);
+    }
+
+    public static string? CanonicalizeCMakePath(string path, string absoluteProjectPath)
+    {
+        const string currentSourceDir = "${CMAKE_CURRENT_SOURCE_DIR}";
+
+        string currentSourceDirPath = Path.GetDirectoryName(absoluteProjectPath)!;
+
+        if (path == currentSourceDir)
+            return currentSourceDirPath;
+        else if (path.StartsWith(currentSourceDir + "/", StringComparison.Ordinal))
+            return Path.GetFullPath(Path.Combine(currentSourceDirPath, path[(currentSourceDir.Length + 1)..]));
+        else if (path.StartsWith("${", StringComparison.Ordinal))
+            return null;
+        else if (Path.IsPathFullyQualified(path))
+            return Path.GetFullPath(path);
+        else
+            return Path.GetFullPath(Path.Combine(currentSourceDirPath, path));
+    }
 }

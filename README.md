@@ -11,7 +11,7 @@
 ## Features
 
 * Accepts either a list of `.vcxproj` project files or Visual Studio solution files (`.sln`/`.slnx`) as input.
-* Supports console, Win32, Dynamic-Link Library (DLL), and Static Library project types.
+* Supports console, Win32, Dynamic-Link Library (DLL), Static Library and Utility project types.
   Includes detection of header-only libraries.
 * Leverages CMake generator expressions for property values that are specific to certain build configurations (Debug, Release, Win32, x64).
 * Supports the following file types: C sources/headers, C++ sources/headers, C++ modules, .manifest, MASM, .rc, .natvis.

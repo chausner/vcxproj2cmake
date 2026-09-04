@@ -9,17 +9,8 @@ using System.Text.RegularExpressions;
 
 namespace vcxproj2cmake;
 
-class CMakeGenerator
+class CMakeGenerator(IFileSystem fileSystem, ILogger logger)
 {
-    readonly IFileSystem fileSystem;
-    readonly ILogger logger;
-
-    public CMakeGenerator(IFileSystem fileSystem, ILogger logger)
-    {
-        this.fileSystem = fileSystem;
-        this.logger = logger;
-    }
-
     public void Generate(CMakeSolution? solution, IEnumerable<CMakeProject> projects, CMakeGeneratorSettings settings)
     {
         var projectCMakeListsTemplate = LoadTemplate("vcxproj2cmake.Resources.Templates.Project-CMakeLists.txt.scriban");
@@ -82,6 +73,9 @@ class CMakeGenerator
 
         var result = cmakeListsTemplate.Render(context);
 
+        if (model is CMakeProject project)
+            result = result.Replace(Config.CompilerArchitectureIdVariablePlaceholder, GetCompilerArchitectureIdVariable(project), StringComparison.Ordinal);
+
         if (settings.IndentStyle != IndentStyle.Spaces || settings.IndentSize != 4)
             result = ApplyIndentation(result, settings.IndentStyle, settings.IndentSize);
 
@@ -98,6 +92,16 @@ class CMakeGenerator
 
             fileSystem.File.WriteAllText(destinationPath, result);
         }
+    }
+
+    static string GetCompilerArchitectureIdVariable(CMakeProject project)
+    {
+        if (project.Languages.Contains("CXX"))
+            return "CMAKE_CXX_COMPILER_ARCHITECTURE_ID";
+        if (project.Languages.Contains("C"))
+            return "CMAKE_C_COMPILER_ARCHITECTURE_ID";
+
+        return "CMAKE_CXX_COMPILER_ARCHITECTURE_ID";
     }
 
     static string ApplyIndentation(string text, IndentStyle indentStyle, int indentSize)
@@ -204,13 +208,8 @@ class CMakeGenerator
     static CMakeExpression PrependRelativePathsWithCMakeCurrentSourceDir(CMakeExpression normalizedPath)
     {
         var path = normalizedPath.Value;
-        var isAbsolutePath = Path.IsPathRooted(path);
-
-        // if a path starts with a CMake variable or generator expression, we just assume that it resolves to an absolute path
-        isAbsolutePath |= path.StartsWith("${");
-        isAbsolutePath |= path.StartsWith("$<");
-
-        if (!isAbsolutePath)
+        
+        if (!PathUtils.IsCMakePathAbsolute(path))
             if (path == ".")
                 return CMakeExpression.Expression("${CMAKE_CURRENT_SOURCE_DIR}");
             else

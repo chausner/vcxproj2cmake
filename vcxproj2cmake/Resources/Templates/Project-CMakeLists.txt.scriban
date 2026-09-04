@@ -177,21 +177,31 @@ target_link_directories({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
         {{~ for kvp in linker_paths.values ~}}
         {{~ for path in kvp.value ~}}
-        {{ get_config_expression kvp.key path }}
+        {{ get_config_expression kvp.key (path | prepend_relative_paths_with_cmake_current_source_dir) }}
         {{~ end ~}}  
         {{~ end ~}}      
 )
 
 {{~ end -}}
 
-{{~ if !libraries.is_empty ~}}
+{{~ if !public_libraries.is_empty || !libraries.is_empty ~}}
 target_link_libraries({{ project_name | literal }}
+{{~ if !public_libraries.is_empty ~}}
+    PUBLIC
+        {{~ for kvp in public_libraries.values ~}}
+        {{~ for library in kvp.value ~}}
+        {{ get_config_expression kvp.key library }}
+        {{~ end ~}}
+        {{~ end ~}}
+{{~ end ~}}
+{{~ if !libraries.is_empty ~}}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
         {{~ for kvp in libraries.values ~}}
         {{~ for library in kvp.value ~}}
         {{ get_config_expression kvp.key library }}
         {{~ end ~}}
         {{~ end ~}}
+{{~ end ~}}
 )
 
 {{~ end -}}

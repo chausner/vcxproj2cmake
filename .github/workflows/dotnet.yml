@@ -61,6 +61,10 @@ jobs:
           repo: https://github.com/zeux/pugixml.git
           ref: v1.16
           project: scripts\pugixml_vs2026_static.vcxproj
+        - name: VRChatOSCOptitrack
+          repo: https://github.com/FizzyApple12/VRChatOSCOptitrack.git
+          ref: 21d44571957ccf648c7966249f50d10d690b0877
+          project: VRChatOSCOptitrack.vcxproj
 
     steps:
     - name: Download vcxproj2cmake artifact
@@ -68,7 +72,7 @@ jobs:
       with:
         name: vcxproj2cmake-win-x64
     - name: Clone ${{ matrix.name }}
-      run: git clone --branch ${{ matrix.ref }} --depth 1 ${{ matrix.repo }} e2e-test/${{ matrix.name }}
+      run: git clone --revision ${{ matrix.ref }} --depth 1 ${{ matrix.repo }} --recurse-submodules e2e-test/${{ matrix.name }}
     - name: Run vcxproj2cmake
       run: |
         if ("${{ matrix.sln }}") {

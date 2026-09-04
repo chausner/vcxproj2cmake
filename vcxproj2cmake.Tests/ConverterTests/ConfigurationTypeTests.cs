@@ -88,7 +88,7 @@ public partial class ConverterTests
         }
 
         [Fact]
-        public void Given_HeaderOnlyLibrary_When_Converted_Then_UsesAddLibraryInterface()
+        public void Given_StaticLibraryProjectWithHeadersOnly_When_Converted_Then_UsesAddLibraryInterface()
         {
             // Arrange
             var fileSystem = new MockFileSystem();
@@ -115,7 +115,56 @@ public partial class ConverterTests
         }
 
         [Fact]
-        public void Given_ProjectWithUnsupportedConfigurationType_When_Converted_Then_Throws()
+        public void Given_UtilityProjectWithHeadersOnly_When_Converted_Then_UsesAddLibraryInterface()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"HeaderOnly.vcxproj", new(TestData.Project()
+                .WithProperty("ConfigurationType", "Utility")
+                .WithItems("ClInclude", "header.hpp")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"HeaderOnly.vcxproj")]);
+
+            // Assert
+            Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """
+                cmake_minimum_required(VERSION 4.0)
+                project(HeaderOnly)
+
+                add_library(HeaderOnly INTERFACE)
+                """);
+        }
+
+        [Fact]
+        public void Given_UtilityProjectWithNonHeaderFiles_When_Converted_Then_Throws()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Bad.vcxproj", new(TestData.Project()
+                .WithProperty("ConfigurationType", "Utility")
+                .WithItems("ClCompile", "main.cpp")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act & Assert
+            var ex = Assert.Throws<CatastrophicFailureException>(() =>
+                converter.Convert(
+                    projectFiles: [new(@"Bad.vcxproj")]));
+
+            Assert.Contains("Utility projects are only supported if they contain C/C++ headers only", ex.Message);
+        }
+
+        [Fact]
+        public void Given_MakefileProject_When_Converted_Then_Throws()
         {
             // Arrange
             var fileSystem = new MockFileSystem();
@@ -132,7 +181,28 @@ public partial class ConverterTests
                 converter.Convert(
                     projectFiles: [new(@"Bad.vcxproj")]));
 
-            Assert.Contains("ConfigurationType property is unsupported: Makefile", ex.Message);
+            Assert.Contains("Makefile projects are not supported", ex.Message);
+        }
+
+        [Fact]
+        public void Given_ProjectWithUnrecognizedConfigurationType_When_Converted_Then_Throws()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Bad.vcxproj", new(TestData.Project()
+                .WithProperty("ConfigurationType", "Foo")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act & Assert
+            var ex = Assert.Throws<CatastrophicFailureException>(() =>
+                converter.Convert(
+                    projectFiles: [new(@"Bad.vcxproj")]));
+
+            Assert.Contains("ConfigurationType property is unsupported: Foo", ex.Message);
         }
     }
 }

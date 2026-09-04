@@ -8,7 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Add support for MSBuild macros `MSBuildProjectDirectory`, `MSBuildProjectName`, `MSBuildThisFileDirectory` and `MSBuildThisFileName`.
+
+### Changed
+
+- Made error messages for unsupported Utility and Makefile projects more explicit.
+
+## [1.11.0] - 2026-08-23
+
+### Added
+
 - Avoid warnings by ignoring certain default values in `AdditionalDependencies` MSBuild property.
+- Explicitly specified include paths that are already implicitly specified via transitive dependencies are now ignored.
+
+### Fixed
+
+- Architecture-dependent values in C-only projects are now translated using `CMAKE_C_COMPILER_ARCHITECTURE_ID`.
+- Fixed an issue where in certain cases, linking of project references may not be converted correctly.
+- Relative paths in `AdditionalLibraryDirectories` MSBuild property are now prefixed with `${CMAKE_CURRENT_SOURCE_DIR}`.
 
 ## [1.10.0] - 2026-07-03
 
@@ -173,7 +190,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 First stable release.
 
-[unreleased]: https://github.com/chausner/vcxproj2cmake/compare/v1.10.0...HEAD
+[unreleased]: https://github.com/chausner/vcxproj2cmake/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.7.0...v1.8.0

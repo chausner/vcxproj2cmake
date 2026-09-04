@@ -3,17 +3,8 @@ using System.IO.Abstractions;
 
 namespace vcxproj2cmake;
 
-public class Converter
+public class Converter(IFileSystem fileSystem, ILogger logger)
 {
-    readonly IFileSystem fileSystem;
-    readonly ILogger logger;
-
-    public Converter(IFileSystem fileSystem, ILogger logger)
-    {
-        this.fileSystem = fileSystem;
-        this.logger = logger;
-    }
-
     public void Convert(
         List<FileInfo>? projectFiles = null,
         FileInfo? solutionFile = null,
@@ -119,6 +110,7 @@ public class Converter
         ResolveProjectReferences(cmakeProjects, continueOnError, failedProjectPaths);
         RemoveObsoleteLibrariesFromProjectReferences(cmakeProjects);
         AddLibrariesFromProjectReferences(cmakeProjects);
+        RemoveObsoleteIncludePaths(cmakeProjects);
 
         var settings = new CMakeGeneratorSettings(enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun);
         var cmakeGenerator = new CMakeGenerator(fileSystem, logger);
@@ -197,12 +189,57 @@ public class Converter
     {
         foreach (var project in cmakeProjects)
         {
-            if (!project.MSBuildProject.LinkLibraryDependenciesEnabled)
-                continue;
-
             foreach (var projectRef in ProjectDependencyUtils.OrderProjectReferencesByDependencies(project.ProjectReferences, cmakeProjects))
-                if (projectRef.Project!.TargetType is CMakeTargetType.StaticLibrary or CMakeTargetType.SharedLibrary)
-                    project.Libraries.AppendValue(Config.CommonConfig, CMakeExpression.Literal(projectRef.Project.ProjectName));
+            {
+                if (projectRef.Project!.TargetType == CMakeTargetType.Executable)
+                    continue;
+
+                var libraries = project.TargetType is CMakeTargetType.StaticLibrary or CMakeTargetType.SharedLibrary
+                    ? project.PublicLibraries
+                    : project.Libraries;
+                var referencedTarget = CMakeExpression.Literal(projectRef.Project.ProjectName);
+
+                if (!libraries.Values.TryGetValue(Config.CommonConfig, out var commonLibraries) || !commonLibraries.Contains(referencedTarget))
+                    libraries.AppendValue(Config.CommonConfig, referencedTarget);
+            }
+        }
+    }
+
+    void RemoveObsoleteIncludePaths(IEnumerable<CMakeProject> projects)
+    {
+        foreach (var project in projects)
+        {
+            var filteredIncludePaths = project.IncludePaths;
+
+            foreach (var referencedProject in project.GetAllReferencedProjects())
+            {
+                HashSet<string> removedPaths = [];
+
+                bool AreSamePath(string path1, string path2)
+                {
+                    var canonicalPath1 = PathUtils.CanonicalizeCMakePath(path1, project.AbsoluteProjectPath);
+                    var canonicalPath2 = PathUtils.CanonicalizeCMakePath(path2, referencedProject.AbsoluteProjectPath);
+
+                    bool same =
+                        canonicalPath1 != null &&
+                        canonicalPath2 != null &&
+                        canonicalPath1.Equals(canonicalPath2, StringComparison.OrdinalIgnoreCase);
+
+                    if (same)
+                        removedPaths.Add(path1);
+
+                    return same;
+                }
+
+                filteredIncludePaths = filteredIncludePaths.Map((includePaths, referencedIncludePaths) =>
+                    includePaths.Where(path => !referencedIncludePaths.Any(referencedPath => AreSamePath(path.Value, referencedPath.Value))).ToArray(),
+                    referencedProject.PublicIncludePaths, project.ProjectConfigurations, logger!);
+
+                foreach (var path in removedPaths.Order())
+                    logger.LogInformation($"Removed include path {path} from project {project.ProjectName} since referenced project {referencedProject.ProjectName} specifies it as a public include directory.");
+            }
+
+            project.IncludePaths = filteredIncludePaths;
         }
     }
 }

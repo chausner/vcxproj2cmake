@@ -20,6 +20,7 @@ class CMakeProject
     public CMakeConfigDependentMultiSetting PublicIncludePaths { get; set; }
     public CMakeConfigDependentMultiSetting LinkerPaths { get; set; }
     public CMakeConfigDependentMultiSetting Libraries { get; set; }
+    public CMakeConfigDependentMultiSetting PublicLibraries { get; set; }
     public CMakeConfigDependentMultiSetting Defines { get; set; }
     public CMakeConfigDependentMultiSetting CompileOptions { get; set; }
     public CMakeConfigDependentMultiSetting LinkOptions { get; set; }
@@ -119,6 +120,7 @@ class CMakeProject
                 .ToArray(),
             supportedProjectConfigurations,
             logger);
+        PublicLibraries = new("PublicLibraries", []);
         Defines = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             project.PreprocessorDefinitions,
             values => values.Select(value => TranslateMSBuildMacros(value, "PreprocessorDefinitions", logger)).ToArray(),
@@ -210,6 +212,10 @@ class CMakeProject
         translatedValue = Regex.Replace(translatedValue, @"\\\$\(Configuration(Name)?\)", "$<CONFIG>", RegexOptions.IgnoreCase);
         translatedValue = Regex.Replace(translatedValue, @"\\\$\(IntDir\)[/\\]*", "${CMAKE_CURRENT_BINARY_DIR}/", RegexOptions.IgnoreCase);
         translatedValue = Regex.Replace(translatedValue, @"\\\$\(OutDir\)[/\\]*", $"$<TARGET_FILE_DIR:{ProjectName}>/", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(MSBuildProjectDirectory\)([/\\]*)", match => "${CMAKE_CURRENT_SOURCE_DIR}" + (match.Groups[1].Length > 0 ? "/" : string.Empty), RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(MSBuildProjectName\)", "${PROJECT_NAME}", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(MSBuildThisFileDirectory\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/", RegexOptions.IgnoreCase);
+        translatedValue = Regex.Replace(translatedValue, @"\\\$\(MSBuildThisFileName\)", "${PROJECT_NAME}", RegexOptions.IgnoreCase);
         translatedValue = Regex.Replace(translatedValue, @"\\\$\(ProjectDir\)[/\\]*", "${CMAKE_CURRENT_SOURCE_DIR}/", RegexOptions.IgnoreCase);
         translatedValue = Regex.Replace(translatedValue, @"\\\$\(ProjectName\)", "${PROJECT_NAME}", RegexOptions.IgnoreCase);
         translatedValue = Regex.Replace(translatedValue, @"\\\$\(SolutionDir\)[/\\]*", "${CMAKE_SOURCE_DIR}/", RegexOptions.IgnoreCase);
@@ -317,6 +323,8 @@ class CMakeProject
                 "Application" => CMakeTargetType.Executable,
                 "StaticLibrary" => CMakeTargetType.StaticLibrary,
                 "DynamicLibrary" => CMakeTargetType.SharedLibrary,
+                "Utility" => throw new CatastrophicFailureException("Utility projects are only supported if they contain C/C++ headers only"),
+                "Makefile" => throw new CatastrophicFailureException("Makefile projects are not supported"),
                 _ => throw new CatastrophicFailureException($"ConfigurationType property is unsupported: {project.ConfigurationType}")
             };
     }
