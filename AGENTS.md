@@ -36,10 +36,12 @@
 - Framework: xUnit (`[Fact]`, `[Theory]`).
 - Location: under `vcxproj2cmake.Tests/`; mirror source folders when useful.
 - Naming: `Given_<Arrange>_When_<Act>_Then_<Assert>`.
-- Mark sections in tests with comments (`// Arrange`, `// Act`, `// Assert`). Use `// Act & Assert` if steps are intertwined. Leave out sections if not applicable. Stay consistent with existing tests.
+- Mark sections in tests with comments (`// Arrange`, `// Act`, `// Assert`). Use `// Act & Assert` if steps are intertwined.
+  Leave out sections if not applicable. Stay consistent with existing tests.
 - Run: `dotnet test -c Release`.
-- Run CMake-backed assertions with `dotnet test -c Release --settings CMakeAssertions.runsettings`; this sets `RUN_CMAKE_ASSERTIONS=1` and is what CI uses.
-- Use `CMakeAssert.ConfiguresAndBuildsWithCMake(...)` for tests that must prove generated CMake configures and builds. Gate these checks with `TestOptions.RunCMakeAssertions` so regular local runs stay fast and do not require CMake, generators, or toolchains.
+- Include CMake-backed assertions by setting environment variable `RUN_CMAKE_ASSERTIONS=1`. This is also what CI uses.
+- Use `CMakeAssert.ConfiguresAndBuildsWithCMake(...)` for tests that must prove generated CMake configures and builds.
+  Gate these checks with `TestOptions.RunCMakeAssertions` so regular local runs stay fast and do not require CMake, generators, or toolchains.
 - `MockFileSystem.CopyCurrentDirectoryToDisk(...)` is intended for debugging generated test output. Only add it temporarily to tests, if necessary, but do not commit it.
 - Keep tests deterministic; use `MockFileSystem` from IO.Abstractions for file I/O.
 
