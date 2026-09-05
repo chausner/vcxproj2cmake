@@ -102,5 +102,5 @@ jobs:
     - name: Coveralls
       uses: coverallsapp/github-action@v2
       with:
-        file: ./TestResults/coverage.cobertura.xml
+        file: ./coverage.cobertura.xml
         format: cobertura
