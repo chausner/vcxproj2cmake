@@ -26,7 +26,7 @@ jobs:
       run: dotnet build --no-restore --configuration Release
     - name: Test
       run: |
-        $env:RUN_CMAKE_ASSERTIONS = "1"
+        export RUN_CMAKE_ASSERTIONS="1"
         dotnet test --no-build --configuration Release --coverage --coverage-output coverage.cobertura.xml --coverage-output-format cobertura
     - name: Publish
       if: runner.os == 'Windows'
