@@ -3,11 +3,9 @@
     <File Path=".editorconfig" />
     <File Path="AGENTS.md" />
     <File Path="CHANGELOG.md" />
-    <File Path="CMakeAssertions.runsettings" />
-    <File Path="CodeCoverage.runsettings" />
+    <File Path="global.json" />
     <File Path="LICENSE" />
     <File Path="README.md" />
-    <File Path="settings.VisualStudio.json" />
   </Folder>
   <Project Path="vcxproj2cmake.Tests/vcxproj2cmake.Tests.csproj" />
   <Project Path="vcxproj2cmake/vcxproj2cmake.csproj" />
