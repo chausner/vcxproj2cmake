@@ -165,7 +165,7 @@ public partial class ConverterTests
         }
 
         [Fact]
-        public void Given_LinkerPathsDifferentPerConfigAndPlatform_When_Converted_Then_SkippedWithWarning()
+        public void Given_LinkerPathsDifferentPerConfigAndPlatform_When_Converted_Then_GeneratorExpressionsUseConfigAndArchitecture()
         {
             // Arrange
             var fileSystem = new MockFileSystem();
@@ -189,8 +189,15 @@ public partial class ConverterTests
             // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
 
-            Assert.DoesNotContain("target_link_directories(Project", cmake);
-            Assert.Contains("ignored because they are specific to certain build configurations", logger.AllMessageText);
+            Assert.Contains("""
+                target_link_directories(Project
+                    PRIVATE
+                        "$<$<AND:$<CONFIG:Debug>,$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>>:${CMAKE_CURRENT_SOURCE_DIR}/DebugWin32>"
+                        "$<$<AND:$<CONFIG:Debug>,$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>>:${CMAKE_CURRENT_SOURCE_DIR}/DebugX64>"
+                        "$<$<AND:$<CONFIG:Release>,$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>>:${CMAKE_CURRENT_SOURCE_DIR}/ReleaseWin32>"
+                        "$<$<AND:$<CONFIG:Release>,$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>>:${CMAKE_CURRENT_SOURCE_DIR}/ReleaseX64>"
+                )
+                """.Trim(), cmake);
         }
 
         [Fact]

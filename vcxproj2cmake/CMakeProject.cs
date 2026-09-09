@@ -61,7 +61,7 @@ class CMakeProject
     {
         logger.LogInformation($"Processing project {project.AbsoluteProjectPath}");
 
-        var supportedProjectConfigurations = FilterSupportedProjectConfigurations(project.ProjectConfigurations, logger);
+        var supportedProjectConfigurations = project.ProjectConfigurations; // TODO
 
         MSBuildProject = project;
         AbsoluteProjectPath = project.AbsoluteProjectPath;
@@ -211,21 +211,6 @@ class CMakeProject
             return library;
     }
 
-    static MSBuildProjectConfig[] FilterSupportedProjectConfigurations(IEnumerable<MSBuildProjectConfig> projectConfigurations, ILogger logger)
-    {
-        List<MSBuildProjectConfig> supportedProjectConfigurations = [];
-
-        foreach (var projectConfig in projectConfigurations)
-        {
-            if (Config.IsMSBuildProjectConfigSupported(projectConfig))
-                supportedProjectConfigurations.Add(projectConfig);
-            else
-                logger.LogWarning($"Skipping unsupported project configuration: {projectConfig}");
-        }
-
-        return supportedProjectConfigurations.ToArray();
-    }
-
     static CMakeTargetType DetermineTargetType(MSBuildProject project)
     {
         var isHeaderOnlyLibrary = project.SourceFiles.Length == 0 && project.HeaderFiles.Length > 0;
@@ -349,10 +334,10 @@ class CMakeProject
         };
 
         if (cppFeature != null)
-            CompileFeatures.AppendValue(Config.CommonConfig, CMakeExpression.Literal(cppFeature));
+            CompileFeatures.AppendValue(ProjectConfigurations, CMakeExpression.Literal(cppFeature));
 
         if (cFeature != null)
-            CompileFeatures.AppendValue(Config.CommonConfig, CMakeExpression.Literal(cFeature));
+            CompileFeatures.AppendValue(ProjectConfigurations, CMakeExpression.Literal(cFeature));
     }
 
     void ApplyRuntimeLibrary(MSBuildProject project, ILogger logger)
@@ -575,7 +560,7 @@ class CMakeProject
         FindPackages.Add(new CMakeFindPackage($"Qt{qtVersion}", Required: true, Components: qtComponents));
 
         foreach (var module in qtModules)
-            Libraries.AppendValue(Config.CommonConfig, CMakeExpression.Literal(module.CMakeTargetName));
+            Libraries.AppendValue(ProjectConfigurations, CMakeExpression.Literal(module.CMakeTargetName));
 
         if (project.RequiresQtMoc)
             Properties.Add("AUTOMOC", CMakeExpression.Literal("ON"));
@@ -595,7 +580,7 @@ class CMakeProject
         foreach (var package in conanPackages)
         {
             FindPackages.Add(new CMakeFindPackage(package.CMakeConfigName, Required: true, Config: true));
-            Libraries.AppendValue(Config.CommonConfig, CMakeExpression.Literal(package.CMakeTargetName));
+            Libraries.AppendValue(ProjectConfigurations, CMakeExpression.Literal(package.CMakeTargetName));
         }
     }
 

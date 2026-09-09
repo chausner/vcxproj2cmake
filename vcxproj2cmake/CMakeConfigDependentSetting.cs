@@ -1,10 +1,11 @@
 using Microsoft.Extensions.Logging;
+using System.Diagnostics.CodeAnalysis;
 
 namespace vcxproj2cmake;
 
 record CMakeConfigDependentSetting
 {
-    public OrderedDictionary<Config, CMakeExpression> Values { get; }
+    public Dictionary<MSBuildProjectConfig, CMakeExpression> Values { get; }
     public string SettingName { get; }
     public CMakeExpression DefaultValue { get; }
 
@@ -20,56 +21,15 @@ record CMakeConfigDependentSetting
         IEnumerable<MSBuildProjectConfig> projectConfigurations,
         ILogger logger)
     {
-        static bool HasContent(CMakeExpression? expression) => expression != null && expression.Value != string.Empty;
-
-        var filteredSettingValues = settings.Values.Where(kvp => projectConfigurations.Contains(kvp.Key)).ToArray();
-
-        if (filteredSettingValues.Length == 0)
-        {
-            Values = [];
-            SettingName = settings.SettingName;
-            DefaultValue = settings.DefaultValue;
-            return;
-        }
-
-        var effectiveSettings = new Dictionary<MSBuildProjectConfig, CMakeExpression>(filteredSettingValues);
+        // TODO: is this needed?
+        var effectiveSettings = new Dictionary<MSBuildProjectConfig, CMakeExpression>(settings.Values);
         foreach (var config in projectConfigurations)
             if (!effectiveSettings.ContainsKey(config))
                 effectiveSettings[config] = settings.DefaultValue;
 
-        var allSettingValues = effectiveSettings.Values.Distinct().ToArray();
-
-        var commonSettingValue = allSettingValues.FirstOrDefault(s => effectiveSettings.All(kvp => kvp.Value == s));
-
-        CMakeExpression? FilterByConfig(Config config)
-        {
-            return allSettingValues
-                .Where(s => effectiveSettings.All(kvp => config.MatchesProjectConfig(kvp.Key) == (kvp.Value == s)))
-                .FirstOrDefault(s => s != commonSettingValue);
-        }
-
-        OrderedDictionary<Config, CMakeExpression> values = [];
-
-        if (HasContent(commonSettingValue))
-            values[Config.CommonConfig] = commonSettingValue!;
-
-        foreach (var config in Config.Configs)
-        {
-            var filteredValues = FilterByConfig(config);
-            if (HasContent(filteredValues))
-                values[config] = filteredValues!;
-        }
-
-        Values = values;
+        Values = effectiveSettings;
         SettingName = settings.SettingName;
         DefaultValue = settings.DefaultValue;
-
-        var skippedSettings = filteredSettingValues.Select(kvp => kvp.Value)
-            .Where(HasContent)
-            .Except(values.Values)
-            .ToArray();
-        if (skippedSettings.Length > 0)
-            logger.LogWarning($"The following values for setting {settings.SettingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings)}");
     }
 
     public CMakeConfigDependentSetting(
@@ -88,23 +48,98 @@ record CMakeConfigDependentSetting
 
     public CMakeExpression? GetValue(MSBuildProjectConfig projectConfig)
     {
-        var config = Config.Configs.SingleOrDefault(config => config.MatchesProjectConfig(projectConfig) && Values.ContainsKey(config));
-        if (config != null)
-            return Values[config];
-        return Values.GetValueOrDefault(Config.CommonConfig);
+        return Values.GetValueOrDefault(projectConfig, DefaultValue);
+    }
+
+    public CMakeExpression[] ToCMakeExpressions()
+    {
+        var projectConfigs = Values.Keys;
+
+        if (Values.Values.Distinct().Count() == 1)
+            if (Values.Values.First().Value != string.Empty)
+                return [Values.Values.First()];
+            else
+                return [];
+
+        List<CMakeVariable> variablesToConsider = [];
+
+        foreach (var variable in CMakeVariable.AllVariables)
+        {
+            int numDistinctValues = projectConfigs.Select(variable.GetValueForProjectConfig).Distinct().Count();
+            if (numDistinctValues > 1)
+                variablesToConsider.Add(variable);
+        }
+
+        if (variablesToConsider.Count == 0)
+        {
+            if (Values.Values.Distinct().Count() != 1)
+                throw new InvalidOperationException($"Cannot convert setting {SettingName} to a CMake expression because it has multiple values and no CMake variable can be used to distinguish between them.");
+
+            if (Values.Values.First().Value != string.Empty)
+                return [Values.Values.First()];
+            else
+                return [];
+        }
+
+        CMakeVariable[] singleConditionVariables =
+            variablesToConsider
+            .Where(variable => projectConfigs.GroupBy(variable.GetValueForProjectConfig)
+            .All(grouping => grouping.Select(config => Values[config]).Distinct().Count() == 1))
+            .ToArray();
+
+        if (singleConditionVariables.Length >= 2)
+        {
+            // TODO: log warning that multiple variables can be used to distinguish between values, but only one will be used
+        }
+
+        if (singleConditionVariables.Length >= 1)
+        {
+            var variable = singleConditionVariables.First();
+
+            List<CMakeExpression> exprs = [];
+            foreach (var grouping in projectConfigs.GroupBy(variable.GetValueForProjectConfig))
+            {
+                var value = Values[grouping.First()];
+                if (value.Value != string.Empty)
+                    exprs.Add(variable.GetExpression(grouping.Key, value));
+            }
+            return exprs.ToArray();
+        }
+
+        {
+            List<CMakeExpression> exprs = [];
+            foreach (var (projectConfig, value) in Values)
+            {
+                if (value.Value == string.Empty)
+                    continue;
+                var variableValues = variablesToConsider.Select(variable => variable.GetValueForProjectConfig(projectConfig)).ToArray();
+                var expr = CMakeExpression.Expression("$<$<AND:");
+                foreach (var (i, (variable, variableValue)) in variablesToConsider.Zip(variableValues).Index())
+                {
+                    expr += variable.GetConditionExpression(variableValue);
+                    if (i < variablesToConsider.Count - 1)
+                        expr += CMakeExpression.Expression(",");
+                }
+                expr += CMakeExpression.Expression(">:" + value.Value + ">");
+                exprs.Add(expr);
+            }
+            return exprs.ToArray();
+        }
     }
 
     public CMakeExpression ToCMakeExpression()
     {
-        return CMakeExpression.Expression(string.Join(string.Empty, Values.Select(kvp => kvp.Key.Apply(kvp.Value).Value)));
+        return CMakeExpression.Expression(string.Join(string.Empty, ToCMakeExpressions().Select(expr => expr.Value)));
     }
 
-    public bool IsEmpty => Values.Count == 0;
+    public CMakeExpression[] CMakeExpressions => ToCMakeExpressions();
+
+    public bool IsEmpty => Values.Values.All(exprs => exprs.Value == string.Empty);
 }
 
 record CMakeConfigDependentMultiSetting
 {
-    public OrderedDictionary<Config, CMakeExpression[]> Values { get; }
+    public Dictionary<MSBuildProjectConfig, CMakeExpression[]> Values { get; }
     public string SettingName { get; }
     public CMakeExpression[] DefaultValue { get; }
 
@@ -120,55 +155,15 @@ record CMakeConfigDependentMultiSetting
         IEnumerable<MSBuildProjectConfig> projectConfigurations,
         ILogger logger)
     {
-        var filteredSettingValues = settings.Values.Where(kvp => projectConfigurations.Contains(kvp.Key)).ToArray();
-
-        if (filteredSettingValues.Length == 0)
-        {
-            Values = [];
-            SettingName = settings.SettingName;
-            DefaultValue = settings.DefaultValue;
-            return;
-        }
-
-        var effectiveSettings = new Dictionary<MSBuildProjectConfig, CMakeExpression[]>(filteredSettingValues);
+        // TODO: is this needed?
+        var effectiveSettings = new Dictionary<MSBuildProjectConfig, CMakeExpression[]>(settings.Values);
         foreach (var config in projectConfigurations)
             if (!effectiveSettings.ContainsKey(config))
-                effectiveSettings[config] = settings.DefaultValue;
+                effectiveSettings[config] = settings.DefaultValue;       
 
-        var allSettingValues = effectiveSettings.Values.SelectMany(s => s).Distinct().ToArray();
-
-        var commonSettingValues = allSettingValues.Where(s => effectiveSettings.All(kvp => kvp.Value.Contains(s))).ToArray();
-
-        CMakeExpression[] FilterByConfig(Config config)
-        {
-            return allSettingValues
-                .Where(s => effectiveSettings.All(kvp => config.MatchesProjectConfig(kvp.Key) == kvp.Value.Contains(s)))
-                .Except(commonSettingValues)
-                .ToArray();
-        }
-
-        OrderedDictionary<Config, CMakeExpression[]> values = [];
-
-        if (commonSettingValues.Length > 0)
-            values[Config.CommonConfig] = commonSettingValues;
-
-        foreach (var config in Config.Configs)
-        {
-            var filteredValues = FilterByConfig(config);
-            if (filteredValues.Length > 0)
-                values[config] = filteredValues;
-        }
-
-        Values = values;
+        Values = effectiveSettings;
         SettingName = settings.SettingName;
-        DefaultValue = settings.DefaultValue;
-
-        var skippedSettings = filteredSettingValues.Select(kvp => kvp.Value)
-            .SelectMany(s => s)
-            .Except(values.Values.SelectMany(s => s))
-            .ToArray();
-        if (skippedSettings.Length > 0)
-            logger.LogWarning($"The following values for setting {settings.SettingName} were ignored because they are specific to certain build configurations: {string.Join(", ", skippedSettings)}");
+        DefaultValue = settings.DefaultValue;     
     }
 
     public CMakeConfigDependentMultiSetting(
@@ -187,27 +182,96 @@ record CMakeConfigDependentMultiSetting
     {
     }
 
-    public void AppendValue(Config config, CMakeExpression value)
-    {
+    public void AppendValue(MSBuildProjectConfig config, CMakeExpression value)
+    { 
         if (!Values.ContainsKey(config))
-            Values[config] = [value];
+            Values[config] = [value]; // TODO: is this needed?
         else
             Values[config] = [.. Values[config], value];
     }
 
+    public void AppendValue(IEnumerable<MSBuildProjectConfig> projectConfigs, CMakeExpression value)
+    {
+        foreach (var projectConfig in projectConfigs)
+            AppendValue(projectConfig, value);
+    }
+
+    public void AppendValueIfNotPresent(MSBuildProjectConfig config, CMakeExpression value)
+    {
+        if (!Values.ContainsKey(config))
+            Values[config] = [value]; // TODO: is this needed?
+        else
+            if (!Values[config].Contains(value))
+                Values[config] = [.. Values[config], value];
+    }
+
+    public void AppendValueIfNotPresent(IEnumerable<MSBuildProjectConfig> projectConfigs, CMakeExpression value)
+    {
+        foreach (var projectConfig in projectConfigs)
+            AppendValueIfNotPresent(projectConfig, value);
+    }
+
     public CMakeExpression[] GetValue(MSBuildProjectConfig projectConfig)
     {
-        return new[] { Config.CommonConfig }
-            .Concat(Config.Configs)
-            .Where(config => config.MatchesProjectConfig(projectConfig) && Values.ContainsKey(config))
-            .SelectMany(config => Values[config])
-            .ToArray();
+        return Values.GetValueOrDefault(projectConfig, DefaultValue);
     }
 
-    public CMakeExpression ToCMakeExpression()
+    public CMakeExpression[] ToCMakeExpressions()
     {
-        return CMakeExpression.Expression(string.Join(' ', Values.SelectMany(kvp => kvp.Value.Select(value => kvp.Key.Apply(value).Value))));
+        var projectConfigs = Values.Keys;
+
+        if (Values.Values.Distinct(CMakeExpressionArrayEqualityComparer.Instance).Count() == 1)
+            return Values.Values.First();
+
+        Dictionary<MSBuildProjectConfig, List<CMakeExpression>> values = new(Values.Select(kvp => new KeyValuePair<MSBuildProjectConfig, List<CMakeExpression>>(kvp.Key, kvp.Value.ToList())));
+
+        List<CMakeExpression> exprs = [];
+
+        CMakeExpression[] commonExpressions = 
+            Values.Values
+            .Aggregate((acc, exprs) => acc.Intersect(exprs).ToArray())
+            .ToArray();
+
+        exprs.AddRange(commonExpressions);
+
+        foreach (var value in values.Values)        
+            foreach (var expr in commonExpressions)
+                value.Remove(expr);
+
+        var uniqueValues = values.Values.SelectMany(exprs => exprs).Distinct().ToArray();
+
+        foreach (var value in uniqueValues)
+        {
+            var setting = new CMakeConfigDependentSetting("foo", CMakeExpression.Expression(string.Empty));
+            foreach (var projectConfig in projectConfigs)
+                setting.Values.Add(projectConfig, values[projectConfig].Contains(value) ? value : CMakeExpression.Expression(string.Empty));
+            exprs.AddRange(setting.ToCMakeExpressions());
+        }
+
+        return exprs.ToArray();
     }
 
-    public bool IsEmpty => Values.Count == 0;
+    public CMakeExpression[] CMakeExpressions => ToCMakeExpressions();
+
+    public bool IsEmpty => Values.Values.All(exprs => exprs.Length == 0);
+}
+
+class CMakeExpressionArrayEqualityComparer : IEqualityComparer<CMakeExpression[]>
+{
+    public static readonly CMakeExpressionArrayEqualityComparer Instance = new();
+
+    public bool Equals(CMakeExpression[]? x, CMakeExpression[]? y)
+    {
+        if (x == null && y == null)
+            return true;
+        else if (x == null || y == null)
+            return false;
+        else
+            return x.SequenceEqual(y);
+    }
+
+    public int GetHashCode([DisallowNull] CMakeExpression[] obj)
+    {
+        return obj.Aggregate(0, (acc, expr) => acc ^ expr.GetHashCode());
+    }
 }

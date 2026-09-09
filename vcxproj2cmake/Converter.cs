@@ -205,8 +205,7 @@ public class Converter(IFileSystem fileSystem, ILogger logger)
                     : project.Libraries;
                 var referencedTarget = CMakeExpression.Literal(projectRef.Project.ProjectName);
 
-                if (!libraries.Values.TryGetValue(Config.CommonConfig, out var commonLibraries) || !commonLibraries.Contains(referencedTarget))
-                    libraries.AppendValue(Config.CommonConfig, referencedTarget);
+                libraries.AppendValueIfNotPresent(project.ProjectConfigurations, referencedTarget);
             }
         }
     }
