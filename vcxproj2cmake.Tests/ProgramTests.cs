@@ -40,6 +40,7 @@ public class ProgramTests
         // Act
         var (_, _, exitCode) = RunProgramMainWithCapturedConsole(
             "--projects", appProj, mathLibProj,
+            "--project-configs", "Debug|Win32", "Release|Win32",
             "--qt-version", "6",
             "--portable",
             "--include-headers",
@@ -62,6 +63,7 @@ public class ProgramTests
         // Act
         var (_, _, exitCode) = RunProgramMainWithCapturedConsole(
             "--solution", sln,
+            "--project-configs", "Debug|Win32", "Release|Win32",
             "--qt-version", "5",
             "--include-headers",
             "--enable-standalone-project-builds",

@@ -21,8 +21,10 @@ record CMakeConfigDependentSetting
         IEnumerable<MSBuildProjectConfig> projectConfigurations,
         ILogger logger)
     {
+        var effectiveSettings = settings.Values
+            .Where(kvp => projectConfigurations.Contains(kvp.Key))
+            .ToDictionary();
         // TODO: is this needed?
-        var effectiveSettings = new Dictionary<MSBuildProjectConfig, CMakeExpression>(settings.Values);
         foreach (var config in projectConfigurations)
             if (!effectiveSettings.ContainsKey(config))
                 effectiveSettings[config] = settings.DefaultValue;
@@ -155,8 +157,10 @@ record CMakeConfigDependentMultiSetting
         IEnumerable<MSBuildProjectConfig> projectConfigurations,
         ILogger logger)
     {
+        var effectiveSettings = settings.Values
+            .Where(kvp => projectConfigurations.Contains(kvp.Key))
+            .ToDictionary();
         // TODO: is this needed?
-        var effectiveSettings = new Dictionary<MSBuildProjectConfig, CMakeExpression[]>(settings.Values);
         foreach (var config in projectConfigurations)
             if (!effectiveSettings.ContainsKey(config))
                 effectiveSettings[config] = settings.DefaultValue;       

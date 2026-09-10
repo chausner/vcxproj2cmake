@@ -28,6 +28,7 @@ public class ProjectDependencyUtilsTests
         var conanRepository = new ConanPackageInfoRepository();
         var cmakeApp = new CMakeProject(
             msbuildApp,
+            null,
             new CMakeProjectSettings(QtVersion: null, Portable: false),
             msbuildApp.ProjectName,
             includeHeaders: false,
@@ -35,6 +36,7 @@ public class ProjectDependencyUtilsTests
             NullLogger.Instance);
         var cmakeLib = new CMakeProject(
             msbuildLib,
+            null,
             new CMakeProjectSettings(QtVersion: null, Portable: false),
             msbuildLib.ProjectName,
             includeHeaders: false,

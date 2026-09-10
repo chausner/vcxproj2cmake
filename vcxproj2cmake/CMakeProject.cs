@@ -52,7 +52,8 @@ class CMakeProject
         CMakeExpression.Expression(@"\$(CoreLibraryDependencies)")];
 
     public CMakeProject(
-        MSBuildProject project,
+        MSBuildProject project,        
+        IEnumerable<string>? projectConfigs,
         CMakeProjectSettings settings,
         string projectName,
         bool includeHeaders,
@@ -61,7 +62,11 @@ class CMakeProject
     {
         logger.LogInformation($"Processing project {project.AbsoluteProjectPath}");
 
-        var supportedProjectConfigurations = project.ProjectConfigurations; // TODO
+        MSBuildProjectConfig[] supportedProjectConfigurations = projectConfigs switch
+        {
+            null => project.ProjectConfigurations,
+            not null => project.ProjectConfigurations.Where(config => projectConfigs.Contains(config.Name)).ToArray()
+        };
 
         MSBuildProject = project;
         AbsoluteProjectPath = project.AbsoluteProjectPath;
