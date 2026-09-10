@@ -38,14 +38,13 @@ class BuildTypeCMakeVariable : CMakeVariable
     {
         // TODO: use UseDebugLibraries instead of relying on the project configuration name
 
-        if (projectConfig.Name.StartsWith("Debug|"))
+        if (projectConfig.Name.StartsWith("Debug|") || projectConfig.Name.Contains("Debug"))
             return "Debug";
-        else if (projectConfig.Name.StartsWith("Release|"))
+        else if (projectConfig.Name.StartsWith("Release|") || projectConfig.Name.Contains("Release"))
             return "Release";
         else
             throw new ArgumentException(
-                $"Unsupported project configuration: '{projectConfig.Name}'. " +
-                $"Expected to start with 'Debug|' or 'Release|'.");
+                $"Unsupported project configuration: '{projectConfig.Name}'.");
     }
 
     public override bool IsMSBuildProjectConfigSupported(MSBuildProjectConfig projectConfig)
