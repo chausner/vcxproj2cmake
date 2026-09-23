@@ -13,8 +13,6 @@ abstract class CMakeVariable
 
     public abstract string GetValueForProjectConfig(MSBuildProjectConfig projectConfig);
 
-    public abstract bool IsMSBuildProjectConfigSupported(MSBuildProjectConfig projectConfig);
-
     public static readonly CMakeVariable[] AllVariables =
     [
         new BuildTypeCMakeVariable(),
@@ -45,11 +43,6 @@ class BuildTypeCMakeVariable : CMakeVariable
         else
             throw new ArgumentException(
                 $"Unsupported project configuration: '{projectConfig.Name}'.");
-    }
-
-    public override bool IsMSBuildProjectConfigSupported(MSBuildProjectConfig projectConfig)
-    {
-        return projectConfig.Name.StartsWith("Debug|") || projectConfig.Name.StartsWith("Release|");
     }
 }
 
@@ -83,15 +76,5 @@ class CompilerArchitectureIdCMakeVariable : CMakeVariable
             throw new ArgumentException(
                 $"Unsupported project configuration: '{projectConfig.Name}'. " +
                 $"Expected to end with '|Win32', '|x86', '|x64', '|ARM32', or '|ARM64'.");
-    }
-
-    public override bool IsMSBuildProjectConfigSupported(MSBuildProjectConfig projectConfig)
-    {
-        return 
-            projectConfig.Name.EndsWith("|Win32") ||
-            projectConfig.Name.EndsWith("|x86") ||
-            projectConfig.Name.EndsWith("|x64") ||
-            projectConfig.Name.EndsWith("|ARM32") ||
-            projectConfig.Name.EndsWith("|ARM64");
     }
 }
