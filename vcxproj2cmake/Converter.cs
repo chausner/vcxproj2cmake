@@ -140,6 +140,12 @@ public class Converter(IFileSystem fileSystem, ILogger logger)
             {
                 var absoluteReference = Path.GetFullPath(projectReference.Path, Path.GetDirectoryName(project.AbsoluteProjectPath)!);
 
+                if (!string.Equals(Path.GetExtension(absoluteReference), ".vcxproj", StringComparison.OrdinalIgnoreCase))
+                {
+                    logger.LogWarning("Ignoring non-vcxproj project reference {ProjectReference} in project {ProjectFile}.", projectReference.Path, project.AbsoluteProjectPath);
+                    continue;
+                }
+
                 var referencedProject = projects.FirstOrDefault(p => p.AbsoluteProjectPath == absoluteReference);
 
                 if (referencedProject == null)

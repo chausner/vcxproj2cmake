@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - Made error messages for unsupported Utility and Makefile projects more explicit.
+- Project references to non-vcxproj projects are now ignored with a warning instead of leading to a conversion failure.
 
 ## [1.11.0] - 2026-08-23
 

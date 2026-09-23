@@ -30,6 +30,35 @@ public partial class ConverterTests
         }
 
         [Fact]
+        public void Given_ProjectReferencesNonVcxprojProject_When_Converted_Then_IgnoresReferenceAndLogsWarning()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "Application")
+                .WithProjectReferences("..\\Managed\\Managed.csproj")
+                .Build()));
+
+            var logger = new InMemoryLogger();
+            var converter = new Converter(fileSystem, logger);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(Path.Combine("App", "App.vcxproj"))]);
+
+            // Assert
+            Assert.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
+                cmake_minimum_required(VERSION 4.0)
+                project(App)
+
+                add_executable(App)
+                """);
+            Assert.Contains("Ignoring non-vcxproj project reference ..\\Managed\\Managed.csproj", logger.AllMessageText);
+        }
+
+        [Fact]
         public void Given_ProjectReferencesAnotherProjectWithRelativePath_When_Converted_Then_MatchesExpectedOutput()
         {
             // Arrange
