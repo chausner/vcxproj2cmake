@@ -8,17 +8,20 @@ record CMakeConfigDependentSetting
     public Dictionary<MSBuildProjectConfig, CMakeExpression> Values { get; }
     public string SettingName { get; }
     public CMakeExpression DefaultValue { get; }
+    public MSBuildProject MSBuildProject { get; }
 
-    public CMakeConfigDependentSetting(string settingName, CMakeExpression defaultValue)
+    public CMakeConfigDependentSetting(string settingName, CMakeExpression defaultValue, MSBuildProject msbuildProject)
     {
         Values = [];
         SettingName = settingName;
         DefaultValue = defaultValue;
+        MSBuildProject = msbuildProject;
     }
 
     public CMakeConfigDependentSetting(
         MSBuildConfigDependentSetting<CMakeExpression> settings,
         IEnumerable<MSBuildProjectConfig> projectConfigurations,
+        MSBuildProject msbuildProject,
         ILogger logger)
     {
         var effectiveSettings = settings.Values
@@ -32,11 +35,13 @@ record CMakeConfigDependentSetting
         Values = effectiveSettings;
         SettingName = settings.SettingName;
         DefaultValue = settings.DefaultValue;
+        MSBuildProject = msbuildProject;
     }
 
     public CMakeConfigDependentSetting(
         MSBuildConfigDependentSetting<string> settings,
         IEnumerable<MSBuildProjectConfig> projectConfigurations,
+        MSBuildProject msbuildProject,
         ILogger logger)
         : this(
             new MSBuildConfigDependentSetting<CMakeExpression>(
@@ -44,6 +49,7 @@ record CMakeConfigDependentSetting
                 CMakeExpression.Literal(settings.DefaultValue ?? string.Empty),
                 settings.Values.ToDictionary(kvp => kvp.Key, kvp => CMakeExpression.Literal(kvp.Value))),
             projectConfigurations,
+            msbuildProject,
             logger)
     {
     }
@@ -67,7 +73,7 @@ record CMakeConfigDependentSetting
 
         foreach (var variable in CMakeVariable.AllVariables)
         {
-            int numDistinctValues = projectConfigs.Select(variable.GetValueForProjectConfig).Distinct().Count();
+            int numDistinctValues = projectConfigs.Select(config => variable.GetValueForProjectConfig(config, MSBuildProject)).Distinct().Count();
             if (numDistinctValues > 1)
                 variablesToConsider.Add(variable);
         }
@@ -85,7 +91,7 @@ record CMakeConfigDependentSetting
 
         CMakeVariable[] singleConditionVariables =
             variablesToConsider
-            .Where(variable => projectConfigs.GroupBy(variable.GetValueForProjectConfig)
+            .Where(variable => projectConfigs.GroupBy(config => variable.GetValueForProjectConfig(config, MSBuildProject))
             .All(grouping => grouping.Select(config => Values[config]).Distinct().Count() == 1))
             .ToArray();
 
@@ -99,7 +105,7 @@ record CMakeConfigDependentSetting
             var variable = singleConditionVariables.First();
 
             List<CMakeExpression> exprs = [];
-            foreach (var grouping in projectConfigs.GroupBy(variable.GetValueForProjectConfig))
+            foreach (var grouping in projectConfigs.GroupBy(config => variable.GetValueForProjectConfig(config, MSBuildProject)))
             {
                 var value = Values[grouping.First()];
                 if (value.Value != string.Empty)
@@ -114,7 +120,7 @@ record CMakeConfigDependentSetting
             {
                 if (value.Value == string.Empty)
                     continue;
-                var variableValues = variablesToConsider.Select(variable => variable.GetValueForProjectConfig(projectConfig)).ToArray();
+                var variableValues = variablesToConsider.Select(variable => variable.GetValueForProjectConfig(projectConfig, MSBuildProject)).ToArray();
                 var expr = CMakeExpression.Expression("$<$<AND:");
                 foreach (var (i, (variable, variableValue)) in variablesToConsider.Zip(variableValues).Index())
                 {
@@ -144,17 +150,20 @@ record CMakeConfigDependentMultiSetting
     public Dictionary<MSBuildProjectConfig, CMakeExpression[]> Values { get; }
     public string SettingName { get; }
     public CMakeExpression[] DefaultValue { get; }
+    public MSBuildProject MSBuildProject { get; }
 
-    public CMakeConfigDependentMultiSetting(string settingName, CMakeExpression[] defaultValue)
+    public CMakeConfigDependentMultiSetting(string settingName, CMakeExpression[] defaultValue, MSBuildProject msbuildProject)
     {
         Values = [];
         SettingName = settingName;
         DefaultValue = defaultValue;
+        MSBuildProject = msbuildProject;
     }
 
     public CMakeConfigDependentMultiSetting(
         MSBuildConfigDependentSetting<CMakeExpression[]> settings,
         IEnumerable<MSBuildProjectConfig> projectConfigurations,
+        MSBuildProject msbuildProject,
         ILogger logger)
     {
         var effectiveSettings = settings.Values
@@ -168,11 +177,13 @@ record CMakeConfigDependentMultiSetting
         Values = effectiveSettings;
         SettingName = settings.SettingName;
         DefaultValue = settings.DefaultValue;     
+        MSBuildProject = msbuildProject;
     }
 
     public CMakeConfigDependentMultiSetting(
         MSBuildConfigDependentSetting<string[]> settings,
         IEnumerable<MSBuildProjectConfig> projectConfigurations,
+        MSBuildProject msbuildProject,
         ILogger logger)
         : this(
             new MSBuildConfigDependentSetting<CMakeExpression[]>(
@@ -182,6 +193,7 @@ record CMakeConfigDependentMultiSetting
                     kvp => kvp.Key,
                     kvp => kvp.Value.Select(value => CMakeExpression.Literal(value)).ToArray())),
             projectConfigurations,
+            msbuildProject,
             logger)
     {
     }
@@ -246,7 +258,7 @@ record CMakeConfigDependentMultiSetting
 
         foreach (var value in uniqueValues)
         {
-            var setting = new CMakeConfigDependentSetting("foo", CMakeExpression.Expression(string.Empty));
+            var setting = new CMakeConfigDependentSetting("foo", CMakeExpression.Expression(string.Empty), MSBuildProject);
             foreach (var projectConfig in projectConfigs)
                 setting.Values.Add(projectConfig, values[projectConfig].Contains(value) ? value : CMakeExpression.Expression(string.Empty));
             exprs.AddRange(setting.ToCMakeExpressions());

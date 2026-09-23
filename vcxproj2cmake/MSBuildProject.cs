@@ -30,6 +30,7 @@ class MSBuildProject
     public required MSBuildConfigDependentSetting<string> ModuleDefinitionFile { get; init; }
     public required MSBuildConfigDependentSetting<string> CharacterSet { get; init; }
     public required MSBuildConfigDependentSetting<string> UseOfMfc { get; init; }
+    public required MSBuildConfigDependentSetting<string> UseDebugLibraries { get; init; }
     public required MSBuildConfigDependentSetting<string> RuntimeLibrary { get; init; }
     public required MSBuildConfigDependentSetting<string> BasicRuntimeChecks { get; init; }
     public required MSBuildConfigDependentSetting<string[]> DisableSpecificWarnings { get; init; }
@@ -61,6 +62,7 @@ class MSBuildProject
         var msbuildNamespace = "http://schemas.microsoft.com/developer/msbuild/2003";
         var clCompileXName = XName.Get("ClCompile", msbuildNamespace);
         var clIncludeXName = XName.Get("ClInclude", msbuildNamespace);
+        var configurationXName = XName.Get("Configuration", msbuildNamespace);
         var importGroupXName = XName.Get("ImportGroup", msbuildNamespace);
         var importXName = XName.Get("Import", msbuildNamespace);
         var itemDefinitionGroupXName = XName.Get("ItemDefinitionGroup", msbuildNamespace);
@@ -71,6 +73,7 @@ class MSBuildProject
         var manifestXName = XName.Get("Manifest", msbuildNamespace);
         var masmXName = XName.Get("MASM", msbuildNamespace);
         var natvisXName = XName.Get("Natvis", msbuildNamespace);
+        var platformXName = XName.Get("Platform", msbuildNamespace);
         var projectConfigurationXName = XName.Get("ProjectConfiguration", msbuildNamespace);
         var projectReferenceXName = XName.Get("ProjectReference", msbuildNamespace);
         var projectXName = XName.Get("Project", msbuildNamespace);
@@ -92,8 +95,11 @@ class MSBuildProject
             projectElement
                 .Elements(itemGroupXName)
                 .SelectMany(group => group.Elements(projectConfigurationXName))
-                .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
-                .Select(config => new MSBuildProjectConfig(config))
+                .Select(element => new MSBuildProjectConfig(
+                    Name: UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim()),
+                    Configuration: UnescapeMSBuildValue(element.Element(configurationXName)!.Value.Trim()),
+                    Platform: UnescapeMSBuildValue(element.Element(platformXName)!.Value.Trim())
+                ))
                 .ToList();
 
         Dictionary<string, Dictionary<MSBuildProjectConfig, string>> compilerSettings = [];
@@ -325,6 +331,7 @@ class MSBuildProject
             ModuleDefinitionFile = moduleDefinitionFile,
             CharacterSet = characterSet,
             UseOfMfc = useOfMfc,
+            UseDebugLibraries = useDebugLibraries,
             RuntimeLibrary = runtimeLibrary,
             BasicRuntimeChecks = basicRuntimeChecks,
             DisableSpecificWarnings = disableSpecificWarnings,

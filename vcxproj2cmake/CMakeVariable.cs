@@ -11,7 +11,7 @@ abstract class CMakeVariable
 
     public abstract CMakeExpression GetConditionExpression(string value);
 
-    public abstract string GetValueForProjectConfig(MSBuildProjectConfig projectConfig);
+    public abstract string GetValueForProjectConfig(MSBuildProjectConfig projectConfig, MSBuildProject project);
 
     public static readonly CMakeVariable[] AllVariables =
     [
@@ -32,17 +32,16 @@ class BuildTypeCMakeVariable : CMakeVariable
         return CMakeExpression.Expression($"$<CONFIG:{value}>");
     }
 
-    public override string GetValueForProjectConfig(MSBuildProjectConfig projectConfig)
+    public override string GetValueForProjectConfig(MSBuildProjectConfig projectConfig, MSBuildProject project)
     {
-        // TODO: use UseDebugLibraries instead of relying on the project configuration name
+        var useDebugLibraries = project.UseDebugLibraries.GetEffectiveValue(projectConfig);
 
-        if (projectConfig.Name.StartsWith("Debug|") || projectConfig.Name.Contains("Debug"))
-            return "Debug";
-        else if (projectConfig.Name.StartsWith("Release|") || projectConfig.Name.Contains("Release"))
-            return "Release";
-        else
-            throw new ArgumentException(
-                $"Unsupported project configuration: '{projectConfig.Name}'.");
+        return useDebugLibraries.ToLowerInvariant() switch
+        {
+            "true" => "Debug",
+            "false" => "Release",
+            _ => throw new ArgumentException($"Unsupported value for UseDebugLibraries: '{useDebugLibraries}'. Expected 'true' or 'false'.")
+        };
     }
 }
 
@@ -60,21 +59,16 @@ class CompilerArchitectureIdCMakeVariable : CMakeVariable
         return CMakeExpression.Expression($"$<STREQUAL:${{{CompilerArchitectureIdVariablePlaceholder}}},{value}>");
     }
 
-    public override string GetValueForProjectConfig(MSBuildProjectConfig projectConfig)
+    public override string GetValueForProjectConfig(MSBuildProjectConfig projectConfig, MSBuildProject project)
     {
-        // TODO: use Platform instead of relying on the project configuration name
-
-        if (projectConfig.Name.EndsWith("|Win32") || projectConfig.Name.EndsWith("|x86"))
-            return "X86";
-        else if (projectConfig.Name.EndsWith("|x64"))
-            return "x64";
-        else if (projectConfig.Name.EndsWith("|ARM32"))
-            return "ARMV7";
-        else if (projectConfig.Name.EndsWith("|ARM64"))
-            return "ARM64";
-        else
-            throw new ArgumentException(
-                $"Unsupported project configuration: '{projectConfig.Name}'. " +
-                $"Expected to end with '|Win32', '|x86', '|x64', '|ARM32', or '|ARM64'.");
+        return projectConfig.Platform switch
+        {
+            "Win32" => "X86",
+            "x86" => "X86",
+            "x64" => "x64",
+            "ARM32" => "ARMV7",
+            "ARM64" => "ARM64",
+            _ => throw new ArgumentException($"Unsupported project configuration platform: '{projectConfig.Platform}'. Expected one of: 'Win32', 'x86', 'x64', 'ARM32', or 'ARM64'.")
+        };
     }
 }
