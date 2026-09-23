@@ -118,9 +118,9 @@ public static class Program
 
         rootCommand.SetAction(parseResult =>
             {
-                var projects = parseResult.GetValue(projectsOption);
+                var projects = parseResult.GetValue(projectsOption)!;
                 var solution = parseResult.GetValue(solutionOption);
-                var projectConfigs = parseResult.GetValue(projectConfigsOptions);
+                var projectConfigs = parseResult.GetValue(projectConfigsOptions)!;
                 var qtVersion = parseResult.GetValue(qtVersionOption);
                 var portable = parseResult.GetValue(portableOption);
                 var includeHeaders = parseResult.GetValue(includeHeadersOption);
@@ -148,9 +148,9 @@ public static class Program
     }
 
     static void Run(
-        List<FileInfo>? projects,
+        List<FileInfo> projects,
         FileInfo? solution,
-        List<string>? projectConfigs,
+        List<string> projectConfigs,
         int? qtVersion,
         bool portable,
         bool includeHeaders,
@@ -164,7 +164,18 @@ public static class Program
         logger = CreateLogger(logLevel);
 
         var converter = new Converter(new FileSystem(), logger);
-        converter.Convert(projects, solution, projectConfigs, qtVersion, portable, includeHeaders, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError);
+        converter.Convert(
+            projects.Count > 0 ? projects : null,
+            solution,
+            projectConfigs.Count > 0 ? projectConfigs : null,
+            qtVersion, 
+            portable, 
+            includeHeaders,
+            enableStandaloneProjectBuilds,
+            indentStyle,
+            indentSize,
+            dryRun, 
+            continueOnError);
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "The application registers a concrete console formatter without binding formatter options from configuration.")]
