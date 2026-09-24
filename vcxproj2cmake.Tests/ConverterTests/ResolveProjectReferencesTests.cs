@@ -55,7 +55,7 @@ public partial class ConverterTests
 
                 add_executable(App)
                 """);
-            Assert.Contains("Ignoring non-vcxproj project reference ..\\Managed\\Managed.csproj", logger.AllMessageText);
+            Assert.Matches("Ignoring non-vcxproj project reference ..(\\\\|/)Managed(\\\\|/)Managed.csproj", logger.AllMessageText);
         }
 
         [Fact]
