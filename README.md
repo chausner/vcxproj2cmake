@@ -13,7 +13,7 @@
 * Accepts either a list of `.vcxproj` project files or Visual Studio solution files (`.sln`/`.slnx`) as input.
 * Supports console, Win32, Dynamic-Link Library (DLL), Static Library and Utility project types.
   Includes detection of header-only libraries.
-* Leverages CMake generator expressions for property values that are specific to certain build configurations (Debug, Release, Win32, x64).
+* Generates CMake expressions for supported MSBuild properties that vary by build configuration, platform, or both.
 * Supports the following file types: C sources/headers, C++ sources/headers, C++ modules, .manifest, MASM, .rc, .natvis.
 * The following MSBuild project properties are converted to their CMake equivalents:
 
@@ -90,6 +90,7 @@ as well as a top-level `CMakeLists.txt` file in the same directory as the soluti
 
 | Option(s)                            | Description |
 |--------------------------------------|-------------|
+| `--project-configs`                  | Take only the specified project configurations, identified by configuration and platform (e.g. "Debug|x64"), into account, ignoring any other project configurations. If not specified, all configurations are taken into account. |
 | `--include-headers`                  | Includes header files in the list of CMake target sources set via `target_sources`, allowing IDEs to display them as part of the project. |
 | `--enable-standalone-project-builds` | Adds extra CMake commands to generated project `CMakeLists.txt` files so the projects can be configured independently of the top‑level solution. |
 | `--qt-version`                       | Specifies the Qt version used by any project that depends on Qt. |
@@ -275,14 +276,6 @@ add_subdirectory(App)
 
 ## Limitations
 
-* vcxproj2cmake expects project configurations and build platforms to be named `Debug`/`Release` and `Win32`/`x86`/`x64`/`ARM32`/`ARM64`, respectively.
-  Configurations and platforms with other names are ignored by default.
-  If you would like to add support for your custom configurations/platforms, extend `Config.Configs` in [Config.cs](vcxproj2cmake/Config.cs).
-* MSBuild properties whose value depends on the build configuration or platform are only supported
-  if the value depends solely on the configuration or platform, but not both.
-  E.g. preprocessor definitions like `_DEBUG` or `WIN32` are supported.
-  They are converted to CMake generator expressions like `$<$<CONFIG:Debug>:_DEBUG>` or `$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x86>:WIN32>`.
-  A definition that is specific to a certain combination of configuration and platform, is not supported and skipped with a warning.
 * MSBuild properties defined in imported .props or .targets files are not considered.
 * Many advanced compiler and linker options are not supported and silently ignored.
   Only a limited set of commonly-used properties is converted, as listed in the [Features](#features) section.
