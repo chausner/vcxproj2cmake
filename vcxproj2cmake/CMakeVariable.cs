@@ -47,7 +47,7 @@ class BuildTypeCMakeVariable : CMakeVariable
 
 class CompilerArchitectureIdCMakeVariable : CMakeVariable
 {
-    internal const string CompilerArchitectureIdVariablePlaceholder = "__VCXPROJ2CMAKE_COMPILER_ARCHITECTURE_ID_VARIABLE__";
+    internal const string VariablePlaceholder = "__VCXPROJ2CMAKE_COMPILER_ARCHITECTURE_ID_VARIABLE__";
 
     public override string[] ValidValues => ["X86", "x64", "ARMV7", "ARM64"];
 
@@ -56,7 +56,7 @@ class CompilerArchitectureIdCMakeVariable : CMakeVariable
         if (!ValidValues.Contains(value))
             throw new ArgumentException($"Invalid value for variable: '{value}'. Expected one of: {string.Join(", ", ValidValues)}");
 
-        return CMakeExpression.Expression($"$<STREQUAL:${{{CompilerArchitectureIdVariablePlaceholder}}},{value}>");
+        return CMakeExpression.Expression($"$<STREQUAL:${{{VariablePlaceholder}}},{value}>");
     }
 
     public override string GetValueForProjectConfig(MSBuildProjectConfig projectConfig, MSBuildProject project)

@@ -74,7 +74,7 @@ class CMakeGenerator(IFileSystem fileSystem, ILogger logger)
         var result = cmakeListsTemplate.Render(context);
 
         if (model is CMakeProject project)
-            result = result.Replace(CompilerArchitectureIdCMakeVariable.CompilerArchitectureIdVariablePlaceholder, GetCompilerArchitectureIdVariable(project), StringComparison.Ordinal);
+            result = result.Replace(CompilerArchitectureIdCMakeVariable.VariablePlaceholder, GetCompilerArchitectureIdVariable(project), StringComparison.Ordinal);
 
         if (settings.IndentStyle != IndentStyle.Spaces || settings.IndentSize != 4)
             result = ApplyIndentation(result, settings.IndentStyle, settings.IndentSize);
