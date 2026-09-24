@@ -62,16 +62,14 @@ class CMakeProject
     {
         logger.LogInformation($"Processing project {project.AbsoluteProjectPath}");
 
-        MSBuildProjectConfig[] supportedProjectConfigurations = projectConfigs switch
+        MSBuildProject = project;
+        AbsoluteProjectPath = project.AbsoluteProjectPath;
+        ProjectName = projectName;
+        ProjectConfigurations = projectConfigs switch
         {
             null => project.ProjectConfigurations,
             not null => project.ProjectConfigurations.Where(config => projectConfigs.Contains(config.Name)).ToArray()
         };
-
-        MSBuildProject = project;
-        AbsoluteProjectPath = project.AbsoluteProjectPath;
-        ProjectName = projectName;
-        ProjectConfigurations = supportedProjectConfigurations;
         Languages = DetectLanguages(project.SourceFiles, logger);
         TargetType = DetermineTargetType(project);
         FindPackages = [];
@@ -88,30 +86,30 @@ class CMakeProject
         CxxModuleFiles = normalizedCxxModuleFiles.ToArray();
 
         OutputName = CMakeExpression.Literal(project.ProjectName);  // may get overridden in ApplyTargetName
-        var mergedIncludeDirectories = MergeIncludeDirectories(project, supportedProjectConfigurations);
+        var mergedIncludeDirectories = MergeIncludeDirectories(project, ProjectConfigurations);
         IncludePaths = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             mergedIncludeDirectories,
             values => values
                 .Except(IgnoredIncludePaths)
                 .Select(value => TranslateAndNormalize(value, "AdditionalIncludeDirectories+IncludePath", logger))
                 .ToArray(),
-            supportedProjectConfigurations,
+            ProjectConfigurations,
             project,
             logger);
         PublicIncludePaths = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             project.PublicIncludeDirectories,
             values => values.Select(value => TranslateAndNormalize(value, "PublicIncludeDirectories", logger)).ToArray(),
-            supportedProjectConfigurations,
+            ProjectConfigurations,
             project,
             logger);
-        var mergedLibraryDirectories = MergeLibraryDirectories(project, supportedProjectConfigurations);
+        var mergedLibraryDirectories = MergeLibraryDirectories(project, ProjectConfigurations);
         LinkerPaths = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             mergedLibraryDirectories,
             values => values
                 .Except(IgnoredLibraryPaths)
                 .Select(value => TranslateAndNormalize(value, "AdditionalLibraryDirectories+LibraryPath", logger))
                 .ToArray(),
-            supportedProjectConfigurations,
+            ProjectConfigurations,
             project,
             logger);
         Libraries = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
@@ -120,32 +118,32 @@ class CMakeProject
                 .Except(IgnoredLibraries)
                 .Select(value => RemoveLibExtension(TranslateAndNormalize(value, "AdditionalDependencies", logger)))
                 .ToArray(),
-            supportedProjectConfigurations,
+            ProjectConfigurations,
             project,
             logger);
         PublicLibraries = new("PublicLibraries", [], project);
         Defines = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             project.PreprocessorDefinitions,
             values => values.Select(value => TranslateMSBuildMacros(value, "PreprocessorDefinitions", logger)).ToArray(),
-            supportedProjectConfigurations,
+            ProjectConfigurations,
             project,
             logger);
         CompileOptions = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             project.AdditionalCompileOptions,
             values => values.Select(value => ApplyMsvcCompilerGuard(TranslateMSBuildMacros(value, "ClCompile.AdditionalOptions", logger), settings.Portable)).ToArray(),
-            supportedProjectConfigurations,
+            ProjectConfigurations,
             project,
             logger);
         LinkOptions = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             project.AdditionalLinkOptions,
             values => values.Select(value => ApplyMsvcCompilerGuard(TranslateMSBuildMacros(value, "Link.AdditionalOptions", logger), settings.Portable)).ToArray(),
-            supportedProjectConfigurations,
+            ProjectConfigurations,
             project,
             logger);
         ModuleDefinitionFile = CMakeConfigDependentSetting.FromMSBuildSetting(
             project.ModuleDefinitionFile,
             value => value != null ? TranslateAndNormalize(value, "ModuleDefinitionFile", logger) : null,
-            supportedProjectConfigurations,
+            ProjectConfigurations,
             project,
             logger);
         ProjectReferences = project.ProjectReferences.Select(path => new CMakeProjectReference { Path = path }).ToArray();
@@ -154,7 +152,7 @@ class CMakeProject
             project.PrecompiledHeaderFile,
             (file, mode) => mode?.Value == "Use" && file != null ? TranslateAndNormalize(file, "PrecompiledHeaderFile", logger) : null,
             project.PrecompiledHeader,
-            supportedProjectConfigurations,
+            ProjectConfigurations,
             project,
             logger);
         Properties = [];
