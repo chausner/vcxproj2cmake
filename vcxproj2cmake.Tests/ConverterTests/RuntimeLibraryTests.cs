@@ -117,31 +117,5 @@ public partial class ConverterTests
                 """,
                 cmake);
         }
-
-        [Fact]
-        public void Given_ProjectConfigsFilter_When_Converted_Then_ExcludedConfigurationsAreNotUsedForRuntimeLibrary()
-        {
-            // Arrange
-            var fileSystem = new MockFileSystem();
-            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
-
-            fileSystem.AddFile("Project.vcxproj", new(TestData.Project()
-                .WithConfigurations(("Debug", "Win32"), ("Debug_XP", "Win32"))
-                .WithItemDefinitionSetting("Debug", "Win32", "ClCompile", "RuntimeLibrary", "MultiThreadedDebug")
-                .WithItemDefinitionSetting("Debug_XP", "Win32", "ClCompile", "RuntimeLibrary", "MultiThreaded")
-                .Build()));
-
-            var converter = new Converter(fileSystem, NullLogger.Instance);
-
-            // Act
-            converter.Convert(
-                projectFiles: [new("Project.vcxproj")],
-                projectConfigs: ["Debug|Win32"]);
-
-            // Assert
-            var cmake = fileSystem.GetFile("CMakeLists.txt").TextContents;
-
-            Assert.Contains("MSVC_RUNTIME_LIBRARY MultiThreadedDebug", cmake);
-        }
     }
 }

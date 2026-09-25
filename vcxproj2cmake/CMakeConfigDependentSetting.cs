@@ -81,7 +81,7 @@ record CMakeConfigDependentSetting
         if (variablesToConsider.Count == 0)
         {
             if (Values.Values.Distinct().Count() != 1)
-                throw new InvalidOperationException($"Cannot convert setting {SettingName} to a CMake expression because it has multiple values and no CMake variable can be used to distinguish between them.");
+                throw new CatastrophicFailureException($"Cannot convert setting {SettingName} to a CMake expression because it has multiple values and no CMake variable can be used to distinguish between them.");
 
             if (Values.Values.First().Value != string.Empty)
                 return [Values.Values.First()];
