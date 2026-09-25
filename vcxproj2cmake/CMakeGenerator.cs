@@ -6,7 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace vcxproj2cmake;
 
@@ -64,7 +63,12 @@ class CMakeGenerator(IFileSystem fileSystem, ILogger logger)
         scriptObject.Add("order_project_references_by_dependencies", DelegateCustomFunction.CreateFunc<IEnumerable<CMakeProjectReference>, CMakeProjectReference[]>(pr => ProjectDependencyUtils.OrderProjectReferencesByDependencies(pr, allProjects, logger)));
         scriptObject.Add("get_directory_name", DelegateCustomFunction.CreateFunc<string?, string?>(Path.GetDirectoryName));
         scriptObject.Add("get_relative_path", DelegateCustomFunction.CreateFunc<string, string, string>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));
-        scriptObject.Add("prepend_relative_paths_with_cmake_current_source_dir", DelegateCustomFunction.CreateFunc<object, object>(PrependRelativePathsWithCMakeCurrentSourceDir));
+        scriptObject.Add("prepend_relative_paths_with_cmake_current_source_dir", DelegateCustomFunction.CreateFunc<object, object>(setting => setting switch
+        {
+            CMakeConfigDependentSetting s => PrependRelativePathsWithCMakeCurrentSourceDir(s),
+            CMakeConfigDependentMultiSetting s => PrependRelativePathsWithCMakeCurrentSourceDir(s),
+            _ => throw new ArgumentException($"Unsupported setting type: {setting.GetType().FullName}")
+        }));
 
         var context = new TemplateContext();
         context.LoopLimit = 0;
@@ -195,26 +199,16 @@ class CMakeGenerator(IFileSystem fileSystem, ILogger logger)
             return normalizedPath;
     }
 
-    CMakeConfigDependentMultiSetting PrependRelativePathsWithCMakeCurrentSourceDir(CMakeConfigDependentMultiSetting setting)
-    {
-        var projectConfigs = setting.Values.Keys;
-        return setting.Map(exprs => exprs.Select(PrependRelativePathsWithCMakeCurrentSourceDir).ToArray(), projectConfigs, logger);
-    }
-
     CMakeConfigDependentSetting PrependRelativePathsWithCMakeCurrentSourceDir(CMakeConfigDependentSetting setting)
     {
         var projectConfigs = setting.Values.Keys;
         return setting.Map(expr => expr != null ? PrependRelativePathsWithCMakeCurrentSourceDir(expr) : null, projectConfigs, logger);
     }
 
-    object PrependRelativePathsWithCMakeCurrentSourceDir(object setting)
+    CMakeConfigDependentMultiSetting PrependRelativePathsWithCMakeCurrentSourceDir(CMakeConfigDependentMultiSetting setting)
     {
-        return setting switch
-        {
-            CMakeConfigDependentSetting s => PrependRelativePathsWithCMakeCurrentSourceDir(s),
-            CMakeConfigDependentMultiSetting s => PrependRelativePathsWithCMakeCurrentSourceDir(s),
-            _ => throw new ArgumentException($"Unsupported setting type: {setting.GetType().FullName}")
-        };
+        var projectConfigs = setting.Values.Keys;
+        return setting.Map(exprs => exprs.Select(PrependRelativePathsWithCMakeCurrentSourceDir).ToArray(), projectConfigs, logger);
     }
 }
 
