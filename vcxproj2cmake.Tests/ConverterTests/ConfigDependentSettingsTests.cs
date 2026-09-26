@@ -144,8 +144,7 @@ public partial class ConverterTests
                 .WithItemDefinitionSetting("Release", "x64", "Link", "AdditionalLibraryDirectories", "ReleaseX64")
                 .Build()));
 
-            var logger = new InMemoryLogger();
-            var converter = new Converter(fileSystem, logger);
+            var converter = new Converter(fileSystem, NullLogger.Instance);
 
             // Act
             converter.Convert(
@@ -179,8 +178,7 @@ public partial class ConverterTests
                 .WithItemDefinitionSetting("MinSizeRel", "Win32", "Link", "AdditionalLibraryDirectories", "MinSizeRelWin32")
                 .Build()));
 
-            var logger = new InMemoryLogger();
-            var converter = new Converter(fileSystem, logger);
+            var converter = new Converter(fileSystem, NullLogger.Instance);
 
             // Act & Assert
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
@@ -204,8 +202,7 @@ public partial class ConverterTests
                 .WithItemDefinitionSetting("MinSizeRel", "Win32", "Link", "AdditionalLibraryDirectories", "MinSizeRelWin32")
                 .Build()));
 
-            var logger = new InMemoryLogger();
-            var converter = new Converter(fileSystem, logger);
+            var converter = new Converter(fileSystem, NullLogger.Instance);
 
             // Act
             converter.Convert(
@@ -243,8 +240,7 @@ public partial class ConverterTests
                 .WithItemDefinitionSetting("MinSizeRel", "x64", "Link", "AdditionalLibraryDirectories", "Common;MinSizeRel;x64;MinSizeRelX64")
                 .Build()));
 
-            var logger = new InMemoryLogger();
-            var converter = new Converter(fileSystem, logger);
+            var converter = new Converter(fileSystem, NullLogger.Instance);
 
             // Act
             converter.Convert(
@@ -268,6 +264,48 @@ public partial class ConverterTests
                         "$<$<AND:$<CONFIG:Release>,$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>>:${CMAKE_CURRENT_SOURCE_DIR}/ReleaseX64>"
                 )
                 """.Trim(), cmake);
+        }
+
+        [Fact]
+        public void Given_LinkerPathsWithNonUniqueConfigSpecificValues_When_Converted_Then_OneOfValidGeneratorExpressionsUsedAndWarningLogged()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithConfigurations(
+                    ("Debug", "Win32"), ("Release", "x64"))
+                .WithItemDefinitionSetting("Debug", "Win32", "Link", "AdditionalLibraryDirectories", "DebugOrWin32")
+                .WithItemDefinitionSetting("Release", "x64", "Link", "AdditionalLibraryDirectories", "ReleaseOrx64")
+                .Build()));
+
+            var logger = new InMemoryLogger();
+            var converter = new Converter(fileSystem, logger);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.True(
+                cmake.Contains("""
+                    target_link_directories(Project
+                        PRIVATE
+                            "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/DebugOrWin32>"
+                            "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/ReleaseOrx64>"
+                    )
+                    """.Trim()) || 
+                cmake.Contains("""
+                    target_link_directories(Project
+                        PRIVATE
+                            "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:${CMAKE_CURRENT_SOURCE_DIR}/DebugOrWin32>"
+                            "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:${CMAKE_CURRENT_SOURCE_DIR}/ReleaseOrx64>"
+                    )
+                    """.Trim())
+                );
         }
 
         [Fact]
