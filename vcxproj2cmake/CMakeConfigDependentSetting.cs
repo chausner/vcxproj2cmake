@@ -27,7 +27,7 @@ record CMakeConfigDependentSetting
         var effectiveSettings = settings.Values
             .Where(kvp => projectConfigurations.Contains(kvp.Key))
             .ToDictionary();
-        // TODO: is this needed?
+
         foreach (var config in projectConfigurations)
             if (!effectiveSettings.ContainsKey(config))
                 effectiveSettings[config] = settings.DefaultValue;
@@ -169,7 +169,7 @@ record CMakeConfigDependentMultiSetting
         var effectiveSettings = settings.Values
             .Where(kvp => projectConfigurations.Contains(kvp.Key))
             .ToDictionary();
-        // TODO: is this needed?
+
         foreach (var config in projectConfigurations)
             if (!effectiveSettings.ContainsKey(config))
                 effectiveSettings[config] = settings.DefaultValue;       
@@ -201,7 +201,7 @@ record CMakeConfigDependentMultiSetting
     public void AppendValue(MSBuildProjectConfig config, CMakeExpression value)
     { 
         if (!Values.ContainsKey(config))
-            Values[config] = [value]; // TODO: is this needed?
+            Values[config] = [value];
         else
             Values[config] = [.. Values[config], value];
     }
@@ -215,7 +215,7 @@ record CMakeConfigDependentMultiSetting
     public void AppendValueIfNotPresent(MSBuildProjectConfig config, CMakeExpression value)
     {
         if (!Values.ContainsKey(config))
-            Values[config] = [value]; // TODO: is this needed?
+            Values[config] = [value];
         else
             if (!Values[config].Contains(value))
                 Values[config] = [.. Values[config], value];
