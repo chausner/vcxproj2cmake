@@ -73,7 +73,7 @@ class CMakeProject
         Languages = DetectLanguages(project.SourceFiles, logger);
         TargetType = DetermineTargetType(project);
         FindPackages = [];
-        CompileFeatures = new("CompileFeatures", [], project);
+        CompileFeatures = new("CompileFeatures", [], project, logger);
 
         var normalizedSourceFiles = project.SourceFiles
             .Where(file => !IsCxxModuleFile(file))
@@ -121,7 +121,7 @@ class CMakeProject
             ProjectConfigurations,
             project,
             logger);
-        PublicLibraries = new("PublicLibraries", [], project);
+        PublicLibraries = new("PublicLibraries", [], project, logger);
         Defines = CMakeConfigDependentMultiSetting.FromMSBuildSetting(
             project.PreprocessorDefinitions,
             values => values.Select(value => TranslateMSBuildMacros(value, "PreprocessorDefinitions", logger)).ToArray(),

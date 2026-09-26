@@ -274,8 +274,7 @@ public partial class ConverterTests
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
             fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
-                .WithConfigurations(
-                    ("Debug", "Win32"), ("Release", "x64"))
+                .WithConfigurations(("Debug", "Win32"), ("Release", "x64"))
                 .WithItemDefinitionSetting("Debug", "Win32", "Link", "AdditionalLibraryDirectories", "DebugOrWin32")
                 .WithItemDefinitionSetting("Release", "x64", "Link", "AdditionalLibraryDirectories", "ReleaseOrx64")
                 .Build()));
@@ -306,6 +305,8 @@ public partial class ConverterTests
                     )
                     """.Trim())
                 );
+
+            Assert.Contains("Multiple CMake variables can be used to distinguish between values for setting AdditionalLibraryDirectories+LibraryPath. One of the variables will be used, but this may not be the intended behavior.", logger.AllMessageText);
         }
 
         [Fact]

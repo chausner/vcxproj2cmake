@@ -10,12 +10,15 @@ record CMakeConfigDependentSetting
     public CMakeExpression DefaultValue { get; }
     public MSBuildProject MSBuildProject { get; }
 
-    public CMakeConfigDependentSetting(string settingName, CMakeExpression defaultValue, MSBuildProject msbuildProject)
+    ILogger logger;
+
+    public CMakeConfigDependentSetting(string settingName, CMakeExpression defaultValue, MSBuildProject msbuildProject, ILogger logger)
     {
         Values = [];
         SettingName = settingName;
         DefaultValue = defaultValue;
         MSBuildProject = msbuildProject;
+        this.logger = logger;
     }
 
     public CMakeConfigDependentSetting(
@@ -36,6 +39,7 @@ record CMakeConfigDependentSetting
         SettingName = settings.SettingName;
         DefaultValue = settings.DefaultValue;
         MSBuildProject = msbuildProject;
+        this.logger = logger;
     }
 
     public CMakeConfigDependentSetting(
@@ -95,10 +99,8 @@ record CMakeConfigDependentSetting
             .All(grouping => grouping.Select(config => Values[config]).Distinct().Count() == 1))
             .ToArray();
 
-        if (singleConditionVariables.Length >= 2)
-        {
-            // TODO: log warning that multiple variables can be used to distinguish between values, but only one will be used
-        }
+        if (singleConditionVariables.Length >= 2)        
+            logger.LogWarning($"Multiple CMake variables can be used to distinguish between values for setting {SettingName}. One of the variables will be used, but this may not be the intended behavior.");        
 
         if (singleConditionVariables.Length >= 1)
         {
@@ -152,12 +154,15 @@ record CMakeConfigDependentMultiSetting
     public CMakeExpression[] DefaultValue { get; }
     public MSBuildProject MSBuildProject { get; }
 
-    public CMakeConfigDependentMultiSetting(string settingName, CMakeExpression[] defaultValue, MSBuildProject msbuildProject)
+    ILogger logger;
+
+    public CMakeConfigDependentMultiSetting(string settingName, CMakeExpression[] defaultValue, MSBuildProject msbuildProject, ILogger logger)
     {
         Values = [];
         SettingName = settingName;
         DefaultValue = defaultValue;
         MSBuildProject = msbuildProject;
+        this.logger = logger;
     }
 
     public CMakeConfigDependentMultiSetting(
@@ -178,6 +183,7 @@ record CMakeConfigDependentMultiSetting
         SettingName = settings.SettingName;
         DefaultValue = settings.DefaultValue;     
         MSBuildProject = msbuildProject;
+        this.logger = logger;
     }
 
     public CMakeConfigDependentMultiSetting(
@@ -260,7 +266,7 @@ record CMakeConfigDependentMultiSetting
 
         foreach (var value in uniqueValues)
         {
-            var setting = new CMakeConfigDependentSetting("foo", CMakeExpression.Expression(string.Empty), MSBuildProject);
+            var setting = new CMakeConfigDependentSetting(SettingName, CMakeExpression.Expression(string.Empty), MSBuildProject, logger);
             foreach (var projectConfig in projectConfigs)
                 setting.Values.Add(projectConfig, values[projectConfig].Contains(value) ? value : CMakeExpression.Expression(string.Empty));
             exprs.AddRange(setting.ToCMakeExpressions());
