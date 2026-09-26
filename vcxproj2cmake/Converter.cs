@@ -8,6 +8,7 @@ public class Converter(IFileSystem fileSystem, ILogger logger)
     public void Convert(
         List<FileInfo>? projectFiles = null,
         FileInfo? solutionFile = null,
+        List<string>? projectConfigs = null,
         int? qtVersion = null,
         bool portable = false,
         bool includeHeaders = false,
@@ -21,6 +22,8 @@ public class Converter(IFileSystem fileSystem, ILogger logger)
             throw new ArgumentException($"Either {nameof(projectFiles)} or {nameof(solutionFile)} must be provided.");
         else if (projectFiles != null && projectFiles.Count > 0 && solutionFile != null)
             throw new ArgumentException($"Only one of {nameof(projectFiles)} or {nameof(solutionFile)} can be provided, not both.");
+        if (projectConfigs != null && projectConfigs.Count == 0)
+            throw new ArgumentException($"If {nameof(projectConfigs)} is provided, it must contain at least one configuration.");
 
         MSBuildSolution? solution = null;
         List<MSBuildProject> projects = [];
@@ -69,6 +72,9 @@ public class Converter(IFileSystem fileSystem, ILogger logger)
             }
         }
 
+        if (projectConfigs != null)        
+            ValidateProjectConfigs(projectConfigs, projects);        
+
         var conanPackageInfoRepository = new ConanPackageInfoRepository();
 
         List<CMakeProject> cmakeProjects = [];
@@ -80,7 +86,7 @@ public class Converter(IFileSystem fileSystem, ILogger logger)
             try
             {
                 string projectName = GetUniqueProjectName(cmakeProjects, project);
-                cmakeProjects.Add(new CMakeProject(project, new(qtVersion, portable), projectName, includeHeaders, conanPackageInfoRepository, logger));
+                cmakeProjects.Add(new CMakeProject(project, projectConfigs, new(qtVersion, portable), projectName, includeHeaders, conanPackageInfoRepository, logger));
             }
             catch (Exception ex) when (continueOnError)
             {
@@ -115,6 +121,17 @@ public class Converter(IFileSystem fileSystem, ILogger logger)
         var settings = new CMakeGeneratorSettings(enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun);
         var cmakeGenerator = new CMakeGenerator(fileSystem, logger);
         cmakeGenerator.Generate(cmakeSolution, cmakeProjects, settings);
+    }
+
+    static void ValidateProjectConfigs(IEnumerable<string> projectConfigs, IEnumerable<MSBuildProject> projects)
+    {
+        foreach (var project in projects)
+            if (!project.ProjectConfigurations.Select(c => c.Name).Intersect(projectConfigs).Any())
+                throw new CatastrophicFailureException($"Project {project.AbsoluteProjectPath} does not use any of the specified configurations: {string.Join(", ", projectConfigs)}");
+
+        foreach (var projectConfig in projectConfigs)
+            if (!projects.Any(project => project.ProjectConfigurations.Any(c => c.Name == projectConfig)))
+                throw new CatastrophicFailureException($"None of the projects uses the specified configuration: {projectConfig}");
     }
 
     static string GetUniqueProjectName(IEnumerable<CMakeProject> projects, MSBuildProject msBuildProject)
@@ -205,8 +222,7 @@ public class Converter(IFileSystem fileSystem, ILogger logger)
                     : project.Libraries;
                 var referencedTarget = CMakeExpression.Literal(projectRef.Project.ProjectName);
 
-                if (!libraries.Values.TryGetValue(Config.CommonConfig, out var commonLibraries) || !commonLibraries.Contains(referencedTarget))
-                    libraries.AppendValue(Config.CommonConfig, referencedTarget);
+                libraries.AppendValueIfNotPresent(project.ProjectConfigurations, referencedTarget);
             }
         }
     }

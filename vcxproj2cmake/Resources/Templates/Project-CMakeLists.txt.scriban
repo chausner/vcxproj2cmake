@@ -42,13 +42,11 @@ add_library({{ project_name | literal }} INTERFACE)
 {{~ if source_files | array.size > 0 || !module_definition_file.is_empty ~}}
 target_sources({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
-        {{~ for file in source_files | array.sort ~}}
-        {{ file }}
+        {{~ if source_files | array.size > 0 ~}}
+        {{ source_files | array.sort | array.join new_line }}
         {{~ end ~}}
-        {{~ for kvp in module_definition_file.values ~}}
-        {{~ if kvp.value != "" ~}}
-        {{ get_config_expression kvp.key kvp.value }}
-        {{~ end ~}}
+        {{~ if !module_definition_file.is_empty ~}}
+        {{ module_definition_file.cmake_expressions | array.join new_line }}
         {{~ end ~}}
 )
 
@@ -59,9 +57,7 @@ target_sources({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
         FILE_SET CXX_MODULES
         FILES
-            {{~ for file in cxx_module_files | array.sort ~}}
-            {{ file }}
-            {{~ end ~}}
+            {{ cxx_module_files | array.sort | array.join new_line }}
 )
 
 {{~ end -}}
@@ -78,11 +74,7 @@ set_target_properties({{ project_name | literal }} PROPERTIES
 {{~ if !compile_features.is_empty ~}}
 target_compile_features({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
-        {{~ for kvp in compile_features.values ~}}
-        {{~ for feature in kvp.value ~}}
-        {{ get_config_expression kvp.key feature }}
-        {{~ end ~}}  
-        {{~ end ~}}
+        {{ compile_features.cmake_expressions | array.join new_line }}
 )
 
 {{~ end -}}
@@ -90,11 +82,7 @@ target_compile_features({{ project_name | literal }}
 {{~ if !precompiled_header_file.is_empty ~}}
 target_precompile_headers({{ project_name | literal }}
     PRIVATE
-        {{~ for kvp in precompiled_header_file.values ~}}
-        {{~ if kvp.value != "" ~}}
-        {{ get_config_expression kvp.key (kvp.value | prepend_relative_paths_with_cmake_current_source_dir) }}
-        {{~ end ~}}
-        {{~ end ~}}
+        {{ (precompiled_header_file | prepend_relative_paths_with_cmake_current_source_dir).cmake_expressions | array.join new_line }}
 )
 
 {{~ end -}}
@@ -103,19 +91,11 @@ target_precompile_headers({{ project_name | literal }}
 target_include_directories({{ project_name | literal }}
 {{~ if !public_include_paths.is_empty ~}}
     INTERFACE
-        {{~ for kvp in public_include_paths.values ~}}
-        {{~ for path in kvp.value ~}}
-        {{ get_config_expression kvp.key (path | prepend_relative_paths_with_cmake_current_source_dir) }}
-        {{~ end ~}}  
-        {{~ end ~}}  
+        {{ (public_include_paths | prepend_relative_paths_with_cmake_current_source_dir).cmake_expressions | array.join new_line }}
 {{~ end ~}}
 {{~ if !include_paths.is_empty ~}}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
-        {{~ for kvp in include_paths.values ~}}
-        {{~ for path in kvp.value ~}}
-        {{ get_config_expression kvp.key (path | prepend_relative_paths_with_cmake_current_source_dir) }}
-        {{~ end ~}}  
-        {{~ end ~}}  
+        {{ (include_paths | prepend_relative_paths_with_cmake_current_source_dir).cmake_expressions | array.join new_line }}
 {{~ end ~}}
 )
 
@@ -124,11 +104,7 @@ target_include_directories({{ project_name | literal }}
 {{~ if !defines.is_empty ~}}
 target_compile_definitions({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
-        {{~ for kvp in defines.values ~}}
-        {{~ for define in kvp.value ~}}
-        {{ get_config_expression kvp.key define }}
-        {{~ end ~}}
-        {{~ end ~}}     
+        {{ defines.cmake_expressions | array.join new_line }}
 )
 
 {{~ end -}}
@@ -136,11 +112,7 @@ target_compile_definitions({{ project_name | literal }}
 {{~ if !linker_paths.is_empty ~}}
 target_link_directories({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
-        {{~ for kvp in linker_paths.values ~}}
-        {{~ for path in kvp.value ~}}
-        {{ get_config_expression kvp.key (path | prepend_relative_paths_with_cmake_current_source_dir) }}
-        {{~ end ~}}  
-        {{~ end ~}}      
+        {{ (linker_paths | prepend_relative_paths_with_cmake_current_source_dir).cmake_expressions | array.join new_line }}
 )
 
 {{~ end -}}
@@ -149,19 +121,11 @@ target_link_directories({{ project_name | literal }}
 target_link_libraries({{ project_name | literal }}
 {{~ if !public_libraries.is_empty ~}}
     PUBLIC
-        {{~ for kvp in public_libraries.values ~}}
-        {{~ for library in kvp.value ~}}
-        {{ get_config_expression kvp.key library }}
-        {{~ end ~}}
-        {{~ end ~}}
+        {{ public_libraries.cmake_expressions | array.join new_line }}
 {{~ end ~}}
 {{~ if !libraries.is_empty ~}}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
-        {{~ for kvp in libraries.values ~}}
-        {{~ for library in kvp.value ~}}
-        {{ get_config_expression kvp.key library }}
-        {{~ end ~}}
-        {{~ end ~}}
+        {{ libraries.cmake_expressions | array.join new_line }}
 {{~ end ~}}
 )
 
@@ -170,11 +134,7 @@ target_link_libraries({{ project_name | literal }}
 {{~ if !compile_options.is_empty ~}}
 target_compile_options({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
-        {{~ for kvp in compile_options.values ~}}
-        {{~ for option in kvp.value ~}}
-        {{ get_config_expression kvp.key option }}
-        {{~ end ~}}
-        {{~ end ~}}     
+        {{ compile_options.cmake_expressions | array.join new_line }}
 )
 
 {{~ end -}}
@@ -182,11 +142,7 @@ target_compile_options({{ project_name | literal }}
 {{~ if !link_options.is_empty ~}}
 target_link_options({{ project_name | literal }}
     {{ if target_type == "InterfaceLibrary" }}INTERFACE{{ else }}PRIVATE{{ end }}
-        {{~ for kvp in link_options.values ~}}
-        {{~ for option in kvp.value ~}}
-        {{ get_config_expression kvp.key option }}
-        {{~ end ~}}
-        {{~ end ~}}
+        {{ link_options.cmake_expressions | array.join new_line }}
 )
 
 {{~ end -}}

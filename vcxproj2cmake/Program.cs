@@ -22,6 +22,7 @@ public static class Program
         var projectsOption = new Option<List<FileInfo>>("--projects")
         {
             AllowMultipleArgumentsPerToken = true,
+            Arity = ArgumentArity.OneOrMore,
             Description = "Paths to one or more .vcxproj files",
             HelpName = "path(s)"
         }.AcceptExistingOnly();
@@ -31,6 +32,14 @@ public static class Program
             Description = "Path to a .sln or .slnx solution file",
             HelpName = "path"
         }.AcceptExistingOnly();
+
+        var projectConfigsOptions = new Option<List<string>>("--project-configs")
+        {
+            AllowMultipleArgumentsPerToken = true,
+            Arity = ArgumentArity.OneOrMore,
+            Description = "Project configurations to convert (e.g., Debug|x64, Release|x64). If not specified, all configurations will be converted.",
+            HelpName = "config(s)"
+        };
 
         var qtVersionOption = new Option<int?>("--qt-version")
         {
@@ -85,6 +94,7 @@ public static class Program
 
         rootCommand.Options.Add(projectsOption);
         rootCommand.Options.Add(solutionOption);
+        rootCommand.Options.Add(projectConfigsOptions);
         rootCommand.Options.Add(qtVersionOption);
         rootCommand.Options.Add(portableOption);
         rootCommand.Options.Add(includeHeadersOption);
@@ -108,8 +118,9 @@ public static class Program
 
         rootCommand.SetAction(parseResult =>
             {
-                var projects = parseResult.GetValue(projectsOption);
+                var projects = parseResult.GetValue(projectsOption)!;
                 var solution = parseResult.GetValue(solutionOption);
+                var projectConfigs = parseResult.GetValue(projectConfigsOptions)!;
                 var qtVersion = parseResult.GetValue(qtVersionOption);
                 var portable = parseResult.GetValue(portableOption);
                 var includeHeaders = parseResult.GetValue(includeHeadersOption);
@@ -119,7 +130,7 @@ public static class Program
                 var dryRun = parseResult.GetValue(dryRunOption);
                 var continueOnError = parseResult.GetValue(continueOnErrorOption);
                 var logLevel = parseResult.GetValue(logLevelOption);
-                Run(projects, solution, qtVersion, portable, includeHeaders, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError, logLevel);
+                Run(projects, solution, projectConfigs, qtVersion, portable, includeHeaders, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError, logLevel);
             });
 
         try
@@ -137,8 +148,9 @@ public static class Program
     }
 
     static void Run(
-        List<FileInfo>? projects,
+        List<FileInfo> projects,
         FileInfo? solution,
+        List<string> projectConfigs,
         int? qtVersion,
         bool portable,
         bool includeHeaders,
@@ -152,7 +164,18 @@ public static class Program
         logger = CreateLogger(logLevel);
 
         var converter = new Converter(new FileSystem(), logger);
-        converter.Convert(projects, solution, qtVersion, portable, includeHeaders, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError);
+        converter.Convert(
+            projects.Count > 0 ? projects : null,
+            solution,
+            projectConfigs.Count > 0 ? projectConfigs : null,
+            qtVersion, 
+            portable, 
+            includeHeaders,
+            enableStandaloneProjectBuilds,
+            indentStyle,
+            indentSize,
+            dryRun, 
+            continueOnError);
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "The application registers a concrete console formatter without binding formatter options from configuration.")]
