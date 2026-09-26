@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Xunit;
 
@@ -12,13 +13,12 @@ public class MSBuildSolutionTests
         {
             // Arrange
             var fileSystem = new MockFileSystem();
-            var logger = new InMemoryLogger();
             fileSystem.AddFile(@"Empty.sln", new("""
                 Microsoft Visual Studio Solution File, Format Version 12.00
                 """));
 
             // Act
-            var solution = MSBuildSolution.ParseSolutionFile("Empty.sln", fileSystem, logger);
+            var solution = MSBuildSolution.ParseSolutionFile("Empty.sln", fileSystem, NullLogger.Instance);
 
             // Assert
             Assert.Equal(Path.GetFullPath("Empty.sln"), solution.AbsoluteSolutionPath);
@@ -31,7 +31,6 @@ public class MSBuildSolutionTests
         {
             // Arrange
             var fileSystem = new MockFileSystem();
-            var logger = new InMemoryLogger();
             fileSystem.AddFile(@"Test.sln", new("""
                 Microsoft Visual Studio Solution File, Format Version 12.00
                 Project("{GUID}") = "Project1", "Project1\Project1.vcxproj", "{GUID1}"
@@ -41,7 +40,7 @@ public class MSBuildSolutionTests
                 """));
 
             // Act
-            var solution = MSBuildSolution.ParseSolutionFile("Test.sln", fileSystem, logger);
+            var solution = MSBuildSolution.ParseSolutionFile("Test.sln", fileSystem, NullLogger.Instance);
 
             // Assert
             Assert.Equal(Path.GetFullPath("Test.sln"), solution.AbsoluteSolutionPath);
@@ -79,13 +78,12 @@ public class MSBuildSolutionTests
         {
             // Arrange
             var fileSystem = new MockFileSystem();
-            var logger = new InMemoryLogger();
             fileSystem.AddFile(@"Empty.slnx", new("""
                 <Solution />
                 """));
 
             // Act
-            var solution = MSBuildSolution.ParseSolutionFile("Empty.slnx", fileSystem, logger);
+            var solution = MSBuildSolution.ParseSolutionFile("Empty.slnx", fileSystem, NullLogger.Instance);
 
             // Assert
             Assert.Equal(Path.GetFullPath("Empty.slnx"), solution.AbsoluteSolutionPath);
@@ -98,7 +96,6 @@ public class MSBuildSolutionTests
         {
             // Arrange
             var fileSystem = new MockFileSystem();
-            var logger = new InMemoryLogger();
             fileSystem.AddFile(@"Test.slnx", new("""
                 <Solution>
                   <Folder Name="/Projects/">
@@ -109,7 +106,7 @@ public class MSBuildSolutionTests
                 """));
 
             // Act
-            var solution = MSBuildSolution.ParseSolutionFile("Test.slnx", fileSystem, logger);
+            var solution = MSBuildSolution.ParseSolutionFile("Test.slnx", fileSystem, NullLogger.Instance);
 
             // Assert
             Assert.Equal(Path.GetFullPath("Test.slnx"), solution.AbsoluteSolutionPath);

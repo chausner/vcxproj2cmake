@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Xunit;
 
@@ -19,7 +20,7 @@ public partial class ConverterTests
                 .WithItems("MASM", @"src\assembler.asm")
                 .Build()));
 
-            var converter = new Converter(fileSystem, new InMemoryLogger());
+            var converter = new Converter(fileSystem, NullLogger.Instance);
 
             // Act
             converter.Convert(projectFiles: [new FileInfo(@"Project.vcxproj")]);
