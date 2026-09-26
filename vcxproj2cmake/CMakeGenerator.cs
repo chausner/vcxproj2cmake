@@ -75,7 +75,16 @@ class CMakeGenerator(IFileSystem fileSystem, ILogger logger)
         context.RecursiveLimit = 0;
         context.PushGlobal(scriptObject);
 
-        var result = cmakeListsTemplate.Render(context);
+        string? result;
+
+        try
+        {
+            result = cmakeListsTemplate.Render(context);
+        }
+        catch (Scriban.Syntax.ScriptRuntimeException ex) when (ex.InnerException?.InnerException is CatastrophicFailureException)
+        {
+            throw ex.InnerException.InnerException;
+        }
 
         if (model is CMakeProject project)
             result = result.Replace(CompilerArchitectureIdCMakeVariable.VariablePlaceholder, GetCompilerArchitectureIdVariable(project), StringComparison.Ordinal);

@@ -239,6 +239,8 @@ record CMakeConfigDependentMultiSetting
         if (Values.Values.Distinct(CMakeExpressionArrayEqualityComparer.Instance).Count() == 1)
             return Values.Values.First();
 
+        ValidateCMakeVariableMapping();
+
         Dictionary<MSBuildProjectConfig, List<CMakeExpression>> values = new(Values.Select(kvp => new KeyValuePair<MSBuildProjectConfig, List<CMakeExpression>>(kvp.Key, kvp.Value.ToList())));
 
         List<CMakeExpression> exprs = [];
@@ -265,6 +267,28 @@ record CMakeConfigDependentMultiSetting
         }
 
         return exprs.ToArray();
+    }
+
+    void ValidateCMakeVariableMapping()
+    {
+        // Each CMake variable combination must identify a single complete setting value.
+        // Checking individual list entries below is insufficient: two configurations can
+        // produce the same conditions while contributing different entries to the list.
+        foreach (var projectConfig in Values.Keys)
+        {
+            foreach (var otherConfig in Values.Keys)
+            {
+                if (Values[projectConfig].SequenceEqual(Values[otherConfig]))
+                    continue;
+
+                if (CMakeVariable.AllVariables.All(variable =>
+                    variable.GetValueForProjectConfig(projectConfig, MSBuildProject) ==
+                    variable.GetValueForProjectConfig(otherConfig, MSBuildProject)))
+                {
+                    throw new CatastrophicFailureException($"Cannot convert setting {SettingName} to a CMake expression because it has multiple values and no CMake variable can be used to distinguish between them.");
+                }
+            }
+        }
     }
 
     public CMakeExpression[] CMakeExpressions => ToCMakeExpressions();
