@@ -165,6 +165,63 @@ public partial class ConverterTests
         }
 
         [Fact]
+        public void Given_ModuleDefinitionFileFollowsUnsupportedPattern_When_Converted_Then_Throws()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithConfigurations(("Debug", "Win32"), ("Release", "Win32"), ("MinSizeRel", "Win32"))
+                .WithItemDefinitionSetting("Debug", "Win32", "Link", "ModuleDefinitionFile", "debug.def")
+                .WithItemDefinitionSetting("Release", "Win32", "Link", "ModuleDefinitionFile", "release.def")
+                .WithItemDefinitionSetting("MinSizeRel", "Win32", "Link", "ModuleDefinitionFile", "min_size_rel.def")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act & Assert
+            var ex = Assert.Throws<CatastrophicFailureException>(() =>
+                converter.Convert(projectFiles: [new(@"Project.vcxproj")]));
+
+            Assert.Contains("Cannot convert setting ModuleDefinitionFile to a CMake expression because it has multiple values and no CMake variable can be used to distinguish between them.", ex.Message);
+        }
+
+
+        [Fact]
+        public void Given_ModuleDefinitionFileFollowsUnsupportedPattern_When_ConvertedWithProblematicProjectConfigExcluded_Then_GeneratorExpressionsUsed()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithConfigurations(("Debug", "Win32"), ("Release", "Win32"), ("MinSizeRel", "Win32"))
+                .WithItemDefinitionSetting("Debug", "Win32", "Link", "ModuleDefinitionFile", "debug.def")
+                .WithItemDefinitionSetting("Release", "Win32", "Link", "ModuleDefinitionFile", "release.def")
+                .WithItemDefinitionSetting("MinSizeRel", "Win32", "Link", "ModuleDefinitionFile", "min_size_rel.def")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")],
+                projectConfigs: ["Debug|Win32", "Release|Win32"]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("""
+                target_sources(Project
+                    PRIVATE
+                        "$<$<CONFIG:Debug>:debug.def>"
+                        "$<$<CONFIG:Release>:release.def>"
+                )
+                """.Trim(), cmake);
+        }
+
+        [Fact]
         public void Given_LinkerPathsFollowUnsupportedPattern_When_Converted_Then_Throws()
         {
             // Arrange

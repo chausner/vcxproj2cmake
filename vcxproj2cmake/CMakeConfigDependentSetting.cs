@@ -93,6 +93,8 @@ record CMakeConfigDependentSetting
                 return [];
         }
 
+        ValidateCMakeVariableMapping();
+
         CMakeVariable[] singleConditionVariables =
             variablesToConsider
             .Where(variable => projectConfigs.GroupBy(config => variable.GetValueForProjectConfig(config, MSBuildProject))
@@ -134,6 +136,25 @@ record CMakeConfigDependentSetting
                 exprs.Add(expr);
             }
             return exprs.ToArray();
+        }
+    }
+
+    void ValidateCMakeVariableMapping()
+    {
+        foreach (var config1 in Values.Keys)
+        {
+            foreach (var config2 in Values.Keys)
+            {
+                if (Values[config1].Value == Values[config2].Value)
+                    continue;
+
+                if (CMakeVariable.AllVariables.All(variable =>
+                    variable.GetValueForProjectConfig(config1, MSBuildProject) ==
+                    variable.GetValueForProjectConfig(config2, MSBuildProject)))
+                {
+                    throw new CatastrophicFailureException($"Cannot convert setting {SettingName} to a CMake expression because it has multiple values and no CMake variable can be used to distinguish between them.");
+                }
+            }
         }
     }
 
@@ -280,16 +301,16 @@ record CMakeConfigDependentMultiSetting
         // Each CMake variable combination must identify a single complete setting value.
         // Checking individual list entries below is insufficient: two configurations can
         // produce the same conditions while contributing different entries to the list.
-        foreach (var projectConfig in Values.Keys)
+        foreach (var config1 in Values.Keys)
         {
-            foreach (var otherConfig in Values.Keys)
+            foreach (var config2 in Values.Keys)
             {
-                if (Values[projectConfig].SequenceEqual(Values[otherConfig]))
+                if (Values[config1].SequenceEqual(Values[config2]))
                     continue;
 
                 if (CMakeVariable.AllVariables.All(variable =>
-                    variable.GetValueForProjectConfig(projectConfig, MSBuildProject) ==
-                    variable.GetValueForProjectConfig(otherConfig, MSBuildProject)))
+                    variable.GetValueForProjectConfig(config1, MSBuildProject) ==
+                    variable.GetValueForProjectConfig(config2, MSBuildProject)))
                 {
                     throw new CatastrophicFailureException($"Cannot convert setting {SettingName} to a CMake expression because it has multiple values and no CMake variable can be used to distinguish between them.");
                 }
