@@ -63,6 +63,7 @@ jobs:
           repo: https://github.com/FizzyApple12/VRChatOSCOptitrack.git
           ref: 21d44571957ccf648c7966249f50d10d690b0877
           project: VRChatOSCOptitrack.vcxproj
+          extra-args: --project-configs "Release|Win32" "Release|x64"
 
     steps:
     - name: Download vcxproj2cmake artifact
@@ -74,9 +75,9 @@ jobs:
     - name: Run vcxproj2cmake
       run: |
         if ("${{ matrix.sln }}") {
-          .\vcxproj2cmake.exe --solution "e2e-test/${{ matrix.name }}/${{ matrix.sln }}"
+          .\vcxproj2cmake.exe --solution "e2e-test/${{ matrix.name }}/${{ matrix.sln }}" ${{ matrix.extra-args }}
         } else {
-          .\vcxproj2cmake.exe --projects "e2e-test/${{ matrix.name }}/${{ matrix.project }}"
+          .\vcxproj2cmake.exe --projects "e2e-test/${{ matrix.name }}/${{ matrix.project }}" ${{ matrix.extra-args }}
         }
     - name: Install latest version of CMake
       shell: pwsh
