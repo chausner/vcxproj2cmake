@@ -411,7 +411,7 @@ class MSBuildProject
 
         static MSBuildConfigDependentSetting<string[]> ParseCommandLineOptionSetting(Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings, string settingName)
         {
-            var parser = (string value) => 
+            var parser = (string value) =>
                 PathUtils.SplitArguments(value)
                     .Except([$"%({settingName})", $"$({settingName})"], StringComparer.OrdinalIgnoreCase)
                     .Select(UnescapeMSBuildValue)

@@ -168,13 +168,13 @@ public static class Program
             projects.Count > 0 ? projects : null,
             solution,
             projectConfigs.Count > 0 ? projectConfigs : null,
-            qtVersion, 
-            portable, 
+            qtVersion,
+            portable,
             includeHeaders,
             enableStandaloneProjectBuilds,
             indentStyle,
             indentSize,
-            dryRun, 
+            dryRun,
             continueOnError);
     }
 

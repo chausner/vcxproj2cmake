@@ -72,8 +72,8 @@ public class Converter(IFileSystem fileSystem, ILogger logger)
             }
         }
 
-        if (projectConfigs != null)        
-            ValidateProjectConfigs(projectConfigs, projects);        
+        if (projectConfigs != null)
+            ValidateProjectConfigs(projectConfigs, projects);
 
         var conanPackageInfoRepository = new ConanPackageInfoRepository();
 

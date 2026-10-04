@@ -103,8 +103,8 @@ static class PathUtils
                     current.Append('"');
                     i++;
                 }
-                else                
-                    inQuotes = !inQuotes;                
+                else
+                    inQuotes = !inQuotes;
 
                 continue;
             }

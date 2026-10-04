@@ -187,7 +187,6 @@ public partial class ConverterTests
             Assert.Contains("Cannot convert setting ModuleDefinitionFile to a CMake expression because it has multiple values and no CMake variable can be used to distinguish between them.", ex.Message);
         }
 
-
         [Fact]
         public void Given_ModuleDefinitionFileFollowsUnsupportedPattern_When_ConvertedWithProblematicProjectConfigExcluded_Then_GeneratorExpressionsUsed()
         {
@@ -353,7 +352,7 @@ public partial class ConverterTests
                             "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/DebugOrWin32>"
                             "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/ReleaseOrx64>"
                     )
-                    """.Trim()) || 
+                    """.Trim()) ||
                 cmake.Contains("""
                     target_link_directories(Project
                         PRIVATE

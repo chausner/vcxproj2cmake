@@ -52,7 +52,7 @@ class CMakeProject
         CMakeExpression.Expression(@"\$(CoreLibraryDependencies)")];
 
     public CMakeProject(
-        MSBuildProject project,        
+        MSBuildProject project,
         IEnumerable<string>? projectConfigs,
         CMakeProjectSettings settings,
         string projectName,

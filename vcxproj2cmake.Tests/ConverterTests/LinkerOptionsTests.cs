@@ -66,7 +66,7 @@ public partial class ConverterTests
                 )
                 """, cmake);
         }
-        
+
         [Fact]
         public void Given_AdditionalOptionsWithQuotedArguments_When_Converted_Then_QuotedArgumentsAreNotSplit()
         {

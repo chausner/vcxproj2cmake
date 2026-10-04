@@ -101,8 +101,8 @@ record CMakeConfigDependentSetting
             .All(grouping => grouping.Select(config => Values[config]).Distinct().Count() == 1))
             .ToArray();
 
-        if (singleConditionVariables.Length >= 2)        
-            logger.LogWarning($"Multiple CMake variables can be used to distinguish between values for setting {SettingName}. One of the variables will be used, but this may not be the intended behavior.");        
+        if (singleConditionVariables.Length >= 2)
+            logger.LogWarning($"Multiple CMake variables can be used to distinguish between values for setting {SettingName}. One of the variables will be used, but this may not be the intended behavior.");
 
         if (singleConditionVariables.Length >= 1)
         {
@@ -198,11 +198,11 @@ record CMakeConfigDependentMultiSetting
 
         foreach (var config in projectConfigurations)
             if (!effectiveSettings.ContainsKey(config))
-                effectiveSettings[config] = settings.DefaultValue;       
+                effectiveSettings[config] = settings.DefaultValue;
 
         Values = effectiveSettings;
         SettingName = settings.SettingName;
-        DefaultValue = settings.DefaultValue;     
+        DefaultValue = settings.DefaultValue;
         MSBuildProject = msbuildProject;
         this.logger = logger;
     }
@@ -226,7 +226,7 @@ record CMakeConfigDependentMultiSetting
     }
 
     public void AppendValue(MSBuildProjectConfig config, CMakeExpression value)
-    { 
+    {
         if (!Values.ContainsKey(config))
             Values[config] = [value];
         else
@@ -272,14 +272,14 @@ record CMakeConfigDependentMultiSetting
 
         List<CMakeExpression> exprs = [];
 
-        CMakeExpression[] commonExpressions = 
+        CMakeExpression[] commonExpressions =
             Values.Values
             .Aggregate((acc, exprs) => acc.Intersect(exprs).ToArray())
             .ToArray();
 
         exprs.AddRange(commonExpressions);
 
-        foreach (var value in values.Values)        
+        foreach (var value in values.Values)
             foreach (var expr in commonExpressions)
                 value.Remove(expr);
 
