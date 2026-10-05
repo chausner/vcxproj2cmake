@@ -4,6 +4,7 @@ using Scriban.Runtime;
 using System.IO.Abstractions;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -81,9 +82,12 @@ class CMakeGenerator(IFileSystem fileSystem, ILogger logger)
         {
             result = cmakeListsTemplate.Render(context);
         }
-        catch (Scriban.Syntax.ScriptRuntimeException ex) when (ex.InnerException?.InnerException is CatastrophicFailureException)
+        catch (Scriban.Syntax.ScriptRuntimeException ex)
         {
-            throw ex.InnerException.InnerException;
+            for (Exception? cause = ex.InnerException; cause != null; cause = cause.InnerException)
+                if (cause is CatastrophicFailureException)
+                    ExceptionDispatchInfo.Capture(cause).Throw();
+            throw;
         }
 
         if (model is CMakeProject project)

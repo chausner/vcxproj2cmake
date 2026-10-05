@@ -10,7 +10,7 @@ record CMakeConfigDependentSetting
     public CMakeExpression DefaultValue { get; }
     public MSBuildProject MSBuildProject { get; }
 
-    ILogger logger;
+    readonly ILogger logger;
 
     public CMakeConfigDependentSetting(string settingName, CMakeExpression defaultValue, MSBuildProject msbuildProject, ILogger logger)
     {
@@ -175,7 +175,7 @@ record CMakeConfigDependentMultiSetting
     public CMakeExpression[] DefaultValue { get; }
     public MSBuildProject MSBuildProject { get; }
 
-    ILogger logger;
+    readonly ILogger logger;
 
     public CMakeConfigDependentMultiSetting(string settingName, CMakeExpression[] defaultValue, MSBuildProject msbuildProject, ILogger logger)
     {

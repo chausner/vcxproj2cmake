@@ -40,7 +40,7 @@ class BuildTypeCMakeVariable : CMakeVariable
         {
             "true" => "Debug",
             "false" => "Release",
-            _ => throw new ArgumentException($"Unsupported value for UseDebugLibraries: '{useDebugLibraries}'. Expected 'true' or 'false'.")
+            _ => throw new CatastrophicFailureException($"Unsupported value for UseDebugLibraries: '{useDebugLibraries}'. Expected 'true' or 'false'.")
         };
     }
 }
@@ -68,7 +68,7 @@ class CompilerArchitectureIdCMakeVariable : CMakeVariable
             "x64" => "x64",
             "ARM32" => "ARMV7",
             "ARM64" => "ARM64",
-            _ => throw new ArgumentException($"Unsupported project configuration platform: '{projectConfig.Platform}'. Expected one of: 'Win32', 'x86', 'x64', 'ARM32', or 'ARM64'.")
+            _ => throw new CatastrophicFailureException($"Unsupported project configuration platform: '{projectConfig.Platform}'. Expected one of: 'Win32', 'x86', 'x64', 'ARM32', or 'ARM64'.")
         };
     }
 }
