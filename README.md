@@ -276,6 +276,10 @@ add_subdirectory(App)
 
 ## Limitations
 
+* Configuration-dependent values are mapped using the value of MSBuild property [`UseDebugLibraries`](https://learn.microsoft.com/en-us/cpp/build/reference/advanced-property-page?view=msvc-180#use-debug-libraries-1) and the project platform (`Win32`, `x86`, `x64`, `ARM32`, or `ARM64`).
+  The Visual Studio configuration name does not determine the CMake build type.
+  If configurations map to the same build type and architecture but have different setting values, conversion fails.
+  In this case, you may use `--project-configs` to select a compatible subset of project configurations.
 * MSBuild properties defined in imported .props or .targets files are not considered.
 * Many advanced compiler and linker options are not supported and silently ignored.
   Only a limited set of commonly-used properties is converted, as listed in the [Features](#features) section.
