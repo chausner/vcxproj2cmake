@@ -172,14 +172,14 @@ class MSBuildProject
         var useDebugLibraries = ParseSetting("UseDebugLibraries", otherSettings, "false");
         var runtimeLibrary = ParseSettingWithConfigSpecificDefault("RuntimeLibrary", compilerSettings, new(projectConfig =>
         {
-            if (useDebugLibraries.GetEffectiveValue(projectConfig) == "true")
+            if (useDebugLibraries.GetEffectiveValue(projectConfig).Equals("true", StringComparison.OrdinalIgnoreCase))
                 return "MultiThreadedDebugDLL";
             else
                 return "MultiThreadedDLL";
         }));
         var basicRuntimeChecks = ParseSettingWithConfigSpecificDefault("BasicRuntimeChecks", compilerSettings, new(projectConfig =>
         {
-            if (useDebugLibraries.GetEffectiveValue(projectConfig) == "true")
+            if (useDebugLibraries.GetEffectiveValue(projectConfig).Equals("true", StringComparison.OrdinalIgnoreCase))
                 return "EnableFastChecks";
             else
                 return "Default";
@@ -262,7 +262,7 @@ class MSBuildProject
                 .SelectMany(group => group.Elements(projectReferenceXName))
                 .SelectMany(element => element.Elements(linkLibraryDependenciesXName))
                 .Select(element => UnescapeMSBuildValue(element.Value.Trim()))
-                .Select(value => value switch
+                .Select(value => value.ToLowerInvariant() switch
                 {
                     "true" => true,
                     "false" => false,
