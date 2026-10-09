@@ -9,6 +9,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - Add support for MSBuild macros `MSBuildProjectDirectory`, `MSBuildProjectName`, `MSBuildThisFileDirectory` and `MSBuildThisFileName`.
+- Add support for MSBuild properties whose value depends on specific combinations of configuration and platform.
+  The tool will generate corresponding CMake generator expressions using logical operator `$<AND:...>` in this case.
+- Add option `--project-configs` allowing to restrict the set of project configurations to be taken into account.
 
 ### Changed
 

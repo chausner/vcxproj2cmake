@@ -167,7 +167,7 @@ public partial class ConverterTests
 
             // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
-            
+
             Assert.Contains("""
                 target_compile_definitions(Project
                     PRIVATE

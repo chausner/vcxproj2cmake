@@ -23,7 +23,7 @@ class MSBuildConfigDependentSetting<TValue>
     public TValue GetEffectiveValue(MSBuildProjectConfig projectConfig) => Values.GetValueOrDefault(projectConfig, DefaultValue);
 }
 
-record MSBuildProjectConfig(string Name)
+record MSBuildProjectConfig(string Name, string Configuration, string Platform)
 {
     public override string ToString() => Name;
 }
