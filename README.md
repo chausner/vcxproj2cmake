@@ -90,7 +90,7 @@ as well as a top-level `CMakeLists.txt` file in the same directory as the soluti
 
 | Option(s)                            | Description |
 |--------------------------------------|-------------|
-| `--project-configs`                  | Take only the specified project configurations, identified by configuration and platform (e.g. "Debug|x64"), into account, ignoring any other project configurations. If not specified, all configurations are taken into account. |
+| `--project-configs`                  | Take only the specified project configurations, identified by configuration and platform (e.g. "Debug\|x64"), into account, ignoring any other project configurations. If not specified, all configurations are taken into account. |
 | `--include-headers`                  | Includes header files in the list of CMake target sources set via `target_sources`, allowing IDEs to display them as part of the project. |
 | `--enable-standalone-project-builds` | Adds extra CMake commands to generated project `CMakeLists.txt` files so the projects can be configured independently of the top‑level solution. |
 | `--qt-version`                       | Specifies the Qt version used by any project that depends on Qt. |
