@@ -1,56 +1,51 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `vcxproj2cmake/` — .NET 10 CLI source. Templates in `vcxproj2cmake/Resources/Templates/*.scriban`; Conan data in `vcxproj2cmake/Resources/conan-packages.csv`.
-- `vcxproj2cmake.Tests/` — xUnit tests (unit and behavior). Subfolders mirror source (e.g., `ConverterTests/`).
-- `ExampleSolution/` — small demo solution for manual testing.
-- `Scripts/` — maintenance scripts (e.g., `GetConanPackageInfo.ps1`).
-- `.github/workflows/dotnet.yml` — CI for build, test, and Windows publish.
+- `vcxproj2cmake/` — .NET 10 CLI source. Scriban templates are embedded from `Resources/Templates/`; Conan package metadata is embedded from `Resources/conan-packages.csv`.
+- `vcxproj2cmake.Tests/` — xUnit v3 tests, organized by area and conversion behavior (for example, `ConverterTests/`).
+- `ExampleSolution/` — small `.slnx` demo with an app and a library, useful for manual conversion checks.
+- `Scripts/` — maintenance scripts, including `GetConanPackageInfo.ps1`.
+- `.github/workflows/dotnet.yml` — Windows and Ubuntu build/test CI, Windows publish and coverage upload, plus a Windows end-to-end job that converts real projects and configures/builds the generated CMake.
+- `vcxproj2cmake.slnx` is the root solution. `global.json` selects Microsoft.Testing.Platform as the `dotnet test` runner.
 
 ## Build, Test, and Development Commands
+Run these from the repository root:
 - Restore: `dotnet restore`
-- Build: `dotnet build -c Release`
-- Test: `dotnet test -c Release`
-- Run locally (example):
-  - `dotnet run --project vcxproj2cmake -- --solution ExampleSolution/ExampleSolution.slnx`
-  - Use `--projects <path1> <path2>` for multiple `.vcxproj` files.
-- Publish (Windows artifact): `dotnet publish vcxproj2cmake/vcxproj2cmake.csproj -c Release`
-- Preview output without writing files: add `--dry-run`.
+- Build: `dotnet build --configuration Release`
+- Test: `dotnet test --configuration Release`
+- Run locally (example): `dotnet run --project vcxproj2cmake -- --solution ExampleSolution/ExampleSolution.slnx`
+- Convert multiple projects with `--projects <path1> <path2>`; preview generated output without writing files by adding `--dry-run`.
+- Publish: `dotnet publish vcxproj2cmake/vcxproj2cmake.csproj --configuration Release`. The project enables trimming and Native AOT; CI publishes the Windows executable.
 
 ## Architecture Overview
-- Entry point: `vcxproj2cmake/Program.cs` parses CLI options via `System.CommandLine`, configures logging, and invokes `Converter`.
-- Models: MSBuild inputs are represented by `MSBuildSolution`, `MSBuildProject`, and `MSBuildProjectConfig`; CMake outputs by `CMakeSolution` and `CMakeProject`.
-- Generation: `CMakeGenerator` renders Scriban templates from `vcxproj2cmake/Resources/Templates/*.scriban`.
-- Metadata: `QtModuleInfoRepository` and `ConanPackageInfoRepository` provide `find_package(...)` hints (the latter sourced from `Resources/conan-packages.csv`).
-- Utilities: `ProjectDependencyUtils`, `PathUtils`, `Extensions` support path and dependency handling; `CustomConsoleFormatter` improves log output; domain errors live in `Exceptions.cs`.
-- Flow: `--solution`/`--projects` → parse MSBuild → build CMake model → render templates → write files or `--dry-run` to console.
+- Entry point: `vcxproj2cmake/Program.cs` defines the `System.CommandLine` options, configures logging, and invokes `Converter`.
+- Input models: `MSBuildSolution`, `MSBuildProject`, and `MSBuildProjectConfig` read solution/project data and build settings.
+- Output models and generation: `CMakeSolution` and `CMakeProject` prepare output; `CMakeGenerator` renders the embedded Scriban templates for project and solution `CMakeLists.txt` files.
+- Configuration-dependent values are represented with `MSBuildConfigDependentSetting`, `CMakeConfigDependentSetting`, and `CMakeExpression` so MSBuild configuration/platform conditions can be translated into CMake expressions.
+- Metadata: `QtModuleInfoRepository` maps Qt modules; `ConanPackageInfoRepository` reads the embedded package CSV. These provide `find_package(...)` information for generated output.
+- `ProjectDependencyUtils`, `PathUtils`, and `Extensions` support dependency and path handling. `CustomConsoleFormatter` formats logs; domain errors live in `Exceptions.cs`.
+- Flow: `--solution` or `--projects` → parse MSBuild → build the CMake model → render templates → write files or print them with `--dry-run`.
 
 ## Coding Style & Naming Conventions
-- C# with 4-space indentation; `nullable` and implicit usings are enabled.
+- C# with 4-space indentation; nullable reference types and implicit usings are enabled.
 - Names: `PascalCase` for types/methods/properties; `camelCase` for locals/parameters; interfaces prefix `I`.
-- File names match primary type (e.g., `CMakeProject.cs`); tests end with `*Tests.cs`.
-- Prefer small, focused classes; early returns; clear logging via `Microsoft.Extensions.Logging`.
-- Use `System.IO.Abstractions` wrappers for filesystem access.
+- File names match primary types (for example, `CMakeProject.cs`); tests end with `*Tests.cs`.
+- Prefer small, focused classes, early returns, and clear logging via `Microsoft.Extensions.Logging`.
+- Use `System.IO.Abstractions` wrappers for production filesystem access.
 
 ## Testing Guidelines
-- Framework: xUnit (`[Fact]`, `[Theory]`).
-- Location: under `vcxproj2cmake.Tests/`; mirror source folders when useful.
-- Naming: `Given_<Arrange>_When_<Act>_Then_<Assert>`.
-- Mark sections in tests with comments (`// Arrange`, `// Act`, `// Assert`). Use `// Act & Assert` if steps are intertwined.
-  Leave out sections if not applicable. Stay consistent with existing tests.
-- Run: `dotnet test -c Release`.
-- Include CMake-backed assertions by setting environment variable `RUN_CMAKE_ASSERTIONS=1`. This is also what CI uses.
-- Use `CMakeAssert.ConfiguresAndBuildsWithCMake(...)` for tests that must prove generated CMake configures and builds.
-  Gate these checks with `TestOptions.RunCMakeAssertions` so regular local runs stay fast and do not require CMake, generators, or toolchains.
-- `MockFileSystem.CopyCurrentDirectoryToDisk(...)` is intended for debugging generated test output. Only add it temporarily to tests, if necessary, but do not commit it.
-- Keep tests deterministic; use `MockFileSystem` from IO.Abstractions for file I/O.
+- Tests use xUnit v3 with Microsoft.Testing.Platform. Keep them deterministic; use `MockFileSystem` from IO.Abstractions for filesystem behavior.
+- Put tests under `vcxproj2cmake.Tests/`, grouped by area or conversion behavior. Name tests `Given_<Arrange>_When_<Act>_Then_<Assert>`.
+- Mark test sections with `// Arrange`, `// Act`, and `// Assert` comments when useful; use `// Act & Assert` when the steps are intertwined. Leave out sections that do not apply and follow nearby tests.
+- `CMakeAssert.ConfiguresAndBuildsWithCMake(...)` and `TestOptions.RunCMakeAssertions` are available for tests that must prove generated CMake configures and builds; there are currently no in-project tests using this helper. Gate any new calls with `TestOptions.RunCMakeAssertions` so ordinary runs do not require CMake. CI sets `RUN_CMAKE_ASSERTIONS=1`, and its separate Windows end-to-end job currently provides the configure/build integration checks against pinned real-world projects.
+- `MockFileSystem.CopyCurrentDirectoryToDisk(...)` is for debugging generated test output. Add it only temporarily when needed and do not commit it.
 
 ## Commit & Pull Request Guidelines
-- Commit subjects in imperative mood; keep concise; include scope when helpful. Example: `Fix generator expressions for target architecture detection`.
-- Link issues/PRs (e.g., `#42`) and describe rationale and behavior changes.
-- PRs should include: summary, repro/usage examples, before/after notes, and tests for new behavior.
-- Ensure CI passes on Windows and Linux: `dotnet build`, `dotnet test` must succeed.
+- Commit subjects in imperative mood; keep them concise and include scope when helpful. Example: `Fix generator expressions for target architecture detection`.
+- Link issues/PRs (for example, `#42`) and describe the rationale and behavior changes.
+- PRs should include a summary, repro/usage examples, before/after notes, and tests for new behavior.
+- CI builds and tests on Windows and Ubuntu; preserve that cross-platform coverage.
 
 ## Security & Configuration Tips
 - Avoid destructive changes; verify generated output first with `--dry-run`.
-- `Scripts/GetConanPackageInfo.ps1` requires network access; use only to update `Resources/conan-packages.csv` (not part of regular build).
+- `Scripts/GetConanPackageInfo.ps1` requires network access; use it only to update `vcxproj2cmake/Resources/conan-packages.csv`, not as part of the regular build.
