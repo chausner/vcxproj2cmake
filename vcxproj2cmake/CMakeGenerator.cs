@@ -60,6 +60,7 @@ class CMakeGenerator(IFileSystem fileSystem, ILogger logger)
         scriptObject.Add("unquoted_literal", DelegateCustomFunction.CreateFunc<string, string>(s => ToCMakeLiteral(s, unquoted: true)));
         scriptObject.Add("normalize_path", DelegateCustomFunction.CreateFunc<string, string>(PathUtils.NormalizePath));
         scriptObject.Add("get_config_expression", DelegateCustomFunction.CreateFunc<Config, CMakeExpression, CMakeExpression>((config, value) => config.Apply(value)));
+        scriptObject.Add("get_build_event_command", DelegateCustomFunction.CreateFunc<Config, CMakeExpression, string>(GetBuildEventCommand));
         scriptObject.Add("order_project_references_by_dependencies", DelegateCustomFunction.CreateFunc<IEnumerable<CMakeProjectReference>, CMakeProjectReference[]>(pr => ProjectDependencyUtils.OrderProjectReferencesByDependencies(pr, allProjects, logger)));
         scriptObject.Add("get_directory_name", DelegateCustomFunction.CreateFunc<string?, string?>(Path.GetDirectoryName));
         scriptObject.Add("get_relative_path", DelegateCustomFunction.CreateFunc<string, string, string>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));
@@ -133,6 +134,29 @@ class CMakeGenerator(IFileSystem fileSystem, ILogger logger)
         using var scope = logger.BeginScope(Path.GetFileName(solution.AbsoluteSolutionPath));
 
         GenerateCMake(solution, allProjects, cmakeListsPath, cmakeListsTemplate, settings);
+    }
+
+    static string GetBuildEventCommand(Config config, CMakeExpression command)
+    {
+        if (config == Config.CommonConfig)
+            return $"cmd /C {command.Value}";
+
+        return $"cmd /C {QuoteCMakeArgument(config.Apply(command).Value)}";
+    }
+
+    static string QuoteCMakeArgument(string value)
+    {
+        var sb = new StringBuilder(value.Length + 2);
+        sb.Append('"');
+        foreach (var c in value)
+            sb.Append(c switch
+            {
+                '\\' => @"\\",
+                '"' => "\\\"",
+                _ => c.ToString()
+            });
+        sb.Append('"');
+        return sb.ToString();
     }
 
     static Template LoadTemplate(string resourceName)
