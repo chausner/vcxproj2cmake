@@ -107,34 +107,5 @@ public partial class ConverterTests
             // Assert
             Assert.DoesNotContain("MSBuild imports are unsupported and will not be processed", logger.AllMessageText);
         }
-
-        [Fact]
-        public void Given_ProjectWithDirectoryBuildFilesInImportSearchPath_When_Converted_Then_LogsWarnings()
-        {
-            // Arrange
-            var fileSystem = new MockFileSystem();
-            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
-
-            var projectPath = Path.Combine("src", "Project.vcxproj");
-            var directoryBuildPropsPath = Path.GetFullPath("Directory.Build.props");
-            var directoryBuildTargetsPath = Path.GetFullPath(Path.Combine("src", "Directory.Build.targets"));
-
-            fileSystem.AddFile(projectPath, new MockFileData(TestData.Project()
-                .Build()));
-            fileSystem.AddFile(directoryBuildPropsPath, new MockFileData("<Project />"));
-            fileSystem.AddFile(directoryBuildTargetsPath, new MockFileData("<Project />"));
-
-            var logger = new InMemoryLogger();
-            var converter = new Converter(fileSystem, logger);
-
-            // Act
-            converter.Convert(
-                projectFiles: [new(projectPath)],
-                dryRun: true);
-
-            // Assert
-            Assert.Contains($"Directory.Build.props/targets are unsupported and will not be processed: {directoryBuildPropsPath}", logger.AllMessageText);
-            Assert.Contains($"Directory.Build.props/targets are unsupported and will not be processed: {directoryBuildTargetsPath}", logger.AllMessageText);
-        }
     }
 }

@@ -248,7 +248,6 @@ class MSBuildProject
                 .ToList();
 
         LogWarningsForUnsupportedImports(imports, logger);
-        LogWarningsForDirectoryBuildFiles(absoluteProjectPath, fileSystem, logger);
         LogWarningsForUnsupportedFileLevelSettings(projectElement, itemGroupXName, logger);
 
         var projectReferences =
@@ -483,27 +482,6 @@ class MSBuildProject
             return StandardVisualStudioImports.Contains(normalizedImport, StringComparer.OrdinalIgnoreCase) ||
                 QtMsBuildImportPattern.IsMatch(normalizedImport) ||
                 ConanImportPattern.IsMatch(normalizedImport);
-        }
-    }
-
-    static void LogWarningsForDirectoryBuildFiles(string absoluteProjectPath, IFileSystem fileSystem, ILogger logger)
-    {
-        var projectDirectory = fileSystem.Path.GetDirectoryName(absoluteProjectPath);
-        if (string.IsNullOrEmpty(projectDirectory))
-            return;
-
-        for (var currentDirectory = fileSystem.DirectoryInfo.New(projectDirectory);
-            currentDirectory != null;
-            currentDirectory = currentDirectory.Parent)
-        {
-            LogWarningIfFileExists(currentDirectory.File("Directory.Build.props"));
-            LogWarningIfFileExists(currentDirectory.File("Directory.Build.targets"));
-        }
-
-        void LogWarningIfFileExists(IFileInfo file)
-        {
-            if (file.Exists)
-                logger.LogWarning($"Directory.Build.props/targets are unsupported and will not be processed: {file.FullName}");
         }
     }
 
