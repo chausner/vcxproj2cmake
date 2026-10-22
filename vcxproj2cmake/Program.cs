@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using System.Diagnostics.CodeAnalysis;
 using System.CommandLine;
 using System.Globalization;
 using System.IO.Abstractions;
@@ -21,60 +22,72 @@ public static class Program
         var projectsOption = new Option<List<FileInfo>>("--projects")
         {
             AllowMultipleArgumentsPerToken = true,
-            Description = "Paths to one or multiple .vcxproj files",
+            Description = "Paths to one or more .vcxproj files",
             HelpName = "path(s)"
         }.AcceptExistingOnly();
 
         var solutionOption = new Option<FileInfo>("--solution")
         {
-            Description = "Path to a solution .sln file",
+            Description = "Path to a .sln or .slnx solution file",
             HelpName = "path"
         }.AcceptExistingOnly();
 
-        var qtVersionOption = new Option<int?>("--qt-version") 
-        { 
-            Description = "Set Qt version (required for Qt projects)" 
+        var qtVersionOption = new Option<int?>("--qt-version")
+        {
+            Description = "Qt version (required for Qt projects)"
         }.AcceptOnlyFromAmong("5", "6");
+
+        var portableOption = new Option<bool>("--portable")
+        {
+            Description = "Guard generated MSVC-specific CMake settings so they are inactive for other compilers"
+        };
+
+        var includeHeadersOption = new Option<bool>("--include-headers")
+        {
+            Description = "Include header files in target_sources()"
+        };
 
         var enableStandaloneProjectBuildsOption = new Option<bool>("--enable-standalone-project-builds")
         {
-            Description = "Generate necessary code to allow projects to be built standalone (not through the root CMakeLists.txt)"
+            Description = "Generate code to allow projects to be built standalone (without the root CMakeLists.txt)"
         };
 
         var indentStyleOption = new Option<IndentStyle>("--indent-style")
         {
-            Description = "The indentation style to use (spaces or tabs).",
+            Description = "Indentation style for CMake output (spaces or tabs)",
             DefaultValueFactory = _ => IndentStyle.Spaces,
         };
 
         var indentSizeOption = new Option<int>("--indent-size")
         {
-            Description = "The number of spaces to use for indentation.",
+            Description = "Number of spaces per indentation level in CMake output",
             HelpName = "count",
             DefaultValueFactory = _ => 4
         };
 
         var dryRunOption = new Option<bool>("--dry-run")
         {
-            Description = "Print generated output to the console, do not store generated files"
+            Description = "Print generated output instead of writing files"
         };
 
         var continueOnErrorOption = new Option<bool>("--continue-on-error")
         {
-            Description = "Do not abort when a project cannot be converted and continue with the remaining projects"
+            Description = "Continue processing remaining projects if the conversion of project fails"
         };
 
         var logLevelOption = new Option<LogLevel>("--log-level")
-        { 
-            Description = "Set the minimum log level",
+        {
+            Description = "Minimum log level",
             DefaultValueFactory = _ => LogLevel.Information
         };
 
-        var rootCommand = new RootCommand("Converts Microsoft Visual C++ projects and solutions to CMake");
+        var rootCommand = new RootCommand("Convert Microsoft Visual C++ projects and solutions to CMake");
 
         rootCommand.Options.Add(projectsOption);
         rootCommand.Options.Add(solutionOption);
         rootCommand.Options.Add(qtVersionOption);
+        rootCommand.Options.Add(portableOption);
+        rootCommand.Options.Add(includeHeadersOption);
         rootCommand.Options.Add(enableStandaloneProjectBuildsOption);
         rootCommand.Options.Add(indentStyleOption);
         rootCommand.Options.Add(indentSizeOption);
@@ -84,11 +97,13 @@ public static class Program
 
         rootCommand.Validators.Add(result =>
         {
-            var hasProjects = result.GetValue(projectsOption)?.Count > 0;
-            var hasSolution = result.GetValue(solutionOption) != null;
+            var projectsSpecified = result.GetResult(projectsOption) != null;
+            var solutionSpecified = result.GetResult(solutionOption) != null;
 
-            if (hasProjects == hasSolution)
-                result.AddError("Specify either --projects or --solution, but not both.");
+            if (!projectsSpecified && !solutionSpecified)
+                result.AddError("Either --projects or --solution must be specified.");
+            else if (projectsSpecified && solutionSpecified)
+                result.AddError("Only one of --projects or --solution can be specified.");
         });
 
         rootCommand.SetAction(parseResult =>
@@ -96,13 +111,15 @@ public static class Program
                 var projects = parseResult.GetValue(projectsOption);
                 var solution = parseResult.GetValue(solutionOption);
                 var qtVersion = parseResult.GetValue(qtVersionOption);
+                var portable = parseResult.GetValue(portableOption);
+                var includeHeaders = parseResult.GetValue(includeHeadersOption);
                 var enableStandaloneProjectBuilds = parseResult.GetValue(enableStandaloneProjectBuildsOption);
                 var indentStyle = parseResult.GetValue(indentStyleOption);
                 var indentSize = parseResult.GetValue(indentSizeOption);
                 var dryRun = parseResult.GetValue(dryRunOption);
                 var continueOnError = parseResult.GetValue(continueOnErrorOption);
                 var logLevel = parseResult.GetValue(logLevelOption);
-                Run(projects, solution, qtVersion, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError, logLevel);
+                Run(projects, solution, qtVersion, portable, includeHeaders, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError, logLevel);
             });
 
         try
@@ -120,22 +137,26 @@ public static class Program
     }
 
     static void Run(
-        List<FileInfo>? projects, 
-        FileInfo? solution, 
-        int? qtVersion, 
-        bool enableStandaloneProjectBuilds, 
-        IndentStyle indentStyle, 
-        int indentSize, 
-        bool dryRun, 
+        List<FileInfo>? projects,
+        FileInfo? solution,
+        int? qtVersion,
+        bool portable,
+        bool includeHeaders,
+        bool enableStandaloneProjectBuilds,
+        IndentStyle indentStyle,
+        int indentSize,
+        bool dryRun,
         bool continueOnError,
         LogLevel logLevel)
     {
         logger = CreateLogger(logLevel);
 
         var converter = new Converter(new FileSystem(), logger);
-        converter.Convert(projects, solution, qtVersion, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError);
+        converter.Convert(projects, solution, qtVersion, portable, includeHeaders, enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun, continueOnError);
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "The application registers a concrete console formatter without binding formatter options from configuration.")]
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The application registers a concrete console formatter without binding formatter options from configuration.")]
     static ILogger CreateLogger(LogLevel logLevel)
     {
         using var loggerFactory = LoggerFactory.Create(builder =>
@@ -143,7 +164,7 @@ public static class Program
             builder
                 .SetMinimumLevel(logLevel)
                 .AddConsole(options => options.FormatterName = nameof(CustomConsoleFormatter))
-                .AddConsoleFormatter<CustomConsoleFormatter, ConsoleFormatterOptions>();    
+                .AddConsoleFormatter<CustomConsoleFormatter, ConsoleFormatterOptions>();
         });
 
         return loggerFactory.CreateLogger("vcxproj2cmake");

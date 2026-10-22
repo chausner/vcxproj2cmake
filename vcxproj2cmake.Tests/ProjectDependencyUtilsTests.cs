@@ -7,7 +7,7 @@ namespace vcxproj2cmake.Tests;
 public class ProjectDependencyUtilsTests
 {
     [Fact]
-    public void GivenReferencedProjectMissingFromSolution_WhenOrderingProjects_ThenLogsErrorAndThrows()
+    public void Given_ReferencedProjectMissingFromSolution_When_OrderingProjects_Then_LogsErrorAndThrows()
     {
         // Arrange
         var fileSystem = new MockFileSystem();
@@ -16,26 +16,40 @@ public class ProjectDependencyUtilsTests
         var appProjectPath = Path.Combine("App", "App.vcxproj");
         var libProjectPath = Path.Combine("Lib", "Lib.vcxproj");
 
-        fileSystem.AddFile(appProjectPath, new MockFileData(TestData.CreateProject("Application", "..\\Lib\\Lib.vcxproj")));
-        fileSystem.AddFile(libProjectPath, new MockFileData(TestData.CreateProject("StaticLibrary")));
+        fileSystem.AddFile(appProjectPath, new MockFileData(TestData.Project()
+            .WithProjectReferences("..\\Lib\\Lib.vcxproj")
+            .Build()));
+        fileSystem.AddFile(libProjectPath, new MockFileData(TestData.Project()
+            .Build()));
 
         var msbuildApp = MSBuildProject.ParseProjectFile(Path.GetFullPath(appProjectPath), fileSystem, NullLogger.Instance);
         var msbuildLib = MSBuildProject.ParseProjectFile(Path.GetFullPath(libProjectPath), fileSystem, NullLogger.Instance);
 
         var conanRepository = new ConanPackageInfoRepository();
-        var cmakeApp = new CMakeProject(msbuildApp, qtVersion: null, conanRepository, NullLogger.Instance);
-        var cmakeLib = new CMakeProject(msbuildLib, qtVersion: null, conanRepository, NullLogger.Instance);
+        var cmakeApp = new CMakeProject(
+            msbuildApp,
+            new CMakeProjectSettings(QtVersion: null, Portable: false),
+            msbuildApp.ProjectName,
+            includeHeaders: false,
+            conanRepository,
+            NullLogger.Instance);
+        var cmakeLib = new CMakeProject(
+            msbuildLib,
+            new CMakeProjectSettings(QtVersion: null, Portable: false),
+            msbuildLib.ProjectName,
+            includeHeaders: false,
+            conanRepository,
+            NullLogger.Instance);
 
         // simulate that Lib exists on disk but is not part of the solution conversion
         cmakeApp.ProjectReferences[0].Project = cmakeLib;
 
         var logger = new InMemoryLogger();
 
-        // Act
+        // Act & Assert
         var exception = Assert.Throws<CatastrophicFailureException>(
             () => ProjectDependencyUtils.OrderProjectsByDependencies([cmakeApp], logger));
 
-        // Assert
         Assert.Equal("Could not determine project dependency tree", exception.Message);
         Assert.Contains("Could not determine project dependency tree", logger.AllMessageText);
         Assert.Contains("Project App" + Environment.NewLine + $"  missing dependency {Path.Combine("..", "Lib", "Lib.vcxproj")}", logger.AllMessageText);

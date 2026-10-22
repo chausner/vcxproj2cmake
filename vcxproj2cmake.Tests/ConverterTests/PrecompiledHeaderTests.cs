@@ -8,63 +8,32 @@ public partial class ConverterTests
 {
     public class PrecompiledHeaderTests
     {
-        static string CreateProject(
-            string debugMode,
-            string releaseMode,
-            string debugHeader = "pch.h",
-            string releaseHeader = "pch.h") => $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Debug|Win32">
-                        <Configuration>Debug</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Release|Win32">
-                        <Configuration>Release</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                </PropertyGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                    <ClCompile>
-                        <PrecompiledHeader>{debugMode}</PrecompiledHeader>
-                        <PrecompiledHeaderFile>{debugHeader}</PrecompiledHeaderFile>
-                    </ClCompile>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                    <ClCompile>
-                        <PrecompiledHeader>{releaseMode}</PrecompiledHeader>
-                        <PrecompiledHeaderFile>{releaseHeader}</PrecompiledHeaderFile>
-                    </ClCompile>
-                </ItemDefinitionGroup>
-            </Project>
-            """;
-
         [Fact]
         public void Given_PrecompiledHeaderUsedInAllConfigs_When_Converted_Then_TargetPrecompileHeadersAdded()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("Use", "Use")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItemDefinitionSetting("ClCompile", "PrecompiledHeader", "Use")
+                .WithItemDefinitionSetting("ClCompile", "PrecompiledHeaderFile", "pch.h")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains(
                 """
                 target_precompile_headers(Project
                     PRIVATE
-                        ${CMAKE_CURRENT_SOURCE_DIR}/pch.h
+                        "${CMAKE_CURRENT_SOURCE_DIR}/pch.h"
                 )
                 """,
                 cmake);
@@ -73,22 +42,31 @@ public partial class ConverterTests
         [Fact]
         public void Given_PrecompiledHeaderUsedOnlyForDebug_When_Converted_Then_GeneratorExpressionWritten()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("Use", "NotUsing")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItemDefinitionSetting("Debug", "Win32", "ClCompile", "PrecompiledHeader", "Use")
+                .WithItemDefinitionSetting("Debug", "Win32", "ClCompile", "PrecompiledHeaderFile", "pch.h")
+                .WithItemDefinitionSetting("Release", "Win32", "ClCompile", "PrecompiledHeader", "NotUsing")
+                .WithItemDefinitionSetting("Release", "Win32", "ClCompile", "PrecompiledHeaderFile", "pch.h")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains(
                 """
                 target_precompile_headers(Project
                     PRIVATE
-                        $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/pch.h>
+                        "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/pch.h>"
                 )
                 """,
                 cmake);
@@ -97,23 +75,32 @@ public partial class ConverterTests
         [Fact]
         public void Given_PrecompiledHeaderUsesDifferentFilesPerConfig_When_Converted_Then_BothHeadersWritten()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("Use", "Use", "pch_debug.h", "pch_release.h")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItemDefinitionSetting("Debug", "Win32", "ClCompile", "PrecompiledHeader", "Use")
+                .WithItemDefinitionSetting("Debug", "Win32", "ClCompile", "PrecompiledHeaderFile", "pch_debug.h")
+                .WithItemDefinitionSetting("Release", "Win32", "ClCompile", "PrecompiledHeader", "Use")
+                .WithItemDefinitionSetting("Release", "Win32", "ClCompile", "PrecompiledHeaderFile", "pch_release.h")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains(
                 """
                 target_precompile_headers(Project
                     PRIVATE
-                        $<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/pch_debug.h>
-                        $<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/pch_release.h>
+                        "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/pch_debug.h>"
+                        "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/pch_release.h>"
                 )
                 """,
                 cmake);
@@ -122,17 +109,24 @@ public partial class ConverterTests
         [Fact]
         public void Given_PrecompiledHeaderDisabled_When_Converted_Then_NoPrecompileHeaderBlock()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("NotUsing", "NotUsing")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItemDefinitionSetting("ClCompile", "PrecompiledHeader", "NotUsing")
+                .WithItemDefinitionSetting("ClCompile", "PrecompiledHeaderFile", "pch.h")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.DoesNotContain("target_precompile_headers(Project", cmake);
         }
     }

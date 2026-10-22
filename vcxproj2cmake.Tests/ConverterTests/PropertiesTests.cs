@@ -8,77 +8,112 @@ public partial class ConverterTests
 {
     public class PropertiesTests
     {
-        static string CreateProject(string property, string debugValue, string releaseValue) => $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Debug|Win32">
-                        <Configuration>Debug</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Release|Win32">
-                        <Configuration>Release</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                </PropertyGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                    <ClCompile>
-                        <{property}>{debugValue}</{property}>
-                    </ClCompile>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                    <ClCompile>
-                        <{property}>{releaseValue}</{property}>
-                    </ClCompile>
-                </ItemDefinitionGroup>
-            </Project>
-            """;
-
-
         [Fact]
         public void Given_TreatWarningAsErrorEnabledForAllConfigs_When_Converted_Then_CompileWarningAsErrorPropertyIsSet()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("TreatWarningAsError", "true", "true")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("TreatWarningAsError", "true")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""
                 set_target_properties(Project PROPERTIES
                     COMPILE_WARNING_AS_ERROR ON
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
         public void Given_TreatWarningAsErrorEnabledConfigSpecific_When_Converted_Then_CompileWarningAsErrorPropertyIsSetWithGeneratorExpression()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProject("TreatWarningAsError", "true", "false")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("TreatWarningAsError", debugValue: "true", releaseValue: "false")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""
                 set_target_properties(Project PROPERTIES
                     COMPILE_WARNING_AS_ERROR "$<$<CONFIG:Debug>:ON>$<$<CONFIG:Release>:OFF>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
+        }
+
+        [Fact]
+        public void Given_TreatLinkerWarningAsErrorsEnabledForAllConfigs_When_Converted_Then_LinkWarningAsErrorPropertyIsSet()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("TreatLinkerWarningAsErrors", "true")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("""
+                set_target_properties(Project PROPERTIES
+                    LINK_WARNING_AS_ERROR LINKER
+                )
+                """, cmake);
+        }
+
+        [Fact]
+        public void Given_TreatLinkerWarningAsErrorsEnabledConfigSpecific_When_Converted_Then_LinkWarningAsErrorPropertyIsSetWithGeneratorExpression()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("TreatLinkerWarningAsErrors", debugValue: "true", releaseValue: "false")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("""
+                set_target_properties(Project PROPERTIES
+                    LINK_WARNING_AS_ERROR "$<$<CONFIG:Debug>:LINKER>$<$<CONFIG:Release>:OFF>"
+                )
+                """, cmake);
         }
     }
 }

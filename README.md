@@ -3,34 +3,35 @@
 <p align="center"><img src="vcxproj2cmake.webp" alt="Logo" width="200" /></p>
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/chausner/vcxproj2cmake)](https://github.com/chausner/vcxproj2cmake/releases/latest)
+[![Code coverage](https://coveralls.io/repos/github/chausner/vcxproj2cmake/badge.svg?branch=main)](https://coveralls.io/github/chausner/vcxproj2cmake?branch=main)
 [![license](https://img.shields.io/github/license/chausner/vcxproj2cmake.svg)](https://github.com/chausner/vcxproj2cmake/blob/master/LICENSE)
 
 **vcxproj2cmake** is a tool designed to convert Microsoft Visual C++ project files (`.vcxproj`) to equivalent CMake files (`CMakeLists.txt`).
 
-> [!NOTE]
-> Due to the complexity of MSBuild, the conversion works best for projects of low-to-medium complexity.
-> The generated CMake files may require manual adjustments, especially for larger projects with complex configurations or custom build steps.
-> Still, it can be a useful starting point for migrating projects to CMake and can save a lot of time compared to writing the CMake files from scratch.
-
 ## Features
 
 * Accepts either a list of `.vcxproj` project files or Visual Studio solution files (`.sln`/`.slnx`) as input.
-* Supports console, Win32, Dynamic-Link Library (DLL), and Static Library project types.
+* Supports console, Win32, Dynamic-Link Library (DLL), Static Library and Utility project types.
   Includes detection of header-only libraries.
 * Leverages CMake generator expressions for property values that are specific to certain build configurations (Debug, Release, Win32, x64).
-* The following MSBuild project properties are converted/taken into account:
+* Supports the following file types: C sources/headers, C++ sources/headers, C++ modules, .manifest, MASM, .rc, .natvis.
+* The following MSBuild project properties are converted to their CMake equivalents:
 
   `AdditionalDependencies`
   `AdditionalIncludeDirectories`
   `AdditionalLibraryDirectories`
   `AdditionalOptions`
   `AllProjectIncludesArePublic`
+  `BasicRuntimeChecks`
   `CharacterSet`
   `DisableSpecificWarnings`
   `ExternalWarningLevel`
+  `IncludePath`
   `LanguageStandard`
   `LanguageStandard_C`
+  `LibraryPath`
   `LinkLibraryDependencies`
+  `ModuleDefinitionFile`
   `OpenMPSupport`
   `PrecompiledHeaderFile`
   `PreprocessorDefinitions`
@@ -39,18 +40,17 @@
   `SubSystem`
   `TargetName`
   `TreatAngleIncludeAsExternal`
+  `TreatLinkerWarningAsErrors`
   `TreatSpecificWarningsAsErrors`
   `TreatWarningAsError`
+  `UseOfMfc`
   `WarningLevel`
 * For projects referencing Qt 5 or 6 via Qt/MsBuild, a corresponding `find_package(Qt... REQUIRED COMPONENTS ...)` command is generated and `AUTOMOC`/`AUTOUIC`/`AUTORCC` are enabled.
-* For projects referencing Conan packages via the MSBuildDeps generator, corresponding `find_package` commands are generated, intended to be used with the `CMakeDeps` generator.
-
-## Installation
-
-1. Make sure you have the [.NET 10 Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/10.0/runtime) installed.
-2. Download the latest release from the [releases page](https://github.com/chausner/vcxproj2cmake/releases) and unzip it to a directory of your choice.
+* For projects referencing Conan packages via the `MSBuildDeps` generator, corresponding `find_package` commands are generated, intended to be used with the `CMakeDeps` generator.
 
 ## Usage
+
+Download the latest release from the [releases page](https://github.com/chausner/vcxproj2cmake/releases) and unzip it to a directory of your choice.
 
 ### Basic Usage
 
@@ -86,17 +86,24 @@ If you have a Visual Studio solution file (`.sln` or `.slnx`), you can convert a
 This will generate a `CMakeLists.txt` file for each project next to the `.vcxproj` file,
 as well as a top-level `CMakeLists.txt` file in the same directory as the solution file.
 
-### Customizing Output
+### Advanced Options
 
-* Specify the `--enable-standalone-project-builds` option to include additional CMake commands in the generated project `CMakeLists.txt` files
-  to allow configuring the projects directly instead of as part of the top-level solution `CMakeLists.txt`.
-* If any of your projects use Qt, you must specify the `--qt-version` option to indicate the Qt version (5 or 6) used in the project.
-* Use options `--indent-style` and `--indent-size` to customize the indentation in the generated CMake files.
-* Specify the `--dry-run` option to have the generated CMake files printed to the console without writing them to disk.
+| Option(s)                            | Description |
+|--------------------------------------|-------------|
+| `--include-headers`                  | Includes header files in the list of CMake target sources set via `target_sources`, allowing IDEs to display them as part of the project. |
+| `--enable-standalone-project-builds` | Adds extra CMake commands to generated project `CMakeLists.txt` files so the projects can be configured independently of the top‑level solution. |
+| `--qt-version`                       | Specifies the Qt version used by any project that depends on Qt. |
+| `--portable`                         | Wraps MSVC‑specific CMake settings in generator expressions so they are ignored when using non‑MSVC compilers. |
+| `--indent-style` / `--indent-size`   | Customizes indentation style and size in generated CMake files. |
+| `--dry-run`                          | Prints generated CMake files to the console instead of writing them to disk. |
 
+For more information, run with the `--help` argument.
 
 ## Example
 
+<details>
+<summary>Click to expand</summary>
+  
 The repository contains a small demo solution under `ExampleSolution`. It
 consists of a static library project `MathLib` and an application project `App`
 that depends on the library. The solution references both projects and the
@@ -104,16 +111,14 @@ application has a project reference to `MathLib`.
 
 The top-level solution looks like this:
 
-```text
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MathLib", "MathLib\MathLib.vcxproj", "{4D944B1C-9EBF-4086-AE57-25DDEBF92F0D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "App", "App\App.vcxproj", "{07DC28F8-AB37-42B2-A0C4-82D4766A9166}"
-    ProjectSection(ProjectDependencies) = postProject
-        {4D944B1C-9EBF-4086-AE57-25DDEBF92F0D} = {4D944B1C-9EBF-4086-AE57-25DDEBF92F0D}
-    EndProjectSection
-EndProject
+```xml
+<Solution>
+  <Configurations>
+    <Platform Name="Win32" />
+  </Configurations>
+  <Project Path="App/App.vcxproj" Id="d4f63c17-b31b-4b33-b304-593051868748" />
+  <Project Path="MathLib/MathLib.vcxproj" Id="620c346a-996a-4c2b-8485-4a872433008b" />
+</Solution>
 ```
 
 `MathLib.vcxproj` includes a header and source file. It also demonstrates configuration-specific options:
@@ -173,84 +178,100 @@ similar configuration-specific defines and compiler options:
 Running the converter on the solution generates three `CMakeLists.txt` files:
 
 ```
-> .\vcxproj2cmake --solution ../ExampleSolution/ExampleSolution.sln
-Parsing ../ExampleSolution/ExampleSolution.sln
-Parsing ../ExampleSolution/MathLib/MathLib.vcxproj
-Parsing ../ExampleSolution/App/App.vcxproj
-Generating ../ExampleSolution/MathLib/CMakeLists.txt
-Generating ../ExampleSolution/App/CMakeLists.txt
-Generating ../ExampleSolution/CMakeLists.txt
+> .\vcxproj2cmake --solution ..\ExampleSolution\ExampleSolution.slnx
+[ExampleSolution.slnx] Parsing ..\ExampleSolution\ExampleSolution.slnx
+[App.vcxproj] Parsing ..\ExampleSolution\App\App.vcxproj
+[MathLib.vcxproj] Parsing ..\ExampleSolution\MathLib\MathLib.vcxproj
+[App.vcxproj] Processing project ..\ExampleSolution\App\App.vcxproj
+[MathLib.vcxproj] Processing project ..\ExampleSolution\MathLib\MathLib.vcxproj
+[App.vcxproj] Generating ..\ExampleSolution\App\CMakeLists.txt
+[MathLib.vcxproj] Generating ..\ExampleSolution\MathLib\CMakeLists.txt
+[ExampleSolution.slnx] Generating ..\ExampleSolution\CMakeLists.txt
 ```
 
 `ExampleSolution/MathLib/CMakeLists.txt`:
 
 ```cmake
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 4.0)
 project(MathLib LANGUAGES CXX)
 
-add_library(MathLib STATIC
-    MathLib.cpp
+add_library(MathLib STATIC)
+
+target_sources(MathLib
+    PRIVATE
+        MathLib.cpp
 )
 
-target_compile_features(MathLib PUBLIC cxx_std_17)
+target_compile_features(MathLib
+    PRIVATE
+        cxx_std_17
+)
 
 target_include_directories(MathLib
-    PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
 target_compile_definitions(MathLib
-    PUBLIC
-        $<$<CONFIG:Debug>:DEBUG>
-        $<$<CONFIG:Release>:NDEBUG>
+    PRIVATE
+        "$<$<CONFIG:Debug>:DEBUG>"
+        "$<$<CONFIG:Release>:NDEBUG>"
 )
 ```
 
 `ExampleSolution/App/CMakeLists.txt`:
 
 ```cmake
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 4.0)
 project(App LANGUAGES CXX)
 
-add_executable(App
-    main.cpp
+add_executable(App)
+
+target_sources(App
+    PRIVATE
+        main.cpp
 )
 
-target_compile_features(App PUBLIC cxx_std_17)
+target_compile_features(App
+    PRIVATE
+        cxx_std_17
+)
 
 target_include_directories(App
-    PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/../MathLib/include
+    PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/../MathLib/include"
 )
 
 target_compile_definitions(App
-    PUBLIC
+    PRIVATE
         MATHLIB
-        $<$<CONFIG:Debug>:DEBUG>
-        $<$<CONFIG:Release>:NDEBUG>
+        "$<$<CONFIG:Debug>:DEBUG>"
+        "$<$<CONFIG:Release>:NDEBUG>"
 )
 
 target_link_libraries(App
-    PUBLIC
+    PRIVATE
         MathLib
 )
 
 target_compile_options(App
-    PUBLIC
-        $<$<CONFIG:Debug>:/W4>
-        $<$<CONFIG:Release>:/O2>
+    PRIVATE
+        "$<$<CONFIG:Debug>:/W4>"
+        "$<$<CONFIG:Release>:/O2>"
 )
 ```
 
 `ExampleSolution/CMakeLists.txt`:
 
 ```cmake
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 4.0)
 project(ExampleSolution)
 
 add_subdirectory(MathLib)
 add_subdirectory(App)
 ```
+
+</details>
 
 ## Limitations
 
@@ -265,6 +286,11 @@ add_subdirectory(App)
 * MSBuild properties defined in imported .props or .targets files are not considered.
 * Many advanced compiler and linker options are not supported and silently ignored.
   Only a limited set of commonly-used properties is converted, as listed in the [Features](#features) section.
+
+> [!NOTE]
+> Due to the complexity of MSBuild, the conversion works best for projects of low-to-medium complexity.
+> The generated CMake files may require manual adjustments, especially for larger projects with complex configurations or custom build steps.
+> Still, it can be a useful starting point for migrating projects to CMake and can save a lot of time compared to writing the CMake files from scratch.
 
 ## Contributing
 Contributions of any kind (e.g. bug fixes, improvements or new features) are gladly accepted!

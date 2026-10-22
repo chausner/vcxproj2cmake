@@ -8,170 +8,40 @@ public partial class ConverterTests
 {
     public class PreprocessorDefinitionsTests
     {
-        static string CreateProjectWithDefines() => $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Debug|Win32">
-                        <Configuration>Debug</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Release|Win32">
-                        <Configuration>Release</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <CharacterSet>NotSet</CharacterSet>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <CharacterSet>NotSet</CharacterSet>
-                </PropertyGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                    <ClCompile>
-                        <PreprocessorDefinitions>FOO;DEBUG;FOO;VALUE=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-                    </ClCompile>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                    <ClCompile>
-                        <PreprocessorDefinitions>FOO;NDEBUG;VALUE=2;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-                    </ClCompile>
-                </ItemDefinitionGroup>
-            </Project>
-            """;
-
-        static string CreateProjectWithMBCS() => $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Debug|Win32">
-                        <Configuration>Debug</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Release|Win32">
-                        <Configuration>Release</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <CharacterSet>MultiByte</CharacterSet>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <CharacterSet>MultiByte</CharacterSet>
-                </PropertyGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                    <ClCompile>
-                        <PreprocessorDefinitions>DEBUG_DEF;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-                    </ClCompile>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                    <ClCompile>
-                        <PreprocessorDefinitions>RELEASE_DEF;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-                    </ClCompile>
-                </ItemDefinitionGroup>
-            </Project>
-            """;
-
-        static string CreateProjectWithInvalidCharSet() => $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Debug|Win32">
-                        <Configuration>Debug</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Release|Win32">
-                        <Configuration>Release</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <CharacterSet>InvalidCharSet</CharacterSet>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <CharacterSet>InvalidCharSet</CharacterSet>
-                </PropertyGroup>
-            </Project>
-            """;
-
-        static string CreateProjectWithArchDefines() => $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Debug|Win32">
-                        <Configuration>Debug</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Debug|x64">
-                        <Configuration>Debug</Configuration>
-                        <Platform>x64</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                </PropertyGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                    <ClCompile>
-                        <PreprocessorDefinitions>X86_DEF;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-                    </ClCompile>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-                    <ClCompile>
-                        <PreprocessorDefinitions>X64_DEF;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-                    </ClCompile>
-                </ItemDefinitionGroup>
-            </Project>
-            """;
-
         [Fact]
         public void Given_ProjectWithConfigurationSpecificDefines_When_Converted_Then_GeneratorExpressionsUsedAndDuplicatesRemoved()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithDefines()));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting(
+                    "PreprocessorDefinitions",
+                    debugValue: "FOO;DEBUG;FOO;VALUE=1;%(PreprocessorDefinitions)",
+                    releaseValue: "FOO;NDEBUG;VALUE=2;%(PreprocessorDefinitions)")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
-            AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
+            // Assert
+            Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """
+                cmake_minimum_required(VERSION 4.0)
                 project(Project)
 
-
-                add_executable(Project
-                )
+                add_executable(Project)
 
                 target_compile_definitions(Project
-                    PUBLIC
+                    PRIVATE
                         FOO
-                        $<$<CONFIG:Debug>:DEBUG>
-                        $<$<CONFIG:Debug>:VALUE=1>
-                        $<$<CONFIG:Release>:NDEBUG>
-                        $<$<CONFIG:Release>:VALUE=2>
+                        "$<$<CONFIG:Debug>:DEBUG>"
+                        "$<$<CONFIG:Debug>:VALUE=1>"
+                        "$<$<CONFIG:Release>:NDEBUG>"
+                        "$<$<CONFIG:Release>:VALUE=2>"
                 )
                 """);
         }
@@ -179,29 +49,31 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectWithMultiByteCharacterSet_When_Converted_Then_MBCSDefinitionAdded()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"ProjectMBCS.vcxproj", new(CreateProjectWithMBCS()));
+            fileSystem.AddFile(@"ProjectMBCS.vcxproj", new(TestData.Project()
+                .WithProperty("Debug", "Win32", "CharacterSet", "MultiByte")
+                .WithProperty("Release", "Win32", "CharacterSet", "MultiByte")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"ProjectMBCS.vcxproj")]);
 
-            AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
+            // Assert
+            Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """
+                cmake_minimum_required(VERSION 4.0)
                 project(ProjectMBCS)
 
-
-                add_executable(ProjectMBCS
-                )
+                add_executable(ProjectMBCS)
 
                 target_compile_definitions(ProjectMBCS
-                    PUBLIC
+                    PRIVATE
                         _MBCS
-                        $<$<CONFIG:Debug>:DEBUG_DEF>
-                        $<$<CONFIG:Release>:RELEASE_DEF>
                 )
                 """);
         }
@@ -209,13 +81,18 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectWithInvalidCharacterSet_When_Converted_Then_Throws()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithInvalidCharSet()));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithProperty("Debug", "Win32", "CharacterSet", "InvalidCharSet")
+                .WithProperty("Release", "Win32", "CharacterSet", "InvalidCharSet")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act & Assert
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
                     projectFiles: [new(@"Project.vcxproj")]));
@@ -226,32 +103,35 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectWithArchitectureSpecificDefines_When_Converted_Then_UsesGeneratorExpressionsForArchitecture()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"ProjectArch.vcxproj", new(CreateProjectWithArchDefines()));
+            fileSystem.AddFile(@"ProjectArch.vcxproj", new(TestData.Project()
+                .WithConfigurations(("Debug", "Win32"), ("Debug", "x64"), ("Release", "Win32"), ("Release", "x64"))
+                .WithItemDefinitionSetting("Debug", "Win32", "ClCompile", "PreprocessorDefinitions", "X86_DEF;%(PreprocessorDefinitions)")
+                .WithItemDefinitionSetting("Debug", "x64", "ClCompile", "PreprocessorDefinitions", "X64_DEF;%(PreprocessorDefinitions)")
+                .WithItemDefinitionSetting("Release", "Win32", "ClCompile", "PreprocessorDefinitions", "X86_DEF;%(PreprocessorDefinitions)")
+                .WithItemDefinitionSetting("Release", "x64", "ClCompile", "PreprocessorDefinitions", "X64_DEF;%(PreprocessorDefinitions)")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"ProjectArch.vcxproj")]);
 
-            AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
+            // Assert
+            Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """
+                cmake_minimum_required(VERSION 4.0)
                 project(ProjectArch)
 
-
-                add_executable(ProjectArch
-                )
-
-                set_target_properties(ProjectArch PROPERTIES
-                    MSVC_RUNTIME_LIBRARY MultiThreadedDebugDLL
-                )
+                add_executable(ProjectArch)
 
                 target_compile_definitions(ProjectArch
-                    PUBLIC
-                        $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:X86_DEF>
-                        $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:X64_DEF>
+                    PRIVATE
+                        "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:X86_DEF>"
+                        "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:X64_DEF>"
                 )
                 """);
         }

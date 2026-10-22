@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Xunit;
 
@@ -8,17 +9,16 @@ public class MSBuildSolutionTests
     public class ParseSolutionFileTests
     {
         [Fact]
-        public void GivenEmptySlnSolution_ThenParsesSolutionCorrectly()
+        public void Given_EmptySlnSolution_Then_ParsesSolutionCorrectly()
         {
             // Arrange
             var fileSystem = new MockFileSystem();
-            var logger = new InMemoryLogger();
             fileSystem.AddFile(@"Empty.sln", new("""
                 Microsoft Visual Studio Solution File, Format Version 12.00
                 """));
 
             // Act
-            var solution = MSBuildSolution.ParseSolutionFile("Empty.sln", fileSystem, logger);
+            var solution = MSBuildSolution.ParseSolutionFile("Empty.sln", fileSystem, NullLogger.Instance);
 
             // Assert
             Assert.Equal(Path.GetFullPath("Empty.sln"), solution.AbsoluteSolutionPath);
@@ -27,11 +27,10 @@ public class MSBuildSolutionTests
         }
 
         [Fact]
-        public void GivenSlnSolutionWithProjects_ThenParsesSolutionCorrectly()
+        public void Given_SlnSolutionWithProjects_Then_ParsesSolutionCorrectly()
         {
             // Arrange
             var fileSystem = new MockFileSystem();
-            var logger = new InMemoryLogger();
             fileSystem.AddFile(@"Test.sln", new("""
                 Microsoft Visual Studio Solution File, Format Version 12.00
                 Project("{GUID}") = "Project1", "Project1\Project1.vcxproj", "{GUID1}"
@@ -41,7 +40,7 @@ public class MSBuildSolutionTests
                 """));
 
             // Act
-            var solution = MSBuildSolution.ParseSolutionFile("Test.sln", fileSystem, logger);
+            var solution = MSBuildSolution.ParseSolutionFile("Test.sln", fileSystem, NullLogger.Instance);
 
             // Assert
             Assert.Equal(Path.GetFullPath("Test.sln"), solution.AbsoluteSolutionPath);
@@ -52,7 +51,7 @@ public class MSBuildSolutionTests
         }
 
         [Fact]
-        public void GivenSlnSolutionWithNonVcxprojProject_ThenIgnoresItAndLogsWarning()
+        public void Given_SlnSolutionWithNonVcxprojProject_Then_IgnoresItAndLogsWarning()
         {
             // Arrange
             var fileSystem = new MockFileSystem();
@@ -75,17 +74,16 @@ public class MSBuildSolutionTests
         }
 
         [Fact]
-        public void GivenEmptySlnxSolution_ThenParsesSolutionCorrectly()
+        public void Given_EmptySlnxSolution_Then_ParsesSolutionCorrectly()
         {
             // Arrange
             var fileSystem = new MockFileSystem();
-            var logger = new InMemoryLogger();
             fileSystem.AddFile(@"Empty.slnx", new("""
                 <Solution />
                 """));
 
             // Act
-            var solution = MSBuildSolution.ParseSolutionFile("Empty.slnx", fileSystem, logger);
+            var solution = MSBuildSolution.ParseSolutionFile("Empty.slnx", fileSystem, NullLogger.Instance);
 
             // Assert
             Assert.Equal(Path.GetFullPath("Empty.slnx"), solution.AbsoluteSolutionPath);
@@ -94,11 +92,10 @@ public class MSBuildSolutionTests
         }
 
         [Fact]
-        public void GivenSlnxSolutionWithProjects_ThenParsesSolutionCorrectly()
+        public void Given_SlnxSolutionWithProjects_Then_ParsesSolutionCorrectly()
         {
             // Arrange
             var fileSystem = new MockFileSystem();
-            var logger = new InMemoryLogger();
             fileSystem.AddFile(@"Test.slnx", new("""
                 <Solution>
                   <Folder Name="/Projects/">
@@ -109,7 +106,7 @@ public class MSBuildSolutionTests
                 """));
 
             // Act
-            var solution = MSBuildSolution.ParseSolutionFile("Test.slnx", fileSystem, logger);
+            var solution = MSBuildSolution.ParseSolutionFile("Test.slnx", fileSystem, NullLogger.Instance);
 
             // Assert
             Assert.Equal(Path.GetFullPath("Test.slnx"), solution.AbsoluteSolutionPath);
@@ -120,7 +117,7 @@ public class MSBuildSolutionTests
         }
 
         [Fact]
-        public void GivenSlnxSolutionWithNonVcxprojProject_ThenIgnoresItAndLogsWarning()
+        public void Given_SlnxSolutionWithNonVcxprojProject_Then_IgnoresItAndLogsWarning()
         {
             // Arrange
             var fileSystem = new MockFileSystem();

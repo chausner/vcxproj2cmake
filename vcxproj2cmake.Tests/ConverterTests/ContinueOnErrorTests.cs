@@ -14,7 +14,10 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", "..\\Missing\\Missing.vcxproj")));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "Application")
+                .WithProjectReferences("..\\Missing\\Missing.vcxproj")
+                .Build()));
             fileSystem.AddFile("Projects.sln", new("""
                 Microsoft Visual Studio Solution File, Format Version 12.00
                 # Visual Studio Version 17
@@ -33,8 +36,7 @@ public partial class ConverterTests
                 continueOnError: true);
 
             // Assert
-            var logs = string.Join(Environment.NewLine, logger.Messages);
-            Assert.Matches("Error processing project file Missing(\\\\|/)Missing.vcxproj: ", logs);
+            Assert.Matches("Error processing project file Missing(\\\\|/)Missing.vcxproj: ", logger.AllMessageText);
 
             Assert.True(fileSystem.FileExists(Path.Combine("App", "CMakeLists.txt")), "CMakeLists.txt should be generated for App project");
             Assert.False(fileSystem.FileExists(Path.Combine("Lib", "CMakeLists.txt")), "CMakeLists.txt should not be generated for Lib project");
@@ -47,8 +49,13 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("Lib", "Lib.vcxproj"), new(TestData.CreateProject("UnsupportedConfigurationType")));
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", "..\\Lib\\Lib.vcxproj")));
+            fileSystem.AddFile(Path.Combine("Lib", "Lib.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "UnsupportedConfigurationType")
+                .Build()));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "Application")
+                .WithProjectReferences("..\\Lib\\Lib.vcxproj")
+                .Build()));
             fileSystem.AddFile("Projects.sln", new("""
                 Microsoft Visual Studio Solution File, Format Version 12.00
                 # Visual Studio Version 17
@@ -67,8 +74,7 @@ public partial class ConverterTests
                 continueOnError: true);
 
             // Assert
-            var logs = string.Join(Environment.NewLine, logger.Messages);
-            Assert.Matches("Error processing project file .*(\\\\|/)Lib(\\\\|/)Lib.vcxproj", logs);
+            Assert.Matches("Error processing project file .*(\\\\|/)Lib(\\\\|/)Lib.vcxproj", logger.AllMessageText);
 
             Assert.True(fileSystem.FileExists(Path.Combine("App", "CMakeLists.txt")), "CMakeLists.txt should be generated for App project");
             Assert.False(fileSystem.FileExists(Path.Combine("Lib", "CMakeLists.txt")), "CMakeLists.txt should not be generated for Lib project");

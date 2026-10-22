@@ -15,7 +15,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project with $pecial c#aracters.vcxproj", new(TestData.EmptyProject));
+            fileSystem.AddFile(@"Project with $pecial c#aracters.vcxproj", new(TestData.DefaultEmptyProject));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -24,26 +24,24 @@ public partial class ConverterTests
                 projectFiles: [new(@"Project with $pecial c#aracters.vcxproj")]);
 
             // Assert
-            AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """            
-                cmake_minimum_required(VERSION 3.24)
-                project("Project with $pecial c#aracters")
+            Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """            
+                cmake_minimum_required(VERSION 4.0)
+                project("Project with \$pecial c#aracters")
 
+                add_executable("Project with \$pecial c#aracters")
 
-                add_executable("Project with $pecial c#aracters"
-                )
-
-                target_compile_definitions("Project with $pecial c#aracters"
-                    PUBLIC
+                target_compile_definitions("Project with \$pecial c#aracters"
+                    PRIVATE
                         WIN32
                         _CONSOLE
                         UNICODE
                         _UNICODE
-                        $<$<CONFIG:Debug>:_DEBUG>
-                        $<$<CONFIG:Release>:NDEBUG>
+                        "$<$<CONFIG:Debug>:_DEBUG>"
+                        "$<$<CONFIG:Release>:NDEBUG>"
                 )
 
-                target_compile_options("Project with $pecial c#aracters"
-                    PUBLIC
+                target_compile_options("Project with \$pecial c#aracters"
+                    PRIVATE
                         /W3
                 )            
                 """);

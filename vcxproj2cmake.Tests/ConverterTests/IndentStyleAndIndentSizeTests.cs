@@ -16,7 +16,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"EmptyProject.vcxproj", new(TestData.EmptyProject));
+            fileSystem.AddFile(@"EmptyProject.vcxproj", new(TestData.DefaultEmptyProject));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -26,26 +26,24 @@ public partial class ConverterTests
                 indentStyle: IndentStyle.Tabs);
 
             // Assert
-            AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, $"""            
-                cmake_minimum_required(VERSION 3.24)
+            Assert.FileHasContent(@"CMakeLists.txt", fileSystem, $"""            
+                cmake_minimum_required(VERSION 4.0)
                 project(EmptyProject)
 
-
-                add_executable(EmptyProject
-                )
+                add_executable(EmptyProject)
 
                 target_compile_definitions(EmptyProject
-                {"\t"}PUBLIC
+                {"\t"}PRIVATE
                 {"\t"}{"\t"}WIN32
                 {"\t"}{"\t"}_CONSOLE
                 {"\t"}{"\t"}UNICODE
                 {"\t"}{"\t"}_UNICODE
-                {"\t"}{"\t"}$<$<CONFIG:Debug>:_DEBUG>
-                {"\t"}{"\t"}$<$<CONFIG:Release>:NDEBUG>
+                {"\t"}{"\t"}"$<$<CONFIG:Debug>:_DEBUG>"
+                {"\t"}{"\t"}"$<$<CONFIG:Release>:NDEBUG>"
                 )
 
                 target_compile_options(EmptyProject
-                {"\t"}PUBLIC
+                {"\t"}PRIVATE
                 {"\t"}{"\t"}/W3
                 )            
                 """);
@@ -58,7 +56,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"EmptyProject.vcxproj", new(TestData.EmptyProject));
+            fileSystem.AddFile(@"EmptyProject.vcxproj", new(TestData.DefaultEmptyProject));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -68,26 +66,24 @@ public partial class ConverterTests
                 indentSize: 2);
 
             // Assert
-            AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """            
-                cmake_minimum_required(VERSION 3.24)
+            Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """            
+                cmake_minimum_required(VERSION 4.0)
                 project(EmptyProject)
 
-
-                add_executable(EmptyProject
-                )
+                add_executable(EmptyProject)
 
                 target_compile_definitions(EmptyProject
-                  PUBLIC
+                  PRIVATE
                     WIN32
                     _CONSOLE
                     UNICODE
                     _UNICODE
-                    $<$<CONFIG:Debug>:_DEBUG>
-                    $<$<CONFIG:Release>:NDEBUG>
+                    "$<$<CONFIG:Debug>:_DEBUG>"
+                    "$<$<CONFIG:Release>:NDEBUG>"
                 )
 
                 target_compile_options(EmptyProject
-                  PUBLIC
+                  PRIVATE
                     /W3
                 )            
                 """);

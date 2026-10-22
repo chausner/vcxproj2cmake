@@ -15,8 +15,8 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("App", "Project1.vcxproj"), new(TestData.EmptyProject));
-            fileSystem.AddFile(Path.Combine("App", "Project2.vcxproj"), new(TestData.EmptyProject));
+            fileSystem.AddFile(Path.Combine("App", "Project1.vcxproj"), new(TestData.DefaultEmptyProject));
+            fileSystem.AddFile(Path.Combine("App", "Project2.vcxproj"), new(TestData.DefaultEmptyProject));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -35,7 +35,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile("Project.vcxproj", new(TestData.EmptyProject));
+            fileSystem.AddFile("Project.vcxproj", new(TestData.DefaultEmptyProject));
             fileSystem.AddFile("Solution.sln", new("""
                 Microsoft Visual Studio Solution File, Format Version 12.00
                 # Visual Studio Version 17

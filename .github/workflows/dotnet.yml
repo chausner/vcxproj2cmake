@@ -15,9 +15,9 @@ jobs:
         os: [windows-latest, ubuntu-latest]
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 10.0.x
     - name: Restore dependencies
@@ -25,13 +25,82 @@ jobs:
     - name: Build
       run: dotnet build --no-restore --configuration Release
     - name: Test
-      run: dotnet test --no-build --configuration Release --verbosity normal
+      env:
+        RUN_CMAKE_ASSERTIONS: 1     
+      run: dotnet test --no-build --configuration Release --coverage --coverage-output coverage.cobertura.xml --coverage-output-format cobertura
     - name: Publish
       if: runner.os == 'Windows'
-      run: dotnet publish vcxproj2cmake\vcxproj2cmake.csproj --no-build --configuration Release --runtime win-x64
+      run: dotnet publish vcxproj2cmake\vcxproj2cmake.csproj --no-build --configuration Release -p:DebugSymbols=false
     - name: Upload published output
       if: runner.os == 'Windows'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: vcxproj2cmake-win-x64
         path: .\vcxproj2cmake\bin\Release\net10.0\win-x64\publish
+    - name: Upload coverage report
+      if: runner.os == 'Windows'
+      uses: actions/upload-artifact@v7
+      with:
+        name: coverage
+        path: .\TestResults\coverage.cobertura.xml
+
+  e2e-test:
+    runs-on: windows-latest
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - name: minhook-detours
+          repo: https://github.com/m417z/minhook-detours.git
+          ref: v1.0.6
+          sln: minhook-detours.sln
+        - name: pugixml
+          repo: https://github.com/zeux/pugixml.git
+          ref: v1.16
+          project: scripts\pugixml_vs2026_static.vcxproj
+        - name: VRChatOSCOptitrack
+          repo: https://github.com/FizzyApple12/VRChatOSCOptitrack.git
+          ref: 21d44571957ccf648c7966249f50d10d690b0877
+          project: VRChatOSCOptitrack.vcxproj
+
+    steps:
+    - name: Download vcxproj2cmake artifact
+      uses: actions/download-artifact@v8
+      with:
+        name: vcxproj2cmake-win-x64
+    - name: Clone ${{ matrix.name }}
+      run: git clone --revision ${{ matrix.ref }} --depth 1 ${{ matrix.repo }} --recurse-submodules e2e-test/${{ matrix.name }}
+    - name: Run vcxproj2cmake
+      run: |
+        if ("${{ matrix.sln }}") {
+          .\vcxproj2cmake.exe --solution "e2e-test/${{ matrix.name }}/${{ matrix.sln }}"
+        } else {
+          .\vcxproj2cmake.exe --projects "e2e-test/${{ matrix.name }}/${{ matrix.project }}"
+        }
+    - name: Install latest version of CMake
+      shell: pwsh
+      run: |
+        python -m pip install --upgrade cmake
+        $cmakeBin = python -c "import cmake; print(cmake.CMAKE_BIN_DIR)"
+        $cmakeBin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+    - name: CMake configure
+      run: |
+        $cmakeSourceDir = Split-Path "${{ matrix.sln || matrix.project }}"
+        cmake -S "e2e-test/${{ matrix.name }}/$cmakeSourceDir" -B e2e-test/${{ matrix.name }}/build -A x64
+    - name: CMake build
+      run: cmake --build e2e-test/${{ matrix.name }}/build --config Release
+
+  submit-coverage:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Download coverage artifact
+      uses: actions/download-artifact@v8
+      with:
+        name: coverage
+    - name: Coveralls
+      uses: coverallsapp/github-action@v2
+      with:
+        file: ./coverage.cobertura.xml
+        format: cobertura

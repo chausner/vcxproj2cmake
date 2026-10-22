@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace vcxproj2cmake.Tests;
@@ -8,309 +9,96 @@ public partial class ConverterTests
 {
     public class ConfigDependentSettingsTests
     {
-        static string CreateProjectWithLibraryDirs(string debugDirs, string releaseDirs) => $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Debug|Win32">
-                        <Configuration>Debug</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Release|Win32">
-                        <Configuration>Release</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                </PropertyGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                    <Link>
-                        <AdditionalLibraryDirectories>{debugDirs}</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                    <Link>
-                        <AdditionalLibraryDirectories>{releaseDirs}</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-            </Project>
-            """;
-
-        static string CreateProjectWithPlatformLibraryDirs(string win32Dirs, string x64Dirs) => $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Debug|Win32">
-                        <Configuration>Debug</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Debug|x64">
-                        <Configuration>Debug</Configuration>
-                        <Platform>x64</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                </PropertyGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                    <Link>
-                        <AdditionalLibraryDirectories>{win32Dirs}</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-                    <Link>
-                        <AdditionalLibraryDirectories>{x64Dirs}</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-            </Project>
-            """;
-
-        static string CreateProjectWithCombinationSpecificLibraryDirs() => """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Debug|Win32">
-                        <Configuration>Debug</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Debug|x64">
-                        <Configuration>Debug</Configuration>
-                        <Platform>x64</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Release|Win32">
-                        <Configuration>Release</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Release|x64">
-                        <Configuration>Release</Configuration>
-                        <Platform>x64</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                </PropertyGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                    <Link>
-                        <AdditionalLibraryDirectories>DebugWin32</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-                    <Link>
-                        <AdditionalLibraryDirectories>DebugX64</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                    <Link>
-                        <AdditionalLibraryDirectories>ReleaseWin32</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-                    <Link>
-                        <AdditionalLibraryDirectories>ReleaseX64</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-            </Project>
-            """;
-
-        static string CreateProjectWithUnsupportedConfigurationSpecificLibraryDirs() => """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Debug|Win32">
-                        <Configuration>Debug</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Release|Win32">
-                        <Configuration>Release</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="MinSizeRel|Win32">
-                        <Configuration>MinSizeRel</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                </PropertyGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                    <Link>
-                        <AdditionalLibraryDirectories>SupportedLib</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                    <Link>
-                        <AdditionalLibraryDirectories>SupportedLib</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|Win32'">
-                    <Link>
-                        <AdditionalLibraryDirectories>UnsupportedLib</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-            </Project>
-            """;
-
-        static string CreateProjectWithUnconditionalLibraryDirs(string dirs) => $"""
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Debug|Win32">
-                        <Configuration>Debug</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Release|Win32">
-                        <Configuration>Release</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                </PropertyGroup>
-                <ItemDefinitionGroup>
-                    <Link>
-                        <AdditionalLibraryDirectories>{dirs}</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-            </Project>
-            """;
-
-        static string CreateProjectWithOverwrittenLibraryDirs() => """
-            <?xml version="1.0" encoding="utf-8"?>
-            <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                <ItemGroup Label="ProjectConfigurations">
-                    <ProjectConfiguration Include="Debug|Win32">
-                        <Configuration>Debug</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                    <ProjectConfiguration Include="Release|Win32">
-                        <Configuration>Release</Configuration>
-                        <Platform>Win32</Platform>
-                    </ProjectConfiguration>
-                </ItemGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                    <UseDebugLibraries>true</UseDebugLibraries>
-                </PropertyGroup>
-                <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                    <UseDebugLibraries>false</UseDebugLibraries>
-                </PropertyGroup>
-                <ItemDefinitionGroup>
-                    <Link>
-                        <AdditionalLibraryDirectories>Libs1</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                    <Link>
-                        <AdditionalLibraryDirectories>DebugLib1</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                    <Link>
-                        <AdditionalLibraryDirectories>ReleaseLib1</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup>
-                    <Link>
-                        <AdditionalLibraryDirectories>Libs2</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-                <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                    <Link>
-                        <AdditionalLibraryDirectories>DebugLib2</AdditionalLibraryDirectories>
-                    </Link>
-                </ItemDefinitionGroup>
-            </Project>
-            """;
-
         [Fact]
         public void Given_LinkerPathsWithoutCondition_When_Converted_Then_TargetLinkDirectoriesAdded()
         {
+            Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Absolute Windows paths are currently broken on non-Windows platforms");
+
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithUnconditionalLibraryDirs("C:/Lib")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("AdditionalLibraryDirectories", "C:/Lib")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""
                 target_link_directories(Project
-                    PUBLIC
+                    PRIVATE
                         C:/Lib
                 )
-                """.Trim(), cmake);
+                """, cmake);
         }
 
         [Fact]
         public void Given_LinkerPathsSameForAllConfigs_When_Converted_Then_TargetLinkDirectoriesAdded()
         {
+            Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Absolute Windows paths are currently broken on non-Windows platforms");
+
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithLibraryDirs("C:/Lib/", "C:/Lib/")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("AdditionalLibraryDirectories", debugValue: "C:/Lib/", releaseValue: "C:/Lib/")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""
                 target_link_directories(Project
-                    PUBLIC
+                    PRIVATE
                         C:/Lib
                 )
-                """.Trim(), cmake);
+                """, cmake);
         }
 
         [Fact]
         public void Given_LinkerPathsWithUnsupportedConfigSpecificValues_When_Converted_Then_UnsupportedConfigurationIgnored()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithUnsupportedConfigurationSpecificLibraryDirs()));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithConfigurations(("Debug", "Win32"), ("Release", "Win32"), ("MinSizeRel", "Win32"))
+                .WithItemDefinitionSetting("Debug", "Win32", "Link", "AdditionalLibraryDirectories", "SupportedLib")
+                .WithItemDefinitionSetting("Release", "Win32", "Link", "AdditionalLibraryDirectories", "SupportedLib")
+                .WithItemDefinitionSetting("MinSizeRel", "Win32", "Link", "AdditionalLibraryDirectories", "UnsupportedLib")
+                .Build()));
 
             var logger = new InMemoryLogger();
             var converter = new Converter(fileSystem, logger);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""
                 target_link_directories(Project
-                    PUBLIC
-                        SupportedLib
+                    PRIVATE
+                        "${CMAKE_CURRENT_SOURCE_DIR}/SupportedLib"
                 )
-                """.Trim(), cmake);
+                """, cmake);
             Assert.DoesNotContain("$<$<CONFIG:Debug>:", cmake);
             Assert.DoesNotContain("$<$<CONFIG:Release>:", cmake);
             Assert.Contains("Skipping unsupported project configuration: MinSizeRel|Win32", logger.AllMessageText);
@@ -319,64 +107,88 @@ public partial class ConverterTests
         [Fact]
         public void Given_LinkerPathsDifferentPerConfig_When_Converted_Then_GeneratorExpressionsUsed()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithLibraryDirs("DebugLibs", "ReleaseLibs")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("AdditionalLibraryDirectories", debugValue: "DebugLibs", releaseValue: "ReleaseLibs")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""
                 target_link_directories(Project
-                    PUBLIC
-                        $<$<CONFIG:Debug>:DebugLibs>
-                        $<$<CONFIG:Release>:ReleaseLibs>
+                    PRIVATE
+                        "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/DebugLibs>"
+                        "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/ReleaseLibs>"
                 )
-                """.Trim(), cmake);
+                """, cmake);
         }
 
         [Fact]
         public void Given_LinkerPathsDifferentPerPlatform_When_Converted_Then_GeneratorExpressionsUseArchitecture()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithPlatformLibraryDirs("Win32Lib", "X64Lib")));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithConfigurations(("Debug", "Win32"), ("Debug", "x64"))
+                .WithItemDefinitionSetting("Debug", "Win32", "Link", "AdditionalLibraryDirectories", "Win32Lib")
+                .WithItemDefinitionSetting("Debug", "x64", "Link", "AdditionalLibraryDirectories", "X64Lib")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""
                 target_link_directories(Project
-                    PUBLIC
-                        $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:Win32Lib>
-                        $<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:X64Lib>
+                    PRIVATE
+                        "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:${CMAKE_CURRENT_SOURCE_DIR}/Win32Lib>"
+                        "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:${CMAKE_CURRENT_SOURCE_DIR}/X64Lib>"
                 )
-                """.Trim(), cmake);
+                """, cmake);
         }
 
         [Fact]
         public void Given_LinkerPathsDifferentPerConfigAndPlatform_When_Converted_Then_SkippedWithWarning()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithCombinationSpecificLibraryDirs()));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithConfigurations(("Debug", "Win32"), ("Debug", "x64"), ("Release", "Win32"), ("Release", "x64"))
+                .WithItemDefinitionSetting("Debug", "Win32", "Link", "AdditionalLibraryDirectories", "DebugWin32")
+                .WithItemDefinitionSetting("Debug", "x64", "Link", "AdditionalLibraryDirectories", "DebugX64")
+                .WithItemDefinitionSetting("Release", "Win32", "Link", "AdditionalLibraryDirectories", "ReleaseWin32")
+                .WithItemDefinitionSetting("Release", "x64", "Link", "AdditionalLibraryDirectories", "ReleaseX64")
+                .Build()));
 
             var logger = new InMemoryLogger();
             var converter = new Converter(fileSystem, logger);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.DoesNotContain("target_link_directories(Project", cmake);
             Assert.Contains("ignored because they are specific to certain build configurations", logger.AllMessageText);
         }
@@ -384,24 +196,56 @@ public partial class ConverterTests
         [Fact]
         public void Given_LinkerPathsOverwrittenMultipleTimes_When_Converted_Then_LastValueUsed()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new(CreateProjectWithOverwrittenLibraryDirs()));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithRawXml("""
+                    <ItemDefinitionGroup>
+                        <Link>
+                            <AdditionalLibraryDirectories>Libs1</AdditionalLibraryDirectories>
+                        </Link>
+                    </ItemDefinitionGroup>
+                    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+                        <Link>
+                            <AdditionalLibraryDirectories>DebugLib1</AdditionalLibraryDirectories>
+                        </Link>
+                    </ItemDefinitionGroup>
+                    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+                        <Link>
+                            <AdditionalLibraryDirectories>ReleaseLib1</AdditionalLibraryDirectories>
+                        </Link>
+                    </ItemDefinitionGroup>
+                    <ItemDefinitionGroup>
+                        <Link>
+                            <AdditionalLibraryDirectories>Libs2</AdditionalLibraryDirectories>
+                        </Link>
+                    </ItemDefinitionGroup>
+                    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+                        <Link>
+                            <AdditionalLibraryDirectories>DebugLib2</AdditionalLibraryDirectories>
+                        </Link>
+                    </ItemDefinitionGroup>
+                    """)
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains("""
                 target_link_directories(Project
-                    PUBLIC
-                        $<$<CONFIG:Debug>:DebugLib2>
-                        $<$<CONFIG:Release>:Libs2>
+                    PRIVATE
+                        "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/DebugLib2>"
+                        "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/Libs2>"
                 )
-                """.Trim(), cmake);
+                """, cmake);
             Assert.DoesNotContain("DebugLib1", cmake);
             Assert.DoesNotContain("Libs1", cmake);
             Assert.DoesNotContain("ReleaseLib1", cmake);

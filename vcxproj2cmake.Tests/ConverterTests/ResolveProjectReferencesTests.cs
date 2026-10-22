@@ -15,7 +15,10 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", "..\\Missing\\Missing.vcxproj")));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "Application")
+                .WithProjectReferences("..\\Missing\\Missing.vcxproj")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -27,14 +30,48 @@ public partial class ConverterTests
         }
 
         [Fact]
+        public void Given_ProjectReferencesNonVcxprojProject_When_Converted_Then_IgnoresReferenceAndLogsWarning()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "Application")
+                .WithProjectReferences("..\\Managed\\Managed.csproj")
+                .Build()));
+
+            var logger = new InMemoryLogger();
+            var converter = new Converter(fileSystem, logger);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(Path.Combine("App", "App.vcxproj"))]);
+
+            // Assert
+            Assert.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
+                cmake_minimum_required(VERSION 4.0)
+                project(App)
+
+                add_executable(App)
+                """);
+            Assert.Matches("Ignoring non-vcxproj project reference ..(\\\\|/)Managed(\\\\|/)Managed.csproj", logger.AllMessageText);
+        }
+
+        [Fact]
         public void Given_ProjectReferencesAnotherProjectWithRelativePath_When_Converted_Then_MatchesExpectedOutput()
         {
             // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("Lib", "Lib.vcxproj"), new(TestData.CreateProject("StaticLibrary"))); 
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", "..\\Lib\\Lib.vcxproj")));
+            fileSystem.AddFile(Path.Combine("Lib", "Lib.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "StaticLibrary")
+                .Build()));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "Application")
+                .WithProjectReferences("..\\Lib\\Lib.vcxproj")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -43,25 +80,21 @@ public partial class ConverterTests
                 projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Lib", "Lib.vcxproj"))]);
 
             // Assert
-            AssertEx.FileHasContent(Path.Combine("Lib", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
+            Assert.FileHasContent(Path.Combine("Lib", "CMakeLists.txt"), fileSystem, """
+                cmake_minimum_required(VERSION 4.0)
                 project(Lib)
 
-
-                add_library(Lib STATIC
-                )
+                add_library(Lib STATIC)
                 """);
 
-            AssertEx.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
+            Assert.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
+                cmake_minimum_required(VERSION 4.0)
                 project(App)
 
-
-                add_executable(App
-                )
+                add_executable(App)
 
                 target_link_libraries(App
-                    PUBLIC
+                    PRIVATE
                         Lib
                 )
                 """);
@@ -75,8 +108,13 @@ public partial class ConverterTests
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
             var absoluteLibPath = Path.GetFullPath(Path.Combine("Lib", "Lib.vcxproj"));
-            fileSystem.AddFile(Path.Combine("Lib", "Lib.vcxproj"), new(TestData.CreateProject("StaticLibrary")));
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.CreateProject("Application", absoluteLibPath)));
+            fileSystem.AddFile(Path.Combine("Lib", "Lib.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "StaticLibrary")
+                .Build()));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.Project()
+                .WithProperty("ConfigurationType", "Application")
+                .WithProjectReferences(absoluteLibPath)
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -85,25 +123,21 @@ public partial class ConverterTests
                 projectFiles: [new(Path.Combine("App", "App.vcxproj")), new(Path.Combine("Lib", "Lib.vcxproj"))]);
 
             // Assert
-            AssertEx.FileHasContent(Path.Combine("Lib", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
+            Assert.FileHasContent(Path.Combine("Lib", "CMakeLists.txt"), fileSystem, """
+                cmake_minimum_required(VERSION 4.0)
                 project(Lib)
 
-
-                add_library(Lib STATIC
-                )
+                add_library(Lib STATIC)
                 """);
 
-            AssertEx.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
+            Assert.FileHasContent(Path.Combine("App", "CMakeLists.txt"), fileSystem, """
+                cmake_minimum_required(VERSION 4.0)
                 project(App)
 
-
-                add_executable(App
-                )
+                add_executable(App)
 
                 target_link_libraries(App
-                    PUBLIC
+                    PRIVATE
                         Lib
                 )
                 """);

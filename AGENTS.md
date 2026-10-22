@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `vcxproj2cmake/` — .NET 9 CLI source. Templates in `vcxproj2cmake/Resources/Templates/*.scriban`; Conan data in `vcxproj2cmake/Resources/conan-packages.csv`.
+- `vcxproj2cmake/` — .NET 10 CLI source. Templates in `vcxproj2cmake/Resources/Templates/*.scriban`; Conan data in `vcxproj2cmake/Resources/conan-packages.csv`.
 - `vcxproj2cmake.Tests/` — xUnit tests (unit and behavior). Subfolders mirror source (e.g., `ConverterTests/`).
 - `ExampleSolution/` — small demo solution for manual testing.
 - `Scripts/` — maintenance scripts (e.g., `GetConanPackageInfo.ps1`).
@@ -12,9 +12,9 @@
 - Build: `dotnet build -c Release`
 - Test: `dotnet test -c Release`
 - Run locally (example):
-  - `dotnet run --project vcxproj2cmake -- --solution ExampleSolution/ExampleSolution.sln`
+  - `dotnet run --project vcxproj2cmake -- --solution ExampleSolution/ExampleSolution.slnx`
   - Use `--projects <path1> <path2>` for multiple `.vcxproj` files.
-- Publish (Windows artifact): `dotnet publish vcxproj2cmake/vcxproj2cmake.csproj -c Release -r win-x64`
+- Publish (Windows artifact): `dotnet publish vcxproj2cmake/vcxproj2cmake.csproj -c Release`
 - Preview output without writing files: add `--dry-run`.
 
 ## Architecture Overview
@@ -36,7 +36,13 @@
 - Framework: xUnit (`[Fact]`, `[Theory]`).
 - Location: under `vcxproj2cmake.Tests/`; mirror source folders when useful.
 - Naming: `Given_<Arrange>_When_<Act>_Then_<Assert>`.
+- Mark sections in tests with comments (`// Arrange`, `// Act`, `// Assert`). Use `// Act & Assert` if steps are intertwined.
+  Leave out sections if not applicable. Stay consistent with existing tests.
 - Run: `dotnet test -c Release`.
+- Include CMake-backed assertions by setting environment variable `RUN_CMAKE_ASSERTIONS=1`. This is also what CI uses.
+- Use `CMakeAssert.ConfiguresAndBuildsWithCMake(...)` for tests that must prove generated CMake configures and builds.
+  Gate these checks with `TestOptions.RunCMakeAssertions` so regular local runs stay fast and do not require CMake, generators, or toolchains.
+- `MockFileSystem.CopyCurrentDirectoryToDisk(...)` is intended for debugging generated test output. Only add it temporarily to tests, if necessary, but do not commit it.
 - Keep tests deterministic; use `MockFileSystem` from IO.Abstractions for file I/O.
 
 ## Commit & Pull Request Guidelines

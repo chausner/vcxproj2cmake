@@ -19,6 +19,11 @@ public class CustomConsoleFormatter : ConsoleFormatter
 
         var (backgroundColor, foregroundColor) = colorsEnabled ? GetColorsForLogLevel(logEntry.LogLevel) : (null, null);
 
+        scopeProvider?.ForEachScope((scope, state) =>
+        {
+            state.WriteColored($"[{scope}] ", backgroundColor, foregroundColor);
+        }, textWriter);
+
         switch (logEntry.LogLevel)
         {
             case LogLevel.Warning:

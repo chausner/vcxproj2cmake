@@ -8,50 +8,21 @@ public partial class ConverterTests
 {
     public class ProjectReferenceOrderTests
     {
-        static string CreateProject(string configurationType = "Application", params string[] projectReferences)
-        {
-            var references = projectReferences.Length > 0
-                ? "<ItemGroup>\n" + string.Join("\n",
-                    projectReferences.Select(r => $"    <ProjectReference Include=\"{r}\" />")) +
-                  "\n</ItemGroup>"
-                : string.Empty;
-
-            return $"""
-                <?xml version="1.0" encoding="utf-8"?>
-                <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                    <ItemGroup Label="ProjectConfigurations">
-                        <ProjectConfiguration Include="Debug|Win32">
-                            <Configuration>Debug</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                        <ProjectConfiguration Include="Release|Win32">
-                            <Configuration>Release</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                    </ItemGroup>
-                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                        <UseDebugLibraries>true</UseDebugLibraries>
-                    </PropertyGroup>
-                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                        <UseDebugLibraries>false</UseDebugLibraries>
-                    </PropertyGroup>
-                    <PropertyGroup>
-                        <ConfigurationType>{configurationType}</ConfigurationType>
-                    </PropertyGroup>
-                    {references}
-                </Project>
-                """;
-        }
-
         [Fact]
         public void Given_SolutionWithChainDependencies_When_Converted_Then_CMakeListsProjectsAreOrdered()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("LibC", "LibC.vcxproj"), new(CreateProject("StaticLibrary")));
-            fileSystem.AddFile(Path.Combine("LibB", "LibB.vcxproj"), new(CreateProject("StaticLibrary", "..\\LibC\\LibC.vcxproj")));
-            fileSystem.AddFile(Path.Combine("LibA", "LibA.vcxproj"), new(CreateProject("StaticLibrary", "..\\LibB\\LibB.vcxproj")));
+            fileSystem.AddFile(Path.Combine("LibC", "LibC.vcxproj"), new(TestData.Project()
+                .Build()));
+            fileSystem.AddFile(Path.Combine("LibB", "LibB.vcxproj"), new(TestData.Project()
+                .WithProjectReferences("..\\LibC\\LibC.vcxproj")
+                .Build()));
+            fileSystem.AddFile(Path.Combine("LibA", "LibA.vcxproj"), new(TestData.Project()
+                .WithProjectReferences("..\\LibB\\LibB.vcxproj")
+                .Build()));
 
             fileSystem.AddFile("Solution.sln", new("""
                 Microsoft Visual Studio Solution File, Format Version 12.00
@@ -65,10 +36,12 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(solutionFile: new("Solution.sln"));
 
-            AssertEx.FileHasContent("CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
+            // Assert
+            Assert.FileHasContent("CMakeLists.txt", fileSystem, """
+                cmake_minimum_required(VERSION 4.0)
                 project(Solution)
 
                 add_subdirectory(LibC)
@@ -80,13 +53,21 @@ public partial class ConverterTests
         [Fact]
         public void Given_SolutionWithBranchingDependencies_When_Converted_Then_CMakeListsProjectsAreOrdered()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("LibC", "LibC.vcxproj"), new(CreateProject("StaticLibrary")));
-            fileSystem.AddFile(Path.Combine("LibB", "LibB.vcxproj"), new(CreateProject("StaticLibrary", "..\\LibC\\LibC.vcxproj")));
-            fileSystem.AddFile(Path.Combine("LibA", "LibA.vcxproj"), new(CreateProject("StaticLibrary", "..\\LibC\\LibC.vcxproj")));
-            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(CreateProject("Application", "..\\LibA\\LibA.vcxproj", "..\\LibB\\LibB.vcxproj")));
+            fileSystem.AddFile(Path.Combine("LibC", "LibC.vcxproj"), new(TestData.Project()
+                .Build()));
+            fileSystem.AddFile(Path.Combine("LibB", "LibB.vcxproj"), new(TestData.Project()
+                .WithProjectReferences("..\\LibC\\LibC.vcxproj")
+                .Build()));
+            fileSystem.AddFile(Path.Combine("LibA", "LibA.vcxproj"), new(TestData.Project()
+                .WithProjectReferences("..\\LibC\\LibC.vcxproj")
+                .Build()));
+            fileSystem.AddFile(Path.Combine("App", "App.vcxproj"), new(TestData.Project()
+                .WithProjectReferences("..\\LibA\\LibA.vcxproj", "..\\LibB\\LibB.vcxproj")
+                .Build()));
 
             fileSystem.AddFile("Branching.sln", new("""
                 Microsoft Visual Studio Solution File, Format Version 12.00
@@ -102,10 +83,12 @@ public partial class ConverterTests
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(solutionFile: new("Branching.sln"));
 
-            AssertEx.FileHasContent("CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
+            // Assert
+            Assert.FileHasContent("CMakeLists.txt", fileSystem, """
+                cmake_minimum_required(VERSION 4.0)
                 project(Branching)
 
                 add_subdirectory(LibC)

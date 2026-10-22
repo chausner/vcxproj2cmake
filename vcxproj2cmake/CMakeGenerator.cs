@@ -1,24 +1,16 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using Scriban;
 using Scriban.Runtime;
 using System.IO.Abstractions;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace vcxproj2cmake;
 
-class CMakeGenerator
+class CMakeGenerator(IFileSystem fileSystem, ILogger logger)
 {
-    readonly IFileSystem fileSystem;
-    readonly ILogger logger;
-
-    public CMakeGenerator(IFileSystem fileSystem, ILogger logger)
-    {
-        this.fileSystem = fileSystem;
-        this.logger = logger;
-    }
-
     public void Generate(CMakeSolution? solution, IEnumerable<CMakeProject> projects, CMakeGeneratorSettings settings)
     {
         var projectCMakeListsTemplate = LoadTemplate("vcxproj2cmake.Resources.Templates.Project-CMakeLists.txt.scriban");
@@ -48,6 +40,14 @@ class CMakeGenerator
             throw new CatastrophicFailureException($"The solution file and at least one project file are located in the same directory. This is not supported.");
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Scriban reflection import is limited to known template model types whose public properties are preserved explicitly for trimming and Native AOT.")]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeProject))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeSolution))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeProjectReference))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeFindPackage))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeConfigDependentSetting))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeConfigDependentMultiSetting))]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(CMakeExpression))]
     void GenerateCMake(object model, IEnumerable<CMakeProject> allProjects, string destinationPath, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
     {
         logger.LogInformation($"Generating {destinationPath}");
@@ -55,18 +55,25 @@ class CMakeGenerator
         var scriptObject = new ScriptObject();
         scriptObject.Import(model);
         scriptObject.Import(settings);
-        scriptObject.Import("fail", new Action<string>(error => throw new CatastrophicFailureException(error)));
-        scriptObject.Import("literal", ToCMakeLiteral);
-        scriptObject.Import("unquoted_literal", (string s) => ToCMakeLiteral(s, unquoted: true));
-        scriptObject.Import("normalize_path", PathUtils.NormalizePath);
-        scriptObject.Import("order_project_references_by_dependencies", (IEnumerable<CMakeProjectReference> pr) => ProjectDependencyUtils.OrderProjectReferencesByDependencies(pr, allProjects, logger));
-        scriptObject.Import("get_directory_name", new Func<string?, string?>(Path.GetDirectoryName));
-        scriptObject.Import("get_relative_path", new Func<string, string, string?>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));
-        scriptObject.Import("prepend_relative_paths_with_cmake_current_source_dir", PrependRelativePathsWithCMakeCurrentSourceDir);
+        scriptObject.Add("fail", DelegateCustomFunction.Create<string>(error => throw new CatastrophicFailureException(error)));
+        scriptObject.Add("literal", DelegateCustomFunction.CreateFunc<string, string>(s => ToCMakeLiteral(s)));
+        scriptObject.Add("unquoted_literal", DelegateCustomFunction.CreateFunc<string, string>(s => ToCMakeLiteral(s, unquoted: true)));
+        scriptObject.Add("normalize_path", DelegateCustomFunction.CreateFunc<string, string>(PathUtils.NormalizePath));
+        scriptObject.Add("get_config_expression", DelegateCustomFunction.CreateFunc<Config, CMakeExpression, CMakeExpression>((config, value) => config.Apply(value)));
+        scriptObject.Add("order_project_references_by_dependencies", DelegateCustomFunction.CreateFunc<IEnumerable<CMakeProjectReference>, CMakeProjectReference[]>(pr => ProjectDependencyUtils.OrderProjectReferencesByDependencies(pr, allProjects, logger)));
+        scriptObject.Add("get_directory_name", DelegateCustomFunction.CreateFunc<string?, string?>(Path.GetDirectoryName));
+        scriptObject.Add("get_relative_path", DelegateCustomFunction.CreateFunc<string, string, string>((path, relativeTo) => Path.GetRelativePath(relativeTo, path)));
+        scriptObject.Add("prepend_relative_paths_with_cmake_current_source_dir", DelegateCustomFunction.CreateFunc<CMakeExpression, CMakeExpression>(PrependRelativePathsWithCMakeCurrentSourceDir));
 
         var context = new TemplateContext();
+        context.LoopLimit = 0;
+        context.RecursiveLimit = 0;
         context.PushGlobal(scriptObject);
+
         var result = cmakeListsTemplate.Render(context);
+
+        if (model is CMakeProject project)
+            result = result.Replace(Config.CompilerArchitectureIdVariablePlaceholder, GetCompilerArchitectureIdVariable(project), StringComparison.Ordinal);
 
         if (settings.IndentStyle != IndentStyle.Spaces || settings.IndentSize != 4)
             result = ApplyIndentation(result, settings.IndentStyle, settings.IndentSize);
@@ -79,11 +86,24 @@ class CMakeGenerator
         }
         else
         {
+            if (fileSystem.File.Exists(destinationPath))
+                logger.LogWarning($"File {destinationPath} already exists and will be overwritten.");
+
             fileSystem.File.WriteAllText(destinationPath, result);
         }
     }
 
-    private static string ApplyIndentation(string text, IndentStyle indentStyle, int indentSize)
+    static string GetCompilerArchitectureIdVariable(CMakeProject project)
+    {
+        if (project.Languages.Contains("CXX"))
+            return "CMAKE_CXX_COMPILER_ARCHITECTURE_ID";
+        if (project.Languages.Contains("C"))
+            return "CMAKE_C_COMPILER_ARCHITECTURE_ID";
+
+        return "CMAKE_CXX_COMPILER_ARCHITECTURE_ID";
+    }
+
+    static string ApplyIndentation(string text, IndentStyle indentStyle, int indentSize)
     {
         return Regex.Replace(text, @"^((    )+)", match =>
         {
@@ -101,12 +121,16 @@ class CMakeGenerator
     {
         string cmakeListsPath = Path.Combine(Path.GetDirectoryName(project.AbsoluteProjectPath)!, "CMakeLists.txt");
 
+        using var scope = logger.BeginScope(Path.GetFileName(project.AbsoluteProjectPath));
+
         GenerateCMake(project, allProjects, cmakeListsPath, cmakeListsTemplate, settings);
     }
 
     void GenerateCMakeForSolution(CMakeSolution solution, IEnumerable<CMakeProject> allProjects, Template cmakeListsTemplate, CMakeGeneratorSettings settings)
     {
         string cmakeListsPath = Path.Combine(Path.GetDirectoryName(solution.AbsoluteSolutionPath)!, "CMakeLists.txt");
+
+        using var scope = logger.BeginScope(Path.GetFileName(solution.AbsoluteSolutionPath));
 
         GenerateCMake(solution, allProjects, cmakeListsPath, cmakeListsTemplate, settings);
     }
@@ -147,10 +171,9 @@ class CMakeGenerator
                 '\n' => "\\n",  // newline
                 '\r' => "\\r",  // carriage return
                 '\t' => "\\t",  // tab
-                // commented out for now since it conflicts with TranslateMSBuildMacros
-                //'$' => "\\$",   // prevent ${VAR} expansion
+                '$' => "\\$",   // prevent ${VAR} expansion
                 _ => c.ToString()
-            });  
+            });
 
         if (!unquoted)
             sb.Append('"');
@@ -158,18 +181,15 @@ class CMakeGenerator
         return sb.ToString();
     }
 
-    static string PrependRelativePathsWithCMakeCurrentSourceDir(string normalizedPath)
+    static CMakeExpression PrependRelativePathsWithCMakeCurrentSourceDir(CMakeExpression normalizedPath)
     {
-        var isAbsolutePath = Path.IsPathRooted(normalizedPath);
-
-        // if a path starts with a CMake variable, we just assume that the variable resolves to an absolute path
-        isAbsolutePath |= normalizedPath.StartsWith("${");
-
-        if (!isAbsolutePath)
-            if (normalizedPath == ".")
-                return "${CMAKE_CURRENT_SOURCE_DIR}";
+        var path = normalizedPath.Value;
+        
+        if (!PathUtils.IsCMakePathAbsolute(path))
+            if (path == ".")
+                return CMakeExpression.Expression("${CMAKE_CURRENT_SOURCE_DIR}");
             else
-                return "${CMAKE_CURRENT_SOURCE_DIR}/" + normalizedPath;
+                return CMakeExpression.Expression("${CMAKE_CURRENT_SOURCE_DIR}/" + path);
         else
             return normalizedPath;
     }

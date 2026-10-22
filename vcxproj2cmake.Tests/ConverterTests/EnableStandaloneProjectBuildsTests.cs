@@ -15,8 +15,13 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Lib/Lib.vcxproj", new(TestData.CreateProject("StaticLibrary")));
-            fileSystem.AddFile(@"App/App.vcxproj", new(TestData.CreateProject("Application", "..\\Lib\\Lib.vcxproj")));
+            fileSystem.AddFile(@"Lib/Lib.vcxproj", new(TestData.Project()
+                .WithProperty("ConfigurationType", "StaticLibrary")
+                .Build()));
+            fileSystem.AddFile(@"App/App.vcxproj", new(TestData.Project()
+                .WithProperty("ConfigurationType", "Application")
+                .WithProjectReferences("..\\Lib\\Lib.vcxproj")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -26,20 +31,18 @@ public partial class ConverterTests
                 enableStandaloneProjectBuilds: true);
 
             // Assert
-            AssertEx.FileHasContent(@"App/CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
+            Assert.FileHasContent(@"App/CMakeLists.txt", fileSystem, """
+                cmake_minimum_required(VERSION 4.0)
                 project(App)
 
                 if(NOT TARGET Lib)
                     add_subdirectory(../Lib "${CMAKE_BINARY_DIR}/Lib")
                 endif()
 
-
-                add_executable(App
-                )
+                add_executable(App)
 
                 target_link_libraries(App
-                    PUBLIC
+                    PRIVATE
                         Lib
                 )
                 """);

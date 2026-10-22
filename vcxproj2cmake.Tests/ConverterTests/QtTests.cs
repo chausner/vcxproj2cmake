@@ -8,46 +8,20 @@ public partial class ConverterTests
 {
     public class QtTests
     {
-        static string CreateQtProject(string modules, bool moc = false, bool uic = false, bool rcc = false) => $"""
-        <?xml version="1.0" encoding="utf-8"?>
-        <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-            <ItemGroup Label="ProjectConfigurations">
-                <ProjectConfiguration Include="Debug|Win32">
-                    <Configuration>Debug</Configuration>
-                    <Platform>Win32</Platform>
-                </ProjectConfiguration>
-                <ProjectConfiguration Include="Release|Win32">
-                    <Configuration>Release</Configuration>
-                    <Platform>Win32</Platform>
-                </ProjectConfiguration>
-            </ItemGroup>
-            <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                <UseDebugLibraries>true</UseDebugLibraries>
-            </PropertyGroup>
-            <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                <UseDebugLibraries>false</UseDebugLibraries>
-            </PropertyGroup>
-            <PropertyGroup>
-                <QtModules>{modules}</QtModules>
-            </PropertyGroup>
-            <ItemGroup>
-                {(moc ? "<QtMoc Include=\"moc.h\" />" : string.Empty)}
-                {(uic ? "<QtUic Include=\"form.ui\" />" : string.Empty)}
-                {(rcc ? "<QtRcc Include=\"res.qrc\" />" : string.Empty)}
-            </ItemGroup>
-        </Project>
-        """;
-
         [Fact]
         public void Given_QtProjectWithoutQtVersion_When_Converted_Then_Throws()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"QtProject.vcxproj", new(CreateQtProject("core", true, true, true)));
+            fileSystem.AddFile(@"QtProject.vcxproj", new(TestData.Project()
+                .WithProperty("QtModules", "core")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act & Assert
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
                     projectFiles: [new(@"QtProject.vcxproj")]));
@@ -58,13 +32,17 @@ public partial class ConverterTests
         [Fact]
         public void Given_QtProjectWithUnknownModule_When_Converted_Then_Throws()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"QtProject.vcxproj", new(CreateQtProject("doesnotexist")));
+            fileSystem.AddFile(@"QtProject.vcxproj", new(TestData.Project()
+                .WithProperty("QtModules", "doesnotexist")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act & Assert
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
                     projectFiles: [new(@"QtProject.vcxproj")],
@@ -76,40 +54,51 @@ public partial class ConverterTests
         [Fact]
         public void Given_QtProjectWithQtVersionAndModules_When_Converted_Then_MatchesExpectedOutput()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"QtProject.vcxproj", new(CreateQtProject("core;widgets", true, true, true)));
+            fileSystem.AddFile(@"QtProject.vcxproj", new(TestData.Project()
+                .WithProperty("QtModules", "core;widgets")
+                .WithItems("QtMoc", "moc.h")
+                .WithItems("QtUic", "form.ui")
+                .WithItems("QtRcc", "res.qrc")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"QtProject.vcxproj")],
                 qtVersion: 6);
 
-            AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-            cmake_minimum_required(VERSION 3.24)
-            project(QtProject)
+            // Assert
+            Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """
+                cmake_minimum_required(VERSION 4.0)
+                project(QtProject)
 
-            find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
+                find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 
-            add_executable(QtProject
-                form.ui
-                res.qrc
-            )
+                add_executable(QtProject)
 
-            set_target_properties(QtProject PROPERTIES
-                AUTOMOC ON
-                AUTOUIC ON
-                AUTORCC ON
-            )
+                target_sources(QtProject
+                    PRIVATE
+                        form.ui
+                        res.qrc
+                )
 
-            target_link_libraries(QtProject
-                PUBLIC
-                    Qt6::Core
-                    Qt6::Widgets
-            )
-            """);
+                set_target_properties(QtProject PROPERTIES
+                    AUTOMOC ON
+                    AUTOUIC ON
+                    AUTORCC ON
+                )
+
+                target_link_libraries(QtProject
+                    PRIVATE
+                        Qt6::Core
+                        Qt6::Widgets
+                )
+                """);
         }
     }
 }

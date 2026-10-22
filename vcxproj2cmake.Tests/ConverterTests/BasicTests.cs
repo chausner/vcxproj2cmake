@@ -15,7 +15,7 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"EmptyProject.vcxproj", new(TestData.EmptyProject));
+            fileSystem.AddFile(@"EmptyProject.vcxproj", new(TestData.DefaultEmptyProject));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
@@ -24,26 +24,24 @@ public partial class ConverterTests
                 projectFiles: [new(@"EmptyProject.vcxproj")]);
 
             // Assert
-            AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """            
-                cmake_minimum_required(VERSION 3.24)
+            Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """            
+                cmake_minimum_required(VERSION 4.0)
                 project(EmptyProject)
 
-
-                add_executable(EmptyProject
-                )
+                add_executable(EmptyProject)
 
                 target_compile_definitions(EmptyProject
-                    PUBLIC
+                    PRIVATE
                         WIN32
                         _CONSOLE
                         UNICODE
                         _UNICODE
-                        $<$<CONFIG:Debug>:_DEBUG>
-                        $<$<CONFIG:Release>:NDEBUG>
+                        "$<$<CONFIG:Debug>:_DEBUG>"
+                        "$<$<CONFIG:Release>:NDEBUG>"
                 )
 
                 target_compile_options(EmptyProject
-                    PUBLIC
+                    PRIVATE
                         /W3
                 )            
                 """);
@@ -68,6 +66,7 @@ public partial class ConverterTests
             var ex = Assert.Throws<CatastrophicFailureException>(() =>
                 converter.Convert(
                     solutionFile: new(@"EmptySolution.sln")));
+
             Assert.Contains("No .vcxproj files found in solution", ex.Message);
         }
 
@@ -78,8 +77,8 @@ public partial class ConverterTests
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(Path.Combine("EmptyProject1", "EmptyProject1.vcxproj"), new(TestData.EmptyProject));
-            fileSystem.AddFile(Path.Combine("EmptyProject2", "EmptyProject2.vcxproj"), new(TestData.EmptyProject));
+            fileSystem.AddFile(Path.Combine("EmptyProject1", "EmptyProject1.vcxproj"), new(TestData.DefaultEmptyProject));
+            fileSystem.AddFile(Path.Combine("EmptyProject2", "EmptyProject2.vcxproj"), new(TestData.DefaultEmptyProject));
 
             fileSystem.AddFile(@"TwoEmptyProjects.sln", new("""                
                 Microsoft Visual Studio Solution File, Format Version 12.00
@@ -98,58 +97,54 @@ public partial class ConverterTests
                 solutionFile: new(@"TwoEmptyProjects.sln"));
 
             // Assert
-            AssertEx.FileHasContent(@"CMakeLists.txt", fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
+            Assert.FileHasContent(@"CMakeLists.txt", fileSystem, """
+                cmake_minimum_required(VERSION 4.0)
                 project(TwoEmptyProjects)
 
                 add_subdirectory(EmptyProject1)
                 add_subdirectory(EmptyProject2)
                 """);
 
-            AssertEx.FileHasContent(Path.Combine("EmptyProject1", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
+            Assert.FileHasContent(Path.Combine("EmptyProject1", "CMakeLists.txt"), fileSystem, """
+                cmake_minimum_required(VERSION 4.0)
                 project(EmptyProject1)
 
-
-                add_executable(EmptyProject1
-                )
+                add_executable(EmptyProject1)
 
                 target_compile_definitions(EmptyProject1
-                    PUBLIC
+                    PRIVATE
                         WIN32
                         _CONSOLE
                         UNICODE
                         _UNICODE
-                        $<$<CONFIG:Debug>:_DEBUG>
-                        $<$<CONFIG:Release>:NDEBUG>
+                        "$<$<CONFIG:Debug>:_DEBUG>"
+                        "$<$<CONFIG:Release>:NDEBUG>"
                 )
 
                 target_compile_options(EmptyProject1
-                    PUBLIC
+                    PRIVATE
                         /W3
                 )
                 """);
 
-            AssertEx.FileHasContent(Path.Combine("EmptyProject2", "CMakeLists.txt"), fileSystem, """
-                cmake_minimum_required(VERSION 3.24)
+            Assert.FileHasContent(Path.Combine("EmptyProject2", "CMakeLists.txt"), fileSystem, """
+                cmake_minimum_required(VERSION 4.0)
                 project(EmptyProject2)
 
-
-                add_executable(EmptyProject2
-                )
+                add_executable(EmptyProject2)
 
                 target_compile_definitions(EmptyProject2
-                    PUBLIC
+                    PRIVATE
                         WIN32
                         _CONSOLE
                         UNICODE
                         _UNICODE
-                        $<$<CONFIG:Debug>:_DEBUG>
-                        $<$<CONFIG:Release>:NDEBUG>
+                        "$<$<CONFIG:Debug>:_DEBUG>"
+                        "$<$<CONFIG:Release>:NDEBUG>"
                 )
 
                 target_compile_options(EmptyProject2
-                    PUBLIC
+                    PRIVATE
                         /W3
                 )
                 """);

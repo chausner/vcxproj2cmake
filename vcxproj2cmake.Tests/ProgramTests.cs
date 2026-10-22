@@ -7,10 +7,26 @@ public class ProgramTests
     [Fact]
     public void When_InvokedWithArgsHelp_Then_PrintsHelpAndReturnsZero()
     {
+        // Act
         var (stdout, stderr, exitCode) = RunProgramMainWithCapturedConsole("--help");
 
+        // Assert
         Assert.Equal(0, exitCode);
-        Assert.Contains("Converts Microsoft Visual C++ projects and solutions to CMake", stdout);
+        Assert.Contains("Convert Microsoft Visual C++ projects and solutions to CMake", stdout);
+        Assert.True(string.IsNullOrEmpty(stderr));
+    }
+
+    [Fact]
+    public void When_InvokedWithArgsVersion_Then_PrintsVersionAndReturnsZero()
+    {
+        const string SemVerRegex = @"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?\s*$";
+
+        // Act
+        var (stdout, stderr, exitCode) = RunProgramMainWithCapturedConsole("--version");
+
+        // Assert
+        Assert.Equal(0, exitCode);
+        Assert.Matches(SemVerRegex, stdout);
         Assert.True(string.IsNullOrEmpty(stderr));
     }
 
@@ -21,15 +37,19 @@ public class ProgramTests
         var appProj = Path.Combine(repoRoot, "ExampleSolution", "App", "App.vcxproj");
         var mathLibProj = Path.Combine(repoRoot, "ExampleSolution", "MathLib", "MathLib.vcxproj");
 
+        // Act
         var (_, _, exitCode) = RunProgramMainWithCapturedConsole(
             "--projects", appProj, mathLibProj,
             "--qt-version", "6",
+            "--portable",
+            "--include-headers",
             "--enable-standalone-project-builds",
             "--indent-style", "Tabs",
             "--indent-size", "2",
             "--dry-run",
             "--log-level", "Debug");
 
+        // Assert
         Assert.Equal(0, exitCode);
     }
 
@@ -37,36 +57,73 @@ public class ProgramTests
     public void When_InvokedWithArgsSolutionAndAllOptions_Then_ReturnsZero()
     {
         var repoRoot = FindRepoRoot();
-        var sln = Path.Combine(repoRoot, "ExampleSolution", "ExampleSolution.sln");
+        var sln = Path.Combine(repoRoot, "ExampleSolution", "ExampleSolution.slnx");
 
+        // Act
         var (_, _, exitCode) = RunProgramMainWithCapturedConsole(
             "--solution", sln,
             "--qt-version", "5",
+            "--include-headers",
             "--enable-standalone-project-builds",
             "--indent-style", "Spaces",
             "--indent-size", "4",
             "--dry-run",
             "--log-level", "Information");
 
+        // Assert
         Assert.Equal(0, exitCode);
+    }
+
+    [Fact]
+    public void When_InvokedWithoutArgsProjectsAndSolution_Then_ReturnsNonZeroAndPrintsError()
+    {
+        // Act
+        var (_, stderr, exitCode) = RunProgramMainWithCapturedConsole(
+            "--dry-run");
+
+        // Assert
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains("Either --projects or --solution must be specified.", stderr);
     }
 
     [Fact]
     public void When_InvokedWithArgsProjectsAndSolution_Then_ReturnsNonZeroAndPrintsError()
     {
         var repoRoot = FindRepoRoot();
-        var sln = Path.Combine(repoRoot, "ExampleSolution", "ExampleSolution.sln");
+        var sln = Path.Combine(repoRoot, "ExampleSolution", "ExampleSolution.slnx");
         var appProj = Path.Combine(repoRoot, "ExampleSolution", "App", "App.vcxproj");
 
+        // Act
         var (_, stderr, exitCode) = RunProgramMainWithCapturedConsole(
             "--projects", appProj,
             "--solution", sln);
 
+        // Assert
         Assert.NotEqual(0, exitCode);
-        Assert.Contains("Specify either --projects or --solution, but not both.", stderr);
+        Assert.Contains("Only one of --projects or --solution can be specified.", stderr);
     }
 
-    private static (string stdout, string stderr, int exitCode) RunProgramMainWithCapturedConsole(params string[] args)
+    [Fact]
+    public void When_UnexpectedExceptionOccurs_Then_ReturnsNonZeroAndPrintsError()
+    {
+        // Arrange
+        var repoRoot = FindRepoRoot();
+        var sln = Path.Combine(repoRoot, "ExampleSolution", "ExampleSolution.slnx");
+
+        // Open the solution file with an exclusive lock to simulate an IOException when trying to read it
+        using var fileLock = File.Open(sln, FileMode.Open, FileAccess.Read, FileShare.None);
+
+        // Act
+        var (stdout, stderr, exitCode) = RunProgramMainWithCapturedConsole(
+            "--solution", sln);
+
+        // Assert
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains("Unexpected error", stdout);
+        Assert.Contains("System.IO.IOException: The process cannot access the file", stdout);
+    }
+
+    static (string stdout, string stderr, int exitCode) RunProgramMainWithCapturedConsole(params string[] args)
     {
         var originalOut = Console.Out;
         var originalError = Console.Error;
@@ -93,7 +150,7 @@ public class ProgramTests
         }
     }
 
-    private static string FindRepoRoot()
+    static string FindRepoRoot()
     {
         var dir = AppContext.BaseDirectory;
 

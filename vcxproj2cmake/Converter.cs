@@ -3,24 +3,17 @@ using System.IO.Abstractions;
 
 namespace vcxproj2cmake;
 
-public class Converter
+public class Converter(IFileSystem fileSystem, ILogger logger)
 {
-    readonly IFileSystem fileSystem;
-    readonly ILogger logger;
-
-    public Converter(IFileSystem fileSystem, ILogger logger)
-    {
-        this.fileSystem = fileSystem;
-        this.logger = logger;
-    }
-
     public void Convert(
-        List<FileInfo>? projectFiles = null, 
+        List<FileInfo>? projectFiles = null,
         FileInfo? solutionFile = null,
         int? qtVersion = null,
-        bool enableStandaloneProjectBuilds = false, 
-        IndentStyle indentStyle = IndentStyle.Spaces, 
-        int indentSize = 4, 
+        bool portable = false,
+        bool includeHeaders = false,
+        bool enableStandaloneProjectBuilds = false,
+        IndentStyle indentStyle = IndentStyle.Spaces,
+        int indentSize = 4,
         bool dryRun = false,
         bool continueOnError = false)
     {
@@ -33,13 +26,16 @@ public class Converter
         List<MSBuildProject> projects = [];
         List<string> failedProjectPaths = [];
 
-        if (projectFiles != null && projectFiles.Any())
+        if (projectFiles != null && projectFiles.Count != 0)
         {
             foreach (var project in projectFiles!)
             {
                 var absolutePath = Path.GetFullPath(project.FullName);
+
+                using var scope = logger.BeginScope(project.Name);
+
                 try
-                {                    
+                {
                     projects.Add(MSBuildProject.ParseProjectFile(absolutePath, fileSystem, logger));
                 }
                 catch (Exception ex) when (continueOnError)
@@ -51,7 +47,8 @@ public class Converter
         }
         else if (solutionFile != null)
         {
-            solution = MSBuildSolution.ParseSolutionFile(solutionFile!.FullName, fileSystem, logger);
+            using (var scope = logger.BeginScope(solutionFile.Name))
+                solution = MSBuildSolution.ParseSolutionFile(solutionFile.FullName, fileSystem, logger);
 
             if (solution.Projects.Length == 0)
                 throw new CatastrophicFailureException($"No .vcxproj files found in solution: {solutionFile}");
@@ -59,8 +56,9 @@ public class Converter
             foreach (var projectReference in solution.Projects)
             {
                 string absolutePath = Path.GetFullPath(Path.Combine(solutionFile.DirectoryName!, projectReference));
+                using var scope = logger.BeginScope(Path.GetFileName(absolutePath));
                 try
-                {                    
+                {
                     projects.Add(MSBuildProject.ParseProjectFile(absolutePath, fileSystem, logger));
                 }
                 catch (Exception ex) when (continueOnError)
@@ -77,9 +75,12 @@ public class Converter
 
         foreach (var project in projects)
         {
+            using var scope = logger.BeginScope(Path.GetFileName(project.AbsoluteProjectPath));
+
             try
             {
-                cmakeProjects.Add(new CMakeProject(project, qtVersion, conanPackageInfoRepository, logger));
+                string projectName = GetUniqueProjectName(cmakeProjects, project);
+                cmakeProjects.Add(new CMakeProject(project, new(qtVersion, portable), projectName, includeHeaders, conanPackageInfoRepository, logger));
             }
             catch (Exception ex) when (continueOnError)
             {
@@ -90,6 +91,8 @@ public class Converter
 
         if (solution != null && solution.Projects.Length != cmakeProjects.Count)
         {
+            using var scope = logger.BeginScope(Path.GetFileName(solution.AbsoluteSolutionPath));
+
             solution = new MSBuildSolution
             {
                 AbsoluteSolutionPath = solution.AbsoluteSolutionPath,
@@ -104,30 +107,27 @@ public class Converter
 
         var cmakeSolution = solution != null ? new CMakeSolution(solution, cmakeProjects) : null;
 
-        EnsureProjectNamesAreUnique(cmakeProjects);
         ResolveProjectReferences(cmakeProjects, continueOnError, failedProjectPaths);
         RemoveObsoleteLibrariesFromProjectReferences(cmakeProjects);
         AddLibrariesFromProjectReferences(cmakeProjects);
+        RemoveObsoleteIncludePaths(cmakeProjects);
 
         var settings = new CMakeGeneratorSettings(enableStandaloneProjectBuilds, indentStyle, indentSize, dryRun);
         var cmakeGenerator = new CMakeGenerator(fileSystem, logger);
         cmakeGenerator.Generate(cmakeSolution, cmakeProjects, settings);
     }
 
-    static void EnsureProjectNamesAreUnique(IEnumerable<CMakeProject> projects)
+    static string GetUniqueProjectName(IEnumerable<CMakeProject> projects, MSBuildProject msBuildProject)
     {
-        HashSet<string> assignedNames = [];
+        bool NameExists(string name) => projects.Any(project => project.ProjectName == name);
 
-        foreach (var project in projects)
-        {
-            if (!assignedNames.Add(project.ProjectName))
-            {
-                int i = 2;
-                while (!assignedNames.Add($"{project.ProjectName}{i}"))
-                    i++;
-                project.ProjectName = $"{project.ProjectName}{i}";
-            }
-        }
+        if (!NameExists(msBuildProject.ProjectName))
+            return msBuildProject.ProjectName;
+
+        int i = 2;
+        while (NameExists($"{msBuildProject.ProjectName}{i}"))
+            i++;
+        return $"{msBuildProject.ProjectName}{i}";
     }
 
     void ResolveProjectReferences(IEnumerable<CMakeProject> projects, bool continueOnError, IEnumerable<string> failedProjectPaths)
@@ -140,6 +140,12 @@ public class Converter
             {
                 var absoluteReference = Path.GetFullPath(projectReference.Path, Path.GetDirectoryName(project.AbsoluteProjectPath)!);
 
+                if (!string.Equals(Path.GetExtension(absoluteReference), ".vcxproj", StringComparison.OrdinalIgnoreCase))
+                {
+                    logger.LogWarning("Ignoring non-vcxproj project reference {ProjectReference} in project {ProjectFile}.", projectReference.Path, project.AbsoluteProjectPath);
+                    continue;
+                }
+
                 var referencedProject = projects.FirstOrDefault(p => p.AbsoluteProjectPath == absoluteReference);
 
                 if (referencedProject == null)
@@ -150,7 +156,7 @@ public class Converter
                         continue;
                     }
 
-                    throw new CatastrophicFailureException($"Project {project.AbsoluteProjectPath} references project {absoluteReference} which is not part of the solution or the list of projects.");                    
+                    throw new CatastrophicFailureException($"Project {project.AbsoluteProjectPath} references project {absoluteReference} which is not part of the solution or the list of projects.");
                 }
 
                 projectReference.Project = referencedProject;
@@ -168,31 +174,78 @@ public class Converter
             if (!project.MSBuildProject.LinkLibraryDependenciesEnabled)
                 continue;
 
-            var dependencyTargets = project.GetAllReferencedProjects(projects)
+            var dependencyTargets = project.GetAllReferencedProjects()
                 .Where(project => project.TargetType is CMakeTargetType.StaticLibrary or CMakeTargetType.SharedLibrary)
-                .Select(project => project.OutputName + ".lib")
+                .SelectMany(project => new[] { project.OutputName, project.OutputName + CMakeExpression.Literal(".lib") })
                 .ToArray();
 
             foreach (var dependencyTarget in dependencyTargets)
-                if (project.Libraries.Values.Values.SelectMany(s => s).Contains(dependencyTarget, StringComparer.OrdinalIgnoreCase))
+                if (project.Libraries.Values.Values.SelectMany(s => s).Any(expr => expr.Equals(dependencyTarget, StringComparison.OrdinalIgnoreCase)))
                 {
                     logger!.LogInformation($"Removing explicit library dependency {dependencyTarget} from project {project.ProjectName} since LinkLibraryDependencies is enabled.");
                 }
 
-            project.Libraries = project.Libraries.Map(libraries => libraries.Except(dependencyTargets, StringComparer.OrdinalIgnoreCase).ToArray(), project.ProjectConfigurations, logger!);
+            project.Libraries = project.Libraries.Map(libraries =>
+                libraries.Where(lib => !dependencyTargets.Any(target => target.Equals(lib, StringComparison.OrdinalIgnoreCase))).ToArray(),
+                project.ProjectConfigurations, logger!);
         }
     }
 
-    private static void AddLibrariesFromProjectReferences(IEnumerable<CMakeProject> cmakeProjects)
+    static void AddLibrariesFromProjectReferences(IEnumerable<CMakeProject> cmakeProjects)
     {
         foreach (var project in cmakeProjects)
         {
-            if (!project.MSBuildProject.LinkLibraryDependenciesEnabled)
-                continue;
-
             foreach (var projectRef in ProjectDependencyUtils.OrderProjectReferencesByDependencies(project.ProjectReferences, cmakeProjects))
-                if (projectRef.Project!.TargetType is CMakeTargetType.StaticLibrary or CMakeTargetType.SharedLibrary)
-                    project.Libraries.AppendValue(Config.CommonConfig, projectRef.Project.ProjectName);
+            {
+                if (projectRef.Project!.TargetType == CMakeTargetType.Executable)
+                    continue;
+
+                var libraries = project.TargetType is CMakeTargetType.StaticLibrary or CMakeTargetType.SharedLibrary
+                    ? project.PublicLibraries
+                    : project.Libraries;
+                var referencedTarget = CMakeExpression.Literal(projectRef.Project.ProjectName);
+
+                if (!libraries.Values.TryGetValue(Config.CommonConfig, out var commonLibraries) || !commonLibraries.Contains(referencedTarget))
+                    libraries.AppendValue(Config.CommonConfig, referencedTarget);
+            }
+        }
+    }
+
+    void RemoveObsoleteIncludePaths(IEnumerable<CMakeProject> projects)
+    {
+        foreach (var project in projects)
+        {
+            var filteredIncludePaths = project.IncludePaths;
+
+            foreach (var referencedProject in project.GetAllReferencedProjects())
+            {
+                HashSet<string> removedPaths = [];
+
+                bool AreSamePath(string path1, string path2)
+                {
+                    var canonicalPath1 = PathUtils.CanonicalizeCMakePath(path1, project.AbsoluteProjectPath);
+                    var canonicalPath2 = PathUtils.CanonicalizeCMakePath(path2, referencedProject.AbsoluteProjectPath);
+
+                    bool same =
+                        canonicalPath1 != null &&
+                        canonicalPath2 != null &&
+                        canonicalPath1.Equals(canonicalPath2, StringComparison.OrdinalIgnoreCase);
+
+                    if (same)
+                        removedPaths.Add(path1);
+
+                    return same;
+                }
+
+                filteredIncludePaths = filteredIncludePaths.Map((includePaths, referencedIncludePaths) =>
+                    includePaths.Where(path => !referencedIncludePaths.Any(referencedPath => AreSamePath(path.Value, referencedPath.Value))).ToArray(),
+                    referencedProject.PublicIncludePaths, project.ProjectConfigurations, logger!);
+
+                foreach (var path in removedPaths.Order())
+                    logger.LogInformation($"Removed include path {path} from project {project.ProjectName} since referenced project {referencedProject.ProjectName} specifies it as a public include directory.");
+            }
+
+            project.IncludePaths = filteredIncludePaths;
         }
     }
 }

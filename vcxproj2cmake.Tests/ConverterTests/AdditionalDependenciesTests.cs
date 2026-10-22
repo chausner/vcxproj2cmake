@@ -11,106 +11,126 @@ public partial class ConverterTests
         [Fact]
         public void Given_ProjectWithAdditionalDependencies_When_Converted_Then_LibrariesAreLinked()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new("""
-                <?xml version="1.0" encoding="utf-8"?>
-                <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                    <ItemGroup Label="ProjectConfigurations">
-                        <ProjectConfiguration Include="Debug|Win32">
-                            <Configuration>Debug</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                        <ProjectConfiguration Include="Release|Win32">
-                            <Configuration>Release</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                    </ItemGroup>
-                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                        <UseDebugLibraries>true</UseDebugLibraries>
-                    </PropertyGroup>
-                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                        <UseDebugLibraries>false</UseDebugLibraries>
-                    </PropertyGroup>
-                    <ItemDefinitionGroup>
-                        <Link>
-                            <AdditionalDependencies>Foo.lib;Bar.lib;%(AdditionalDependencies)</AdditionalDependencies>
-                        </Link>
-                    </ItemDefinitionGroup>
-                </Project>
-                """));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("AdditionalDependencies", "Foo.lib;Bar.lib;%(AdditionalDependencies)")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains(
                 """
                 target_link_libraries(Project
-                    PUBLIC
-                        Foo.lib
-                        Bar.lib
+                    PRIVATE
+                        Foo
+                        Bar
                 )
-                """.Trim(),
+                """,
+                cmake);
+        }
+
+        [Fact]
+        public void Given_ProjectWithAdditionalDependencyPaths_When_Converted_Then_LibraryPathsKeepFileExtensions()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("AdditionalDependencies", @"Foo.lib;lib/Bar.lib;..\Baz\Baz.lib;%(AdditionalDependencies)")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains(
+                """
+                target_link_libraries(Project
+                    PRIVATE
+                        Foo
+                        lib/Bar.lib
+                        ../Baz/Baz.lib
+                )
+                """,
                 cmake);
         }
 
         [Fact]
         public void Given_ProjectWithConfigSpecificAdditionalDependencies_When_Converted_Then_GeneratorExpressionsUsed()
         {
+            // Arrange
             var fileSystem = new MockFileSystem();
             fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
 
-            fileSystem.AddFile(@"Project.vcxproj", new("""
-                <?xml version="1.0" encoding="utf-8"?>
-                <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-                    <ItemGroup Label="ProjectConfigurations">
-                        <ProjectConfiguration Include="Debug|Win32">
-                            <Configuration>Debug</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                        <ProjectConfiguration Include="Release|Win32">
-                            <Configuration>Release</Configuration>
-                            <Platform>Win32</Platform>
-                        </ProjectConfiguration>
-                    </ItemGroup>
-                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-                        <UseDebugLibraries>true</UseDebugLibraries>
-                    </PropertyGroup>
-                    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-                        <UseDebugLibraries>false</UseDebugLibraries>
-                    </PropertyGroup>
-                    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-                        <Link>
-                            <AdditionalDependencies>Foo_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
-                        </Link>
-                    </ItemDefinitionGroup>
-                    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-                        <Link>
-                            <AdditionalDependencies>Foo.lib;%(AdditionalDependencies)</AdditionalDependencies>
-                        </Link>
-                    </ItemDefinitionGroup>
-                </Project>
-                """));
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("AdditionalDependencies", debugValue: "Foo_d.lib;%(AdditionalDependencies)", releaseValue: "Foo.lib;%(AdditionalDependencies)")
+                .Build()));
 
             var converter = new Converter(fileSystem, NullLogger.Instance);
 
+            // Act
             converter.Convert(
                 projectFiles: [new(@"Project.vcxproj")]);
 
+            // Assert
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
             Assert.Contains(
                 """
                 target_link_libraries(Project
-                    PUBLIC
-                        $<$<CONFIG:Debug>:Foo_d.lib>
-                        $<$<CONFIG:Release>:Foo.lib>
+                    PRIVATE
+                        "$<$<CONFIG:Debug>:Foo_d>"
+                        "$<$<CONFIG:Release>:Foo>"
                 )
-                """.Trim(),
+                """,
                 cmake);
+        }
+
+        [Fact]
+        public void Given_ProjectWithDefaultAdditionalDependencies_When_Converted_Then_ValuesAreIgnoredAndNoWarningsAreGenerated()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithLinkSetting("AdditionalDependencies", "Foo.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)")
+                .Build()));
+
+            var logger = new InMemoryLogger();
+            var converter = new Converter(fileSystem, logger);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("""
+                target_link_libraries(Project
+                    PRIVATE
+                        Foo
+                )
+                """, cmake);
+
+            Assert.DoesNotContain("CoreLibraryDependencies", logger.AllMessageText);
         }
     }
 }
