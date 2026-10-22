@@ -77,6 +77,29 @@ public partial class ConverterTests
         }
 
         [Fact]
+        public void Given_ProjectWithOnlyCxxModuleFiles_When_Converted_Then_LanguageIsCxx()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItems("ClCompile", "math.ixx")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("project(Project LANGUAGES CXX)", cmake);
+        }
+
+        [Fact]
         public void Given_ProjectWithCAndCppFiles_When_Converted_Then_LanguagesAreCAndCxx()
         {
             // Arrange
@@ -97,6 +120,62 @@ public partial class ConverterTests
             var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
 
             Assert.Contains("project(Project LANGUAGES C CXX)", cmake);
+        }
+
+        [Fact]
+        public void Given_ProjectWithOnlyMasmFiles_When_Converted_Then_LanguageIsAsmMasm()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithItems("MASM", "assembler.asm")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("project(Project LANGUAGES ASM_MASM)", cmake);
+        }
+
+        [Fact]
+        public void Given_ProjectWithOnlyCFilesAndArchitectureSpecificSettings_When_Converted_Then_ArchitectureExpressionsUseCCompilerArchitectureId()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithConfigurations(("Debug", "Win32"), ("Debug", "x64"))
+                .WithItemDefinitionSetting("Debug", "Win32", "ClCompile", "PreprocessorDefinitions", "X86_DEF;%(PreprocessorDefinitions)")
+                .WithItemDefinitionSetting("Debug", "x64", "ClCompile", "PreprocessorDefinitions", "X64_DEF;%(PreprocessorDefinitions)")
+                .WithItems("ClCompile", "main.c")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+            
+            Assert.Contains("""
+                target_compile_definitions(Project
+                    PRIVATE
+                        "$<$<STREQUAL:${CMAKE_C_COMPILER_ARCHITECTURE_ID},X86>:X86_DEF>"
+                        "$<$<STREQUAL:${CMAKE_C_COMPILER_ARCHITECTURE_ID},x64>:X64_DEF>"
+                )
+                """, cmake);
+            Assert.DoesNotContain("CMAKE_CXX_COMPILER_ARCHITECTURE_ID", cmake);
         }
     }
 }

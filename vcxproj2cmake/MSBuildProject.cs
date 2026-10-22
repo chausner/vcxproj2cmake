@@ -80,100 +80,7 @@ class MSBuildProject
         var evaluatedElements =
             evaluatedProjects.Values
                 .SelectMany(project => project.Elements)
-                .ToList();
-
-        var sourceFiles =
-            evaluatedElements
-                .Where(element => element.Name.LocalName == "ItemGroup")
-                .SelectMany(group =>
-                    ElementsNamed(group, "ClCompile")
-                    .Concat(ElementsNamed(group, "ResourceCompile"))
-                    .Concat(ElementsNamed(group, "QtUic"))
-                    .Concat(ElementsNamed(group, "QtRcc")))
-                .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-        var headerFiles =
-            evaluatedElements
-                .Where(element => element.Name.LocalName == "ItemGroup")
-                .SelectMany(group => ElementsNamed(group, "ClInclude"))
-                .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-        var qtMocHeaderFiles =
-            evaluatedElements
-                .Where(element => element.Name.LocalName == "ItemGroup")
-                .SelectMany(group => ElementsNamed(group, "QtMoc"))
-                .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
-                .Where(path => Path.GetExtension(path).ToLowerInvariant() is ".h" or ".hpp" or ".hxx" or ".h++" or ".hh")
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-        var qtModules =
-            evaluatedElements
-                .Where(element => element.Name.LocalName == "PropertyGroup")
-                .SelectMany(group => ElementsNamed(group, "QtModules"))
-                .Select(element => element.Value.Trim())
-                .Distinct()
-                .SingleOrDefaultWithException(string.Empty,
-                    () => throw new CatastrophicFailureException("Qt modules are inconsistent between configurations"))
-                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Select(UnescapeMSBuildValue)
-                .ToArray();
-
-        var imports =
-            evaluatedProjects.Values
-                .SelectMany(project => project.Imports)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-        LogWarningsForUnsupportedFileLevelSettings(evaluatedElements, logger);
-
-        var projectReferences =
-            evaluatedElements
-                .Where(element => element.Name.LocalName == "ItemGroup")
-                .SelectMany(group => ElementsNamed(group, "ProjectReference"))
-                .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
-                .Distinct()
-                .ToList();
-
-        var linkLibraryDependenciesEnabled =
-            evaluatedElements
-                .Where(element => element.Name.LocalName == "ItemDefinitionGroup")
-                .SelectMany(group => ElementsNamed(group, "ProjectReference"))
-                .SelectMany(element => ElementsNamed(element, "LinkLibraryDependencies"))
-                .Select(element => UnescapeMSBuildValue(element.Value.Trim()))
-                .Select(value => value switch
-                {
-                    "true" => true,
-                    "false" => false,
-                    _ => throw new CatastrophicFailureException(
-                        $"Invalid value for LinkLibraryDependencies: {value}")
-                })
-                .Distinct()
-                .SingleOrDefaultWithException(true,
-                    () => throw new CatastrophicFailureException(
-                        "LinkLibraryDependencies property is inconsistent between configurations"));
-
-        var requiresQtMoc =
-            evaluatedElements
-            .Where(element => element.Name.LocalName == "ItemGroup")
-            .SelectMany(group => ElementsNamed(group, "QtMoc"))
-            .Any();
-
-        var requiresQtUic =
-            evaluatedElements
-            .Where(element => element.Name.LocalName == "ItemGroup")
-            .SelectMany(group => ElementsNamed(group, "QtUic"))
-            .Any();
-
-        var requiresQtRcc =
-            evaluatedElements
-            .Where(element => element.Name.LocalName == "ItemGroup")
-            .SelectMany(group => ElementsNamed(group, "QtRcc"))
-            .Any();
+                .ToList();        
 
         Dictionary<string, Dictionary<MSBuildProjectConfig, string>> compilerSettings = [];
         Dictionary<string, Dictionary<MSBuildProjectConfig, string>> linkerSettings = [];
@@ -233,6 +140,7 @@ class MSBuildProject
         var configurationType = GetCommonSetting("ConfigurationType", otherSettings) ?? "Application";
         var languageStandard = GetCommonSetting("LanguageStandard", compilerSettings) ?? "Default";
         var languageStandardC = GetCommonSetting("LanguageStandard_C", compilerSettings) ?? "Default";
+        string? linkerSubsystem = GetCommonSetting("SubSystem", linkerSettings);
 
         var targetName = ParseSetting("TargetName", otherSettings, Path.GetFileNameWithoutExtension(projectPath));
         var additionalIncludeDirectories = ParseMultiSetting("AdditionalIncludeDirectories", ';', compilerSettings, []);
@@ -242,22 +150,22 @@ class MSBuildProject
         var libraryPath = ParseMultiSetting("LibraryPath", ';', otherSettings, []);
         var additionalDependencies = ParseMultiSetting("AdditionalDependencies", ';', linkerSettings, []);
         var preprocessorDefinitions = ParseMultiSetting("PreprocessorDefinitions", ';', compilerSettings, []);
-        var additionalCompileOptions = ParseMultiSetting("AdditionalOptions", ' ', compilerSettings, []);
-        var additionalLinkOptions = ParseMultiSetting("AdditionalOptions", ' ', linkerSettings, []);
+        var additionalCompileOptions = ParseCommandLineOptionSetting(compilerSettings, "AdditionalOptions");
+        var additionalLinkOptions = ParseCommandLineOptionSetting(linkerSettings, "AdditionalOptions");
         var moduleDefinitionFile = ParseSetting("ModuleDefinitionFile", linkerSettings, string.Empty);
         var characterSet = ParseSetting("CharacterSet", otherSettings, "NotSet");
         var useOfMfc = ParseSetting("UseOfMfc", otherSettings, "false");
         var useDebugLibraries = ParseSetting("UseDebugLibraries", otherSettings, "false");
         var runtimeLibrary = ParseSettingWithConfigSpecificDefault("RuntimeLibrary", compilerSettings, new(projectConfig =>
         {
-            if (useDebugLibraries.GetEffectiveValue(projectConfig) == "true")
+            if (useDebugLibraries.GetEffectiveValue(projectConfig).Equals("true", StringComparison.OrdinalIgnoreCase))
                 return "MultiThreadedDebugDLL";
             else
                 return "MultiThreadedDLL";
         }));
         var basicRuntimeChecks = ParseSettingWithConfigSpecificDefault("BasicRuntimeChecks", compilerSettings, new(projectConfig =>
         {
-            if (useDebugLibraries.GetEffectiveValue(projectConfig) == "true")
+            if (useDebugLibraries.GetEffectiveValue(projectConfig).Equals("true", StringComparison.OrdinalIgnoreCase))
                 return "EnableFastChecks";
             else
                 return "Default";
@@ -274,6 +182,102 @@ class MSBuildProject
         var precompiledHeader = ParseSetting("PrecompiledHeader", compilerSettings, "NotUsing");
         var precompiledHeaderFile = ParseSetting("PrecompiledHeaderFile", compilerSettings, string.Empty);
 
+        var sourceFiles =
+            evaluatedElements
+                .Where(element => element.Name.LocalName == "ItemGroup")
+                .SelectMany(group =>
+                    ElementsNamed(group, "ClCompile")
+                    .Concat(ElementsNamed(group, "ResourceCompile"))
+                    .Concat(ElementsNamed(group, "Manifest"))
+                    .Concat(ElementsNamed(group, "MASM"))
+                    .Concat(ElementsNamed(group, "Natvis"))
+                    .Concat(ElementsNamed(group, "QtUic"))
+                    .Concat(ElementsNamed(group, "QtRcc")))
+                .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+        var headerFiles =
+            evaluatedElements
+                .Where(element => element.Name.LocalName == "ItemGroup")
+                .SelectMany(group => ElementsNamed(group, "ClInclude"))
+                .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+        var qtMocHeaderFiles =
+            evaluatedElements
+                .Where(element => element.Name.LocalName == "ItemGroup")
+                .SelectMany(group => ElementsNamed(group, "QtMoc"))
+                .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
+                .Where(path => Path.GetExtension(path).ToLowerInvariant() is ".h" or ".hpp" or ".hxx" or ".h++" or ".hh")
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+        var qtModules =
+            evaluatedElements
+                .Where(element => element.Name.LocalName == "PropertyGroup")
+                .SelectMany(group => ElementsNamed(group, "QtModules"))
+                .Select(element => element.Value.Trim())
+                .Distinct()
+                .SingleOrDefaultWithException(string.Empty,
+                    () => throw new CatastrophicFailureException("Qt modules are inconsistent between configurations"))
+                .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(UnescapeMSBuildValue)
+                .ToArray();
+
+        var imports =
+            evaluatedProjects.Values
+                .SelectMany(project => project.Imports)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+        LogWarningsForUnsupportedImports(imports, logger);
+        LogWarningsForUnsupportedFileLevelSettings(evaluatedElements, logger);
+
+        var projectReferences =
+            evaluatedElements
+                .Where(element => element.Name.LocalName == "ItemGroup")
+                .SelectMany(group => ElementsNamed(group, "ProjectReference"))
+                .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
+                .Distinct()
+                .ToList();
+
+        var linkLibraryDependenciesEnabled =
+            evaluatedElements
+                .Where(element => element.Name.LocalName == "ItemDefinitionGroup")
+                .SelectMany(group => ElementsNamed(group, "ProjectReference"))
+                .SelectMany(element => ElementsNamed(element, "LinkLibraryDependencies"))
+                .Select(element => UnescapeMSBuildValue(element.Value.Trim()))
+                .Select(value => value.ToLowerInvariant() switch
+                {
+                    "true" => true,
+                    "false" => false,
+                    _ => throw new CatastrophicFailureException(
+                        $"Invalid value for LinkLibraryDependencies: {value}")
+                })
+                .Distinct()
+                .SingleOrDefaultWithException(configurationType != "StaticLibrary",
+                    () => throw new CatastrophicFailureException(
+                        "LinkLibraryDependencies property is inconsistent between configurations"));
+
+        var requiresQtMoc =
+            evaluatedElements
+            .Where(element => element.Name.LocalName == "ItemGroup")
+            .SelectMany(group => ElementsNamed(group, "QtMoc"))
+            .Any();
+
+        var requiresQtUic =
+            evaluatedElements
+            .Where(element => element.Name.LocalName == "ItemGroup")
+            .SelectMany(group => ElementsNamed(group, "QtUic"))
+            .Any();
+
+        var requiresQtRcc =
+            evaluatedElements
+            .Where(element => element.Name.LocalName == "ItemGroup")
+            .SelectMany(group => ElementsNamed(group, "QtRcc"))
+            .Any();
         var conanPackages =
             imports
                 .Select(import =>
@@ -283,8 +287,6 @@ class MSBuildProject
                 })
                 .Where(packageName => packageName != null)
                 .ToArray();
-
-        string? linkerSubsystem = GetCommonSetting("SubSystem", linkerSettings);
 
         return new MSBuildProject
         {
@@ -379,6 +381,16 @@ class MSBuildProject
             return new(property, defaultValue, settings.GetValueOrDefault(property, []), parser);
         }
 
+        static MSBuildConfigDependentSetting<string[]> ParseCommandLineOptionSetting(Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings, string settingName)
+        {
+            var parser = (string value) => 
+                PathUtils.SplitArguments(value)
+                    .Except([$"%({settingName})", $"$({settingName})"], StringComparer.OrdinalIgnoreCase)
+                    .Select(UnescapeMSBuildValue)
+                    .ToArray();
+
+            return new(settingName, [], settings.GetValueOrDefault(settingName, []), parser);
+        }
     }
 
     static bool DoesConfigPlatformConditionApply(XElement element, MSBuildProjectConfig projectConfig)
@@ -429,6 +441,9 @@ class MSBuildProject
     {
         "ClCompile",
         "ClInclude",
+        "Manifest",
+        "MASM",
+        "Natvis",
         "QtMoc",
         "QtRcc",
         "QtUic",

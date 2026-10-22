@@ -3,6 +3,7 @@
 <p align="center"><img src="vcxproj2cmake.webp" alt="Logo" width="200" /></p>
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/chausner/vcxproj2cmake)](https://github.com/chausner/vcxproj2cmake/releases/latest)
+[![Code coverage](https://coveralls.io/repos/github/chausner/vcxproj2cmake/badge.svg?branch=main)](https://coveralls.io/github/chausner/vcxproj2cmake?branch=main)
 [![license](https://img.shields.io/github/license/chausner/vcxproj2cmake.svg)](https://github.com/chausner/vcxproj2cmake/blob/master/LICENSE)
 
 **vcxproj2cmake** is a tool designed to convert Microsoft Visual C++ project files (`.vcxproj`) to equivalent CMake files (`CMakeLists.txt`).
@@ -10,10 +11,11 @@
 ## Features
 
 * Accepts either a list of `.vcxproj` project files or Visual Studio solution files (`.sln`/`.slnx`) as input.
-* Supports console, Win32, Dynamic-Link Library (DLL), and Static Library project types.
+* Supports console, Win32, Dynamic-Link Library (DLL), Static Library and Utility project types.
   Includes detection of header-only libraries.
 * Leverages CMake generator expressions for property values that are specific to certain build configurations (Debug, Release, Win32, x64).
-* The following MSBuild project properties are taken into account and converted to their CMake equivalents:
+* Supports the following file types: C sources/headers, C++ sources/headers, C++ modules, .manifest, MASM, .rc, .natvis.
+* The following MSBuild project properties are converted to their CMake equivalents:
 
   `AdditionalDependencies`
   `AdditionalIncludeDirectories`
@@ -84,17 +86,18 @@ If you have a Visual Studio solution file (`.sln` or `.slnx`), you can convert a
 This will generate a `CMakeLists.txt` file for each project next to the `.vcxproj` file,
 as well as a top-level `CMakeLists.txt` file in the same directory as the solution file.
 
-### Customizing Output
+### Advanced Options
 
-* Specify the `--include-headers` option to include header files in the list of CMake target sources set via `target_sources` command.
-  This allows IDEs to recognize header files as part of the project and e.g. show them in the project tree.
-* Specify the `--enable-standalone-project-builds` option to include additional CMake commands in the generated project `CMakeLists.txt` files
-  to allow configuring the projects directly instead of as part of the top-level solution `CMakeLists.txt`.
-* If any of your projects use Qt, you must specify the `--qt-version` option to indicate the Qt version (5 or 6) used in the project.
-* Use `--portable` to guard generated MSVC-specific CMake settings with CMake generator expressions to be inactive when using a different compiler.
-* Use options `--indent-style` and `--indent-size` to customize the indentation in the generated CMake files.
-* Specify the `--dry-run` option to have the generated CMake files printed to the console without writing them to disk.
+| Option(s)                            | Description |
+|--------------------------------------|-------------|
+| `--include-headers`                  | Includes header files in the list of CMake target sources set via `target_sources`, allowing IDEs to display them as part of the project. |
+| `--enable-standalone-project-builds` | Adds extra CMake commands to generated project `CMakeLists.txt` files so the projects can be configured independently of the top‑level solution. |
+| `--qt-version`                       | Specifies the Qt version used by any project that depends on Qt. |
+| `--portable`                         | Wraps MSVC‑specific CMake settings in generator expressions so they are ignored when using non‑MSVC compilers. |
+| `--indent-style` / `--indent-size`   | Customizes indentation style and size in generated CMake files. |
+| `--dry-run`                          | Prints generated CMake files to the console instead of writing them to disk. |
 
+For more information, run with the `--help` argument.
 
 ## Example
 

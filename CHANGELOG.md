@@ -6,6 +6,58 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Add support for MSBuild macros `MSBuildProjectDirectory`, `MSBuildProjectName`, `MSBuildThisFileDirectory` and `MSBuildThisFileName`.
+
+### Changed
+
+- Made error messages for unsupported Utility and Makefile projects more explicit.
+- Project references to non-vcxproj projects are now ignored with a warning instead of leading to a conversion failure.
+
+### Fixed
+
+- Fix some boolean MSBuild properties not using case-insensitive matching.
+
+## [1.11.0] - 2026-08-23
+
+### Added
+
+- Avoid warnings by ignoring certain default values in `AdditionalDependencies` MSBuild property.
+- Explicitly specified include paths that are already implicitly specified via transitive dependencies are now ignored.
+
+### Fixed
+
+- Architecture-dependent values in C-only projects are now translated using `CMAKE_C_COMPILER_ARCHITECTURE_ID`.
+- Fixed an issue where in certain cases, linking of project references may not be converted correctly.
+- Relative paths in `AdditionalLibraryDirectories` MSBuild property are now prefixed with `${CMAKE_CURRENT_SOURCE_DIR}`.
+
+## [1.10.0] - 2026-07-03
+
+### Added
+
+- Avoid warnings by ignoring certain default values in `IncludePath` and `LibraryPath` MSBuild properties.
+- Add support for MSBuild macros `IntDir`, `OutDir`, `TargetDir`, `TargetExt`, `TargetFileName`, `TargetName` and `TargetPath`.
+
+### Changed
+
+- When possible, the `.lib` file extension is now omitted for libraries passed to `target_link_libraries`.
+- MSBuild macros `Configuration` and `ConfigurationName` are now translated to `$<CONFIG>`.
+- Update list of Conan package metadata.
+
+## [1.9.0] - 2026-05-31
+
+### Added
+
+- Add support for C++ module files.
+- Add support for `.manifest` files.
+- Add support for MASM assembler files.
+- Add support for `.natvis` files.
+
+### Fixed
+
+- Fix issue where options in `AdditionalOptions` compiler/linker properties would get translated incorrectly if they were quoted and contained spaces.
+
 ## [1.8.0] - 2026-05-22
 
 ### Added
@@ -143,7 +195,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 First stable release.
 
-[unreleased]: https://github.com/chausner/vcxproj2cmake/compare/v1.8.0...HEAD
+[unreleased]: https://github.com/chausner/vcxproj2cmake/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.10.0...v1.11.0
+[1.10.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.9.0...v1.10.0
+[1.9.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.5.0...v1.6.0

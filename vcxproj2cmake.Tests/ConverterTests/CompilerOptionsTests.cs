@@ -34,7 +34,7 @@ public partial class ConverterTests
                         foo
                         bar
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -64,7 +64,68 @@ public partial class ConverterTests
                         "$<$<CXX_COMPILER_ID:MSVC>:foo>"
                         "$<$<CXX_COMPILER_ID:MSVC>:bar>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
+        }
+
+        [Fact]
+        public void Given_AdditionalOptionsWithQuotedArguments_When_Converted_Then_QuotedArgumentsAreNotSplit()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("AdditionalOptions", """/DNAME=&quot;foo bar&quot; /I&quot;C:\My Includes&quot; /O2""")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("""
+                target_compile_options(Project
+                    PRIVATE
+                        "/DNAME=foo bar"
+                        "/IC:\\My Includes"
+                        /O2
+                )
+                """, cmake);
+        }
+
+        [Fact]
+        public void Given_AdditionalOptionsWithQuotedArgumentsAndPortableMode_When_Converted_Then_QuotedGuardedArgumentsAreNotSplit()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile(@"Project.vcxproj", new(TestData.Project()
+                .WithClCompileSetting("AdditionalOptions", """/DNAME=&quot;foo bar&quot; /I&quot;C:\My Includes&quot; /O2""")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(
+                projectFiles: [new(@"Project.vcxproj")],
+                portable: true);
+
+            // Assert
+            var cmake = fileSystem.GetFile(@"CMakeLists.txt").TextContents;
+
+            Assert.Contains("""
+                target_compile_options(Project
+                    PRIVATE
+                        "$<$<CXX_COMPILER_ID:MSVC>:/DNAME=foo bar>"
+                        "$<$<CXX_COMPILER_ID:MSVC>:/IC:\\My Includes>"
+                        "$<$<CXX_COMPILER_ID:MSVC>:/O2>"
+                )
+                """, cmake);
         }
 
         [Fact]
@@ -93,7 +154,7 @@ public partial class ConverterTests
                         /wd4100
                         /wd4200
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -123,7 +184,7 @@ public partial class ConverterTests
                         "$<$<CXX_COMPILER_ID:MSVC>:/wd4100>"
                         "$<$<CXX_COMPILER_ID:MSVC>:/wd4200>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -152,7 +213,7 @@ public partial class ConverterTests
                         /we4800
                         /we4801
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -182,7 +243,7 @@ public partial class ConverterTests
                         "$<$<CXX_COMPILER_ID:MSVC>:/we4800>"
                         "$<$<CXX_COMPILER_ID:MSVC>:/we4801>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -210,7 +271,7 @@ public partial class ConverterTests
                     PRIVATE
                         /W4
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -239,7 +300,7 @@ public partial class ConverterTests
                     PRIVATE
                         "$<$<CXX_COMPILER_ID:MSVC>:/W4>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -285,7 +346,7 @@ public partial class ConverterTests
                     PRIVATE
                         /external:W2
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -314,7 +375,7 @@ public partial class ConverterTests
                     PRIVATE
                         "$<$<CXX_COMPILER_ID:MSVC>:/external:W2>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -360,7 +421,7 @@ public partial class ConverterTests
                     PRIVATE
                         /external:anglebrackets
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -389,7 +450,7 @@ public partial class ConverterTests
                     PRIVATE
                         "$<$<CXX_COMPILER_ID:MSVC>:/external:anglebrackets>"
                 )
-                """.TrimEnd(), cmake);
+                """, cmake);
         }
     }
 }

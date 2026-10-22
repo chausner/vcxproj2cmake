@@ -32,7 +32,7 @@ public partial class ConverterTests
                     PRIVATE
                         project.def
                 )
-                """.Trim(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -60,7 +60,7 @@ public partial class ConverterTests
                         "$<$<CONFIG:Debug>:project_debug.def>"
                         "$<$<CONFIG:Release>:project_release.def>"
                 )
-                """.Trim(), cmake);
+                """, cmake);
         }
     }
 }
