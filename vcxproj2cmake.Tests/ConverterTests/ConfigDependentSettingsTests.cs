@@ -161,7 +161,7 @@ public partial class ConverterTests
                         "$<$<AND:$<CONFIG:Release>,$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>>:${CMAKE_CURRENT_SOURCE_DIR}/ReleaseWin32>"
                         "$<$<AND:$<CONFIG:Release>,$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>>:${CMAKE_CURRENT_SOURCE_DIR}/ReleaseX64>"
                 )
-                """.Trim(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -217,7 +217,7 @@ public partial class ConverterTests
                         "$<$<CONFIG:Debug>:debug.def>"
                         "$<$<CONFIG:Release>:release.def>"
                 )
-                """.Trim(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -274,7 +274,7 @@ public partial class ConverterTests
                         "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/DebugWin32>"
                         "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/ReleaseWin32>"
                 )
-                """.Trim(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -319,7 +319,7 @@ public partial class ConverterTests
                         "$<$<AND:$<CONFIG:Debug>,$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>>:${CMAKE_CURRENT_SOURCE_DIR}/DebugX64>"
                         "$<$<AND:$<CONFIG:Release>,$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>>:${CMAKE_CURRENT_SOURCE_DIR}/ReleaseX64>"
                 )
-                """.Trim(), cmake);
+                """, cmake);
         }
 
         [Fact]
@@ -352,14 +352,14 @@ public partial class ConverterTests
                             "$<$<CONFIG:Debug>:${CMAKE_CURRENT_SOURCE_DIR}/DebugOrWin32>"
                             "$<$<CONFIG:Release>:${CMAKE_CURRENT_SOURCE_DIR}/ReleaseOrx64>"
                     )
-                    """.Trim()) ||
+                    """) ||
                 cmake.Contains("""
                     target_link_directories(Project
                         PRIVATE
                             "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>:${CMAKE_CURRENT_SOURCE_DIR}/DebugOrWin32>"
                             "$<$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>:${CMAKE_CURRENT_SOURCE_DIR}/ReleaseOrx64>"
                     )
-                    """.Trim())
+                    """)
                 );
 
             Assert.Contains("Multiple CMake variables can be used to distinguish between values for setting AdditionalLibraryDirectories+LibraryPath. One of the variables will be used, but this may not be the intended behavior.", logger.AllMessageText);
