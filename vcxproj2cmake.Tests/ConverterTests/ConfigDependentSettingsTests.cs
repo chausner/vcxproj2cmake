@@ -422,5 +422,50 @@ public partial class ConverterTests
             Assert.DoesNotContain("Libs1", cmake);
             Assert.DoesNotContain("ReleaseLib1", cmake);
         }
+
+        [Fact]
+        public void Given_EquivalentConfigurations_When_Converted_Then_CombinedConditionsAreNotDuplicated()
+        {
+            // Arrange
+            var fileSystem = new MockFileSystem();
+            fileSystem.Directory.SetCurrentDirectory(Environment.CurrentDirectory);
+
+            fileSystem.AddFile("Project.vcxproj", new(TestData.Project()
+                .WithConfigurations(
+                    ("Debug", "Win32"), ("Debug", "x86"), ("Debug", "x64"),
+                    ("Release", "Win32"), ("Release", "x64"))
+                .WithProperty("Debug", "Win32", "TargetName", "DebugWin32")
+                .WithProperty("Debug", "x86", "TargetName", "DebugWin32")
+                .WithProperty("Debug", "x64", "TargetName", "Debugx64")
+                .WithProperty("Release", "Win32", "TargetName", "ReleaseWin32")
+                .WithProperty("Release", "x64", "TargetName", "Releasex64")
+                .WithItemDefinitionSetting("Debug", "Win32", "Link", "AdditionalLibraryDirectories", "DebugWin32")
+                .WithItemDefinitionSetting("Debug", "x86", "Link", "AdditionalLibraryDirectories", "DebugWin32")
+                .WithItemDefinitionSetting("Debug", "x64", "Link", "AdditionalLibraryDirectories", "Debugx64")
+                .WithItemDefinitionSetting("Release", "Win32", "Link", "AdditionalLibraryDirectories", "ReleaseWin32")
+                .WithItemDefinitionSetting("Release", "x64", "Link", "AdditionalLibraryDirectories", "Releasex64")
+                .Build()));
+
+            var converter = new Converter(fileSystem, NullLogger.Instance);
+
+            // Act
+            converter.Convert(projectFiles: [new("Project.vcxproj")]);
+
+            // Assert
+            var cmake = fileSystem.GetFile("CMakeLists.txt").TextContents;
+            
+            Assert.Contains("""
+                OUTPUT_NAME "$<$<AND:$<CONFIG:Debug>,$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>>:DebugWin32>$<$<AND:$<CONFIG:Debug>,$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>>:Debugx64>$<$<AND:$<CONFIG:Release>,$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>>:ReleaseWin32>$<$<AND:$<CONFIG:Release>,$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>>:Releasex64>"
+                """, cmake);
+            Assert.Contains("""
+                target_link_directories(Project
+                    PRIVATE
+                        "$<$<AND:$<CONFIG:Debug>,$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>>:${CMAKE_CURRENT_SOURCE_DIR}/DebugWin32>"
+                        "$<$<AND:$<CONFIG:Debug>,$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>>:${CMAKE_CURRENT_SOURCE_DIR}/Debugx64>"
+                        "$<$<AND:$<CONFIG:Release>,$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},X86>>:${CMAKE_CURRENT_SOURCE_DIR}/ReleaseWin32>"
+                        "$<$<AND:$<CONFIG:Release>,$<STREQUAL:${CMAKE_CXX_COMPILER_ARCHITECTURE_ID},x64>>:${CMAKE_CURRENT_SOURCE_DIR}/Releasex64>"
+                )
+                """, cmake);
+        }
     }
 }

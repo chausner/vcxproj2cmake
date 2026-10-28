@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using System.Diagnostics.CodeAnalysis;
 
 namespace vcxproj2cmake;
 
@@ -65,40 +64,24 @@ record CMakeConfigDependentSetting
 
     public CMakeExpression[] ToCMakeExpressions()
     {
-        var projectConfigs = Values.Keys;
+        if (IsEmpty)
+            return [];
 
-        if (Values.Values.Distinct().Count() == 1)
-            if (Values.Values.First().Value != string.Empty)
-                return [Values.Values.First()];
-            else
-                return [];
+        var firstValue = Values.Values.First();
+        if (Values.Values.All(value => value == firstValue))
+            return [firstValue];
 
-        List<CMakeVariable> variablesToConsider = [];
+        CMakeVariable.ValidateMapping(SettingName, Values, MSBuildProject, (left, right) => left == right);
 
-        foreach (var variable in CMakeVariable.AllVariables)
-        {
-            int numDistinctValues = projectConfigs.Select(config => variable.GetValueForProjectConfig(config, MSBuildProject)).Distinct().Count();
-            if (numDistinctValues > 1)
-                variablesToConsider.Add(variable);
-        }
+        var variableGroups = CMakeVariable.AllVariables
+            .Select(variable => (
+                Variable: variable,
+                Groups: Values.GroupBy(kvp => variable.GetValueForProjectConfig(kvp.Key, MSBuildProject)).ToArray()))
+            .Where(mapping => mapping.Groups.Length > 1)
+            .ToArray();
 
-        if (variablesToConsider.Count == 0)
-        {
-            if (Values.Values.Distinct().Count() != 1)
-                throw new CatastrophicFailureException($"Cannot convert setting {SettingName} to a CMake expression because it has multiple values and no CMake variable can be used to distinguish between them.");
-
-            if (Values.Values.First().Value != string.Empty)
-                return [Values.Values.First()];
-            else
-                return [];
-        }
-
-        ValidateCMakeVariableMapping();
-
-        CMakeVariable[] singleConditionVariables =
-            variablesToConsider
-            .Where(variable => projectConfigs.GroupBy(config => variable.GetValueForProjectConfig(config, MSBuildProject))
-            .All(grouping => grouping.Select(config => Values[config]).Distinct().Count() == 1))
+        var singleConditionVariables = variableGroups
+            .Where(mapping => mapping.Groups.All(group => group.All(kvp => kvp.Value == group.First().Value)))
             .ToArray();
 
         if (singleConditionVariables.Length >= 2)
@@ -106,56 +89,23 @@ record CMakeConfigDependentSetting
 
         if (singleConditionVariables.Length >= 1)
         {
-            var variable = singleConditionVariables.First();
-
-            List<CMakeExpression> exprs = [];
-            foreach (var grouping in projectConfigs.GroupBy(config => variable.GetValueForProjectConfig(config, MSBuildProject)))
-            {
-                var value = Values[grouping.First()];
-                if (value.Value != string.Empty)
-                    exprs.Add(variable.GetExpression(grouping.Key, value));
-            }
-            return exprs.ToArray();
+            var (variable, groups) = singleConditionVariables[0];
+            return groups
+                .Where(group => group.First().Value.Value != string.Empty)
+                .Select(group => variable.GetExpression(group.Key, group.First().Value))
+                .ToArray();
         }
 
-        {
-            List<CMakeExpression> exprs = [];
-            foreach (var (projectConfig, value) in Values)
+        return Values
+            .Where(kvp => kvp.Value.Value != string.Empty)
+            .Select(kvp =>
             {
-                if (value.Value == string.Empty)
-                    continue;
-                var variableValues = variablesToConsider.Select(variable => variable.GetValueForProjectConfig(projectConfig, MSBuildProject)).ToArray();
-                var expr = CMakeExpression.Expression("$<$<AND:");
-                foreach (var (i, (variable, variableValue)) in variablesToConsider.Zip(variableValues).Index())
-                {
-                    expr += variable.GetConditionExpression(variableValue);
-                    if (i < variablesToConsider.Count - 1)
-                        expr += CMakeExpression.Expression(",");
-                }
-                expr += CMakeExpression.Expression(">:" + value.Value + ">");
-                exprs.Add(expr);
-            }
-            return exprs.ToArray();
-        }
-    }
-
-    void ValidateCMakeVariableMapping()
-    {
-        foreach (var config1 in Values.Keys)
-        {
-            foreach (var config2 in Values.Keys)
-            {
-                if (Values[config1].Value == Values[config2].Value)
-                    continue;
-
-                if (CMakeVariable.AllVariables.All(variable =>
-                    variable.GetValueForProjectConfig(config1, MSBuildProject) ==
-                    variable.GetValueForProjectConfig(config2, MSBuildProject)))
-                {
-                    throw new CatastrophicFailureException($"Cannot convert setting {SettingName} to a CMake expression because it has multiple values and no CMake variable can be used to distinguish between them.");
-                }
-            }
-        }
+                var conditions = variableGroups.Select(mapping => mapping.Variable.GetConditionExpression(
+                    mapping.Variable.GetValueForProjectConfig(kvp.Key, MSBuildProject)).Value);
+                return CMakeExpression.Expression($"$<$<AND:{string.Join(',', conditions)}>:{kvp.Value.Value}>");
+            })
+            .Distinct()
+            .ToArray();
     }
 
     public CMakeExpression ToCMakeExpression()
@@ -261,84 +211,37 @@ record CMakeConfigDependentMultiSetting
 
     public CMakeExpression[] ToCMakeExpressions()
     {
-        var projectConfigs = Values.Keys;
+        if (IsEmpty)
+            return [];
 
-        if (Values.Values.Distinct(CMakeExpressionArrayEqualityComparer.Instance).Count() == 1)
-            return Values.Values.First();
+        var firstValue = Values.Values.First();
+        if (Values.Values.All(value => value.SequenceEqual(firstValue)))
+            return firstValue;
 
-        ValidateCMakeVariableMapping();
+        // Validate complete lists before splitting them into individual entries so
+        // differences in ordering or multiplicity cannot hide an ambiguous mapping.
+        CMakeVariable.ValidateMapping(SettingName, Values, MSBuildProject, (left, right) => left.SequenceEqual(right));
 
-        Dictionary<MSBuildProjectConfig, List<CMakeExpression>> values = new(Values.Select(kvp => new KeyValuePair<MSBuildProjectConfig, List<CMakeExpression>>(kvp.Key, kvp.Value.ToList())));
-
-        List<CMakeExpression> exprs = [];
-
-        CMakeExpression[] commonExpressions =
-            Values.Values
-            .Aggregate((acc, exprs) => acc.Intersect(exprs).ToArray())
+        var commonExpressions = firstValue
+            .Where(value => Values.Values.All(values => values.Contains(value)))
+            .Distinct()
             .ToArray();
-
-        exprs.AddRange(commonExpressions);
-
-        foreach (var value in values.Values)
-            foreach (var expr in commonExpressions)
-                value.Remove(expr);
-
-        var uniqueValues = values.Values.SelectMany(exprs => exprs).Distinct().ToArray();
+        List<CMakeExpression> exprs = [.. commonExpressions];
+        var uniqueValues = Values.Values.SelectMany(values => values).Except(commonExpressions);
+        var empty = CMakeExpression.Expression(string.Empty);
 
         foreach (var value in uniqueValues)
         {
-            var setting = new CMakeConfigDependentSetting(SettingName, CMakeExpression.Expression(string.Empty), MSBuildProject, logger);
-            foreach (var projectConfig in projectConfigs)
-                setting.Values.Add(projectConfig, values[projectConfig].Contains(value) ? value : CMakeExpression.Expression(string.Empty));
+            var setting = new CMakeConfigDependentSetting(SettingName, empty, MSBuildProject, logger);
+            foreach (var (projectConfig, values) in Values)
+                setting.Values.Add(projectConfig, values.Contains(value) ? value : empty);
             exprs.AddRange(setting.ToCMakeExpressions());
         }
 
         return exprs.ToArray();
     }
 
-    void ValidateCMakeVariableMapping()
-    {
-        // Each CMake variable combination must identify a single complete setting value.
-        // Checking individual list entries below is insufficient: two configurations can
-        // produce the same conditions while contributing different entries to the list.
-        foreach (var config1 in Values.Keys)
-        {
-            foreach (var config2 in Values.Keys)
-            {
-                if (Values[config1].SequenceEqual(Values[config2]))
-                    continue;
-
-                if (CMakeVariable.AllVariables.All(variable =>
-                    variable.GetValueForProjectConfig(config1, MSBuildProject) ==
-                    variable.GetValueForProjectConfig(config2, MSBuildProject)))
-                {
-                    throw new CatastrophicFailureException($"Cannot convert setting {SettingName} to a CMake expression because it has multiple values and no CMake variable can be used to distinguish between them.");
-                }
-            }
-        }
-    }
-
     public CMakeExpression[] CMakeExpressions => ToCMakeExpressions();
 
     public bool IsEmpty => Values.Values.All(exprs => exprs.Length == 0);
-}
-
-class CMakeExpressionArrayEqualityComparer : IEqualityComparer<CMakeExpression[]>
-{
-    public static readonly CMakeExpressionArrayEqualityComparer Instance = new();
-
-    public bool Equals(CMakeExpression[]? x, CMakeExpression[]? y)
-    {
-        if (x == null && y == null)
-            return true;
-        else if (x == null || y == null)
-            return false;
-        else
-            return x.SequenceEqual(y);
-    }
-
-    public int GetHashCode([DisallowNull] CMakeExpression[] obj)
-    {
-        return obj.Aggregate(0, (acc, expr) => acc ^ expr.GetHashCode());
-    }
 }

@@ -13,6 +13,29 @@ abstract class CMakeVariable
 
     public abstract string GetValueForProjectConfig(MSBuildProjectConfig projectConfig, MSBuildProject project);
 
+    public static void ValidateMapping<TValue>(
+        string settingName,
+        IReadOnlyDictionary<MSBuildProjectConfig, TValue> values,
+        MSBuildProject project,
+        Func<TValue, TValue, bool> valuesEqual)
+    {
+        var entries = values.ToArray();
+
+        for (var i = 0; i < entries.Length; i++)        
+            for (var j = i + 1; j < entries.Length; j++)
+            {
+                var (config1, value1) = entries[i];
+                var (config2, value2) = entries[j];
+                
+                if (!valuesEqual(value1, value2) && AllVariables.All(variable =>
+                    variable.GetValueForProjectConfig(config1, project) ==
+                    variable.GetValueForProjectConfig(config2, project)))
+                {
+                    throw new CatastrophicFailureException($"Cannot convert setting {settingName} to a CMake expression because it has multiple values and no CMake variable can be used to distinguish between them.");
+                }
+            }        
+    }
+
     public static readonly CMakeVariable[] AllVariables =
     [
         new BuildTypeCMakeVariable(),
