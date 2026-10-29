@@ -30,6 +30,7 @@ class MSBuildProject
     public required MSBuildConfigDependentSetting<string> ModuleDefinitionFile { get; init; }
     public required MSBuildConfigDependentSetting<string> CharacterSet { get; init; }
     public required MSBuildConfigDependentSetting<string> UseOfMfc { get; init; }
+    public required MSBuildConfigDependentSetting<string> UseDebugLibraries { get; init; }
     public required MSBuildConfigDependentSetting<string> RuntimeLibrary { get; init; }
     public required MSBuildConfigDependentSetting<string> BasicRuntimeChecks { get; init; }
     public required MSBuildConfigDependentSetting<string[]> DisableSpecificWarnings { get; init; }
@@ -68,8 +69,11 @@ class MSBuildProject
         var projectConfigurations =
             ElementsNamed(projectElement, "ItemGroup")
                 .SelectMany(group => ElementsNamed(group, "ProjectConfiguration"))
-                .Select(element => PathUtils.NormalizePathSeparators(UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim())))
-                .Select(config => new MSBuildProjectConfig(config))
+                .Select(element => new MSBuildProjectConfig(
+                    Name: UnescapeMSBuildValue(element.Attribute("Include")!.Value.Trim()),
+                    Configuration: UnescapeMSBuildValue(ElementsNamed(element, "Configuration").Single().Value.Trim()),
+                    Platform: UnescapeMSBuildValue(ElementsNamed(element, "Platform").Single().Value.Trim())
+                ))
                 .ToList();
 
         var evaluatedProjects =
@@ -311,6 +315,7 @@ class MSBuildProject
             ModuleDefinitionFile = moduleDefinitionFile,
             CharacterSet = characterSet,
             UseOfMfc = useOfMfc,
+            UseDebugLibraries = useDebugLibraries,
             RuntimeLibrary = runtimeLibrary,
             BasicRuntimeChecks = basicRuntimeChecks,
             DisableSpecificWarnings = disableSpecificWarnings,
@@ -383,7 +388,7 @@ class MSBuildProject
 
         static MSBuildConfigDependentSetting<string[]> ParseCommandLineOptionSetting(Dictionary<string, Dictionary<MSBuildProjectConfig, string>> settings, string settingName)
         {
-            var parser = (string value) => 
+            var parser = (string value) =>
                 PathUtils.SplitArguments(value)
                     .Except([$"%({settingName})", $"$({settingName})"], StringComparer.OrdinalIgnoreCase)
                     .Select(UnescapeMSBuildValue)

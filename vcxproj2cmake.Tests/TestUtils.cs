@@ -66,8 +66,8 @@ internal class InMemoryLogger : ILogger
 static class CMakeAssert
 {
     public static async Task<(ProcessOutput ConfigureOutput, ProcessOutput BuildOutput)> ConfiguresAndBuildsWithCMake(
-        MockFileSystem fileSystem, 
-        string? architecture = null, 
+        MockFileSystem fileSystem,
+        string? architecture = null,
         string? configuration = null)
     {
         if (!await CanRunCMake())

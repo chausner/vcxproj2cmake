@@ -6,9 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-10-28
+
 ### Added
 
 - Add support for MSBuild macros `MSBuildProjectDirectory`, `MSBuildProjectName`, `MSBuildThisFileDirectory` and `MSBuildThisFileName`.
+- Add support for MSBuild properties whose value depends on specific combinations of configuration and platform.
+  The tool will generate corresponding CMake generator expressions using logical operator `$<AND:...>` in this case.
+- Add option `--project-configs` allowing to restrict the set of project configurations to be taken into account.
 
 ### Changed
 
@@ -195,7 +200,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 First stable release.
 
-[unreleased]: https://github.com/chausner/vcxproj2cmake/compare/v1.11.0...HEAD
+[unreleased]: https://github.com/chausner/vcxproj2cmake/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/chausner/vcxproj2cmake/compare/v1.8.0...v1.9.0
