@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `vcxproj2cmake/` — .NET 10 CLI source. Scriban templates are embedded from `Resources/Templates/`; Conan package metadata is embedded from `Resources/conan-packages.csv`.
+- `vcxproj2cmake/` — .NET 11 CLI source. Scriban templates are embedded from `Resources/Templates/`; Conan package metadata is embedded from `Resources/conan-packages.csv`.
 - `vcxproj2cmake.Tests/` — xUnit v3 tests, organized by area and conversion behavior (for example, `ConverterTests/`).
 - `ExampleSolution/` — small `.slnx` demo with an app and a library, useful for manual conversion checks.
 - `Scripts/` — maintenance scripts, including `GetConanPackageInfo.ps1`.
